@@ -28,6 +28,8 @@ op signin
 
 # Apps
 loginstall "apps"
+brew install --cask alfred
+brew install --cask alt-tab
 brew install --cask arc
 brew install --cask background-music
 brew install --cask discord
@@ -35,13 +37,16 @@ brew install --cask fantastical
 brew install --cask gitkraken
 brew install --cask gpg-suite-no-mail
 brew install --cask keyclu
-brew install --cask notion notion-calendar
+brew install --cask notion
+brew install --cask notion-calendar
+brew install --cask pocket-casts
 brew install --cask rectangle
 brew install --cask rocket
 brew install --cask setapp 
 brew install --cask slack
 brew install --cask spotify
 brew install --cask steam
+brew install --cask surfshark
 brew install --cask visual-studio-code
 brew install --cask zoom
 brew tap teamookla/speedtest
