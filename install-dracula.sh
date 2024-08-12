@@ -21,5 +21,6 @@ cp $DIR_DRACULA/zsh-syntax-highlighting/zsh-syntax-highlighting.sh $ZSH_CUSTOM/z
 ## Get dracula pro themes
 loginstall "dracula pro themes"
 curl -ofsSL $THEME_PRO.zip $THEME_PRO_URL
-unzip $THEME_PRO.zip
+unzip ~/Downloads/$THEME_PRO.zip
+cp ~r ~/Downloads/$THEME_PRO $DIR_PROJECTS/$THEME_PRO
 cp $THEME_PRO/themes/zsh/$THEME_PRO.zsh-theme $ZSH_CUSTOM/themes/$THEME_PRO.zsh-theme
