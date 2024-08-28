@@ -2,11 +2,12 @@
 
 source ./shared.sh
 
-# Clone themes
-cd ~/
-createdirsafely "projects"
-cd projects
-createdirsafely "dracula"
+createdirsafely $DIR_PROJECTS
+createdirsafely $DIR_DRACULA
+createdirsafely $DIR_DRACULA_PRO
+
+CUR_DIR="${PWD}"
+echo "Current dir: ${BLUE}${CUR_DIR}${NC}"
 
 ## Get public dracula themes
 loginstall "dracula themes"
@@ -17,10 +18,19 @@ git clone $REPO_DRACULA/xcode.git $DIR_DRACULA/xcode
 git clone $REPO_DRACULA/zsh.git $DIR_DRACULA/zsh
 git clone $REPO_DRACULA/zsh-syntax-highlighting.git $DIR_DRACULA/zsh-syntax-highlighting
 cp $DIR_DRACULA/zsh-syntax-highlighting/zsh-syntax-highlighting.sh $ZSH_CUSTOM/zsh-syntax-highlighting.zsh
-
 ## Get dracula pro themes
 loginstall "dracula pro themes"
-curl -o $THEME_PRO.zip -fsSL $THEME_PRO_URL
-unzip ~/Downloads/$THEME_PRO.zip
-cp ~r ~/Downloads/$THEME_PRO $DIR_PROJECTS/$THEME_PRO
-cp $THEME_PRO/themes/zsh/$THEME_PRO.zsh-theme $ZSH_CUSTOM/themes/$THEME_PRO.zsh-theme
+cd $ROOT_DIR/Downloads
+echo "${BLUE}Go to downloads${COLOR_OFF}"
+pwd
+
+if [ ! -f "$ROOT_DIR/Downloads/$THEME_PRO.zip" ]; then
+  echo "${BLUE}CMD + Click the following link in order to download the archive. Once downloaded, press Enter to continue:${COLOR_OFF} ${THEME_PRO_URL}"
+  read -r # Waits for Enter
+  echo "${BLUE}Continuing dracula pro install${COLOR_OFF}"
+  mv Archive.zip $THEME_PRO.zip
+fi
+
+unzip $ROOT_DIR/Downloads/$THEME_PRO.zip -d $DIR_DRACULA_PRO
+cp $DIR_DRACULA_PRO/themes/zsh/$THEME_PRO.zsh-theme $ZSH_CUSTOM/themes/$THEME_PRO.zsh-theme
+cd $CUR_DIR
