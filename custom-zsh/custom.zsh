@@ -61,9 +61,9 @@ function gotopathsafely() {
 function updategitdirectory() {
   DIR_NAME="$1"
   LIB_TYPE="$2"
-  echo "${BOLD}========================================================${NC}"
-  echo "${BOLD}Go to ${CYAN}${DIR_NAME}${NC}"
-  echo "${BOLD}========================================================${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BOLD_BLUE}Go to ${CYAN}${DIR_NAME}${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
   gotopathsafely $DIR_NAME
   echo ""
   local dirs=()
@@ -74,9 +74,9 @@ function updategitdirectory() {
   done
 
   for dir in "${dirs[@]}"; do
-    echo "${BOLD}========================================================${NC}"
-    echo "${BOLD}Update ${LIB_TYPE}: ${CYAN}${dir}${NC}"
-    echo "${BOLD}========================================================${NC}"
+    echo "${BOLD_BLUE}========================================================${NC}"
+    echo "${BOLD_BLUE}Update ${LIB_TYPE}: ${CYAN}${dir}${NC}"
+    echo "${BOLD_BLUE}========================================================${NC}"
     gotopathsafely $DIR_NAME/$dir
     if git rev-parse --is-inside-work-tree &>/dev/null; then
       echo ""
@@ -89,14 +89,14 @@ function updategitdirectory() {
 }
 
 function updatelibs() {
-  echo "${BOLD}========================================================${NC}"
-  echo "${BOLD}Install latest ${CYAN}node${NC}"
-  echo "${BOLD}========================================================${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BOLD_BLUE}Install latest ${CYAN}node${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
   fnm use lts-latest --corepack-enabled --install-if-missing
   echo ""
-  echo "${BOLD}========================================================${NC}"
-  echo "${BOLD}Update ${CYAN}npm${NC}"
-  echo "${BOLD}========================================================${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BOLD_BLUE}Update ${CYAN}npm${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
   npm update -g
   echo ""
   updategitdirectory $ZSH_CUSTOM/plugins "plugin"
@@ -107,14 +107,14 @@ function updatelibs() {
   echo ""
   gohome
   echo ""
-  echo "${BOLD}========================================================${NC}"
-  echo "${BOLD}Update ${CYAN}homebrew${NC}"
-  echo "${BOLD}========================================================${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BOLD_BLUE}Update ${CYAN}homebrew${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
   brew update
   echo ""
-  echo "${BOLD}========================================================${NC}"
-  echo "${BOLD}Cleanup ${CYAN}homebrew${NC}"
-  echo "${BOLD}========================================================${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BOLD_BLUE}Cleanup ${CYAN}homebrew${NC}"
+  echo "${BOLD_BLUE}========================================================${NC}"
   brew cleanup
 }
 
