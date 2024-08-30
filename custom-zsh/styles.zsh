@@ -23,11 +23,3 @@ BOLD_BLUE='\033[1;34m'
 BOLD_MAGENTA='\033[1;35m'
 BOLD_CYAN='\033[1;36m'
 BOLD_WHITE='\033[1;37m'
-
-GITHUB="https://github.com"
-GITHUB_RAW="https://raw.githubusercontent.com"
-DIR_CONFIG="~/.config"
-DIR_PROJECTS="~/projects"
-DIR_DRACULA="$DIR_PROJECTS/dracula"
-THEME_PRO="dracula-pro"
-DIR_DRACULA_PRO="$DIR_PROJECTS/$THEME_PRO"
