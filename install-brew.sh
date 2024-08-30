@@ -5,7 +5,7 @@
 # ref: https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh          #
 ###############################################################################
 
-source shared.sh
+source ./shared.sh
 
 INSTALL_APPS=$1
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source ./env.sh
-source ./styles.sh
+source ./custom-zsh/styles.sh
 
 ROOT_DIR="${PWD%%/projects/*}"
 GITHUB="https://github.com"
