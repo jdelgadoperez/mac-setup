@@ -40,20 +40,16 @@ git clone $GITHUB/MichaelAquilina/zsh-you-should-use.git $ZSH_CUSTOM/plugins/you
 git clone $GITHUB/qoomon/zsh-lazyload $ZSH_CUSTOM/plugins/zsh-lazyload
 
 # Copy custom config files
-cd ~/
-createdirsafely ".config"
-
-gh auth login
+createdirsafely "$ROOT_DIR/.config"
 
 loginstall "zsh customizations"
-gh gist clone $GIST_ROOT
-cp $GIST_ROOT/.zshrc ~/.zshrc
-cp $GIST_ROOT/starship.toml $CONFIG/starship.toml
-rm -rf $GIST_ROOT
-
-gh gist clone $GIST_CUSTOM
-cp $GIST_CUSTOM/fzf-preview.sh $ZSH_CUSTOM/fzf-preview.sh
-cp $GIST_CUSTOM/history.zsh $ZSH_CUSTOM/history.zsh
-cp $GIST_CUSTOM/custom.zsh $ZSH_CUSTOM/custom.zsh
-cp $GIST_CUSTOM/nerdtopia.zsh $ZSH_CUSTOM/nerdtopia.zsh
-rm -rf $GIST_CUSTOM
+cp ./dotfiles/.zshrc $ROOT_DIR/.bash_profile
+cp ./dotfiles/.zshrc $ROOT_DIR/.bashrc
+cp ./dotfiles/.zshrc $ROOT_DIR/.zprofile
+cp ./dotfiles/.zshrc $ROOT_DIR/.zshrc
+cp ./.config/starship.toml $CONFIG/starship.toml
+cp ./custom-zsh/fzf-preview.sh $ZSH_CUSTOM/fzf-preview.sh
+cp ./custom-zsh/history.zsh $ZSH_CUSTOM/history.zsh
+cp ./custom-zsh/custom.zsh $ZSH_CUSTOM/custom.zsh
+cp ./custom-zsh/nerdtopia.zsh $ZSH_CUSTOM/nerdtopia.zsh
+cp ./custom-zsh/styles.zsh $ZSH_CUSTOM/styles.zsh
