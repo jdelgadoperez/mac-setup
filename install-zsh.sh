@@ -4,7 +4,7 @@ source ./shared.sh
 
 # Update and install Zsh if not already installed
 if ! [ -x "$(command -v zsh)" ]; then
-  echo "${BOLD_YELLOW}ZSH is not installed${NORMAL}"
+  echo "${YELLOW}ZSH is not installed${NC}"
   loginstall "zsh"
   if [[ "$OSTYPE" == "darwin"* ]]; then
     # Install Zsh on macOS
@@ -18,7 +18,7 @@ fi
 
 # Change default shell to Zsh
 if [ "$SHELL" != "$(which zsh)" ]; then
-  echo "${BOLD}Changing default shell to ${CYAN}zsh${NORMAL}"
+  echo "${BLUE}Changing default shell to ${CYAN}zsh${NC}"
   chsh -s "$(which zsh)"
 fi
 
