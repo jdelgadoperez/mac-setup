@@ -3,8 +3,6 @@
 ######################################################################################
 
 ## System
-alias cat=bat
-alias lsz="eza --icons=always --color=always --git"
 alias restart="sudo shutdown -r now"
 alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
 
@@ -42,6 +40,12 @@ alias dockerconfig="openvs ~/.docker/config.json"
 ######################################################################################
 
 ## Global helpers
+function ensurepy() {
+  if command -v pyenv 1>/dev/null 2>&1 && [[ -z "$PYENV_ROOT" ]]; then
+    pyenv
+  fi
+}
+
 function createdirsafely() {
   DIR_NAME=$@
   if [ ! -d "$DIR_NAME" ]; then
@@ -58,12 +62,25 @@ function gotopathsafely() {
   fi
 }
 
+function getlocktype() {
+  if [ -f "yarn.lock" ]; then
+    echo "yarn"
+  elif [ -f "pnpm-lock.yaml" ]; then
+    echo "pnpm"
+  elif [ -f "package-lock.json" ]; then
+    echo "npm"
+  else
+    echo "none"
+  fi
+}
+
 function updategitdirectory() {
   DIR_NAME="$1"
   LIB_TYPE="$2"
-  echo "${BOLD_BLUE}========================================================${NC}"
-  echo "${BOLD_BLUE}Go to ${CYAN}${DIR_NAME}${NC}"
-  echo "${BOLD_BLUE}========================================================${NC}"
+
+  echo "${BLUE}========================================================${NC}"
+  echo "${BLUE}Go to ${CYAN}${DIR_NAME}${NC}"
+  echo "${BLUE}========================================================${NC}"
   gotopathsafely $DIR_NAME
   echo ""
   local dirs=()
@@ -74,15 +91,26 @@ function updategitdirectory() {
   done
 
   for dir in "${dirs[@]}"; do
-    echo "${BOLD_BLUE}========================================================${NC}"
-    echo "${BOLD_BLUE}Update ${LIB_TYPE}: ${CYAN}${dir}${NC}"
-    echo "${BOLD_BLUE}========================================================${NC}"
+    echo "${BLUE}========================================================${NC}"
+    echo "${BLUE}Update ${LIB_TYPE}: ${CYAN}${dir}${NC}"
+    echo "${BLUE}========================================================${NC}"
     gotopathsafely $DIR_NAME/$dir
     if git rev-parse --is-inside-work-tree &>/dev/null; then
       echo ""
       echo "${BOLD_MAGENTA}Git branch: ${BOLD_GREEN}$(git branch --show-current)${NC}"
       echo ""
       gpr
+      echo ""
+      PKG_TYPE=$(getlocktype)
+      if [[ "$PKG_TYPE" == "yarn" ]]; then
+        yii
+      elif [[ "$PKG_TYPE" == "pnpm" ]]; then
+        pnpm install --frozen-lockfile
+      elif [[ "$PKG_TYPE" == "npm" ]]; then
+        npm i --no-package-lock
+      else
+        echo "${GREEN}No lock file found. Skipping install.${NC}"
+      fi
     fi
     echo ""
   done
@@ -120,6 +148,49 @@ function updatelibs() {
 
 function openvs() {
   open -a 'Visual Studio Code' $@
+}
+
+function mysqlrm() {
+  OLD_VERSION=$1
+  # Remove current mysql
+  brew services stop $OLD_VERSION
+  sleep 10
+  sudo killall mysqld
+  brew unlink $OLD_VERSION
+  brew unpin $OLD_VERSION
+  brew uninstall $OLD_VERSION
+  brew cleanup
+  # Remove remaining config
+  sudo rm /opt/homebrew/etc/my.cnf
+  sudo rm /opt/homebrew/etc/my.cnf.d
+  sudo rm -rf /opt/homebrew/var/mysql
+  sudo rm -rf /opt/homebrew/var/log/mysql*
+  sudo rm -rf /opt/homebrew/var/mysql*
+  sudo rm -rf /opt/homebrew/Cellar/mysql
+  sudo rm -rf /opt/homebrew/opt/mysql
+  sudo rm -f ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
+  sudo rm -f /Library/LaunchDaemons/com.oracle.oss.mysql.mysqld.plist
+}
+
+function mysqladd() {
+  NEW_VERSION=$1
+  # Update and install new
+  brew update
+  brew install $NEW_VERSION
+  brew link --force $NEW_VERSION
+  brew pin $NEW_VERSION
+  brew services start $NEW_VERSION
+  sleep 10
+  brew services list
+}
+
+function mysqlreplace() {
+  OLD_VERSION=$1
+  NEW_VERSION=$2
+  # Remove current mysql
+  mysqlrm $OLD_VERSION
+  # Update and install new
+  mysqladd $NEW_VERSION
 }
 
 function viewports() {
@@ -171,10 +242,16 @@ function timestamp_now() {
   date -u +%Y-%m-%dT%H:%M:%SZ
 }
 
-######################################################################################
-# Hooks
-######################################################################################
-
-function chpwd() {
-  lsz -a
+function getmactype() {
+  MY_MAC_CHIP=$(sysctl -n machdep.cpu.brand_string)
+  MY_MAC_TYPE=""
+  if [[ "$MY_MAC_CHIP" == *"Intel"* ]]; then
+    MY_MAC_TYPE="Intel"
+  elif [[ "$MY_MAC_CHIP" == *"Apple"* ]]; then
+    MY_MAC_TYPE="Apple Silicon"
+  else
+    MY_MAC_TYPE="Unknown processor: $MY_MAC_CHIP"
+  fi
+  echo $MY_MAC_CHIP
+  echo $MY_MAC_TYPE
 }

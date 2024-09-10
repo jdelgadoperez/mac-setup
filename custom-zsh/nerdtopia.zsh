@@ -29,26 +29,13 @@ export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always {}'"
-export FZF_ALT_C_COMMAND="fd --type=d --hiden --strip-cwd-prefix --exclude .git"
+export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
 export FZF_DEFAULT_OPTS='--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 --color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6 --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4'
 
 function batdiff() {
   git diff --name-only --relative --diff-filter=d | xargs bat --diff
 }
-
-# Global expand
-function globalias() {
-  zle _expand_alias
-  zle expand-word
-  zle magic-space
-  zle self-insert
-}
-zle -N globalias
-
-# control-space expands all aliases, including global
-bindkey -M emacs "^ " globalias
-bindkey -M viins "^ " globalias
 
 # https://blog.mattclemente.com/2020/06/26/oh-my-zsh-slow-to-load/#how-to-test-your-shell-load-time
 function timezsh() {
@@ -60,4 +47,13 @@ function timezsh() {
 function profzsh() {
   shell=${1-$SHELL}
   ZPROF=true $shell -i -c exit
+}
+
+######################################################################################
+# Hooks
+######################################################################################
+
+function chpwd() {
+  lsz -a
+  echo ""
 }
