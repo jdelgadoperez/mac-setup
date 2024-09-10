@@ -2,19 +2,19 @@ if [[ "$ZPROF" = true ]]; then
   zmodload zsh/zprof
 fi
 
-source ~/.oh-my-zsh/custom/styles.zsh
+# Path to your oh-my-zsh installation.
+export ZSH="$HOME/.oh-my-zsh"
+
+source $ZSH/custom/styles.zsh
 
 # homebrew
 eval "$(/opt/homebrew/bin/brew shellenv)"
-
-# Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
 
 ####################
 ## Oh My ZSH
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
-plugins=(git dotenv fnm yarn you-should-use zsh-lazyload)
+plugins=(1password git dotenv fnm kubectl yarn you-should-use zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
