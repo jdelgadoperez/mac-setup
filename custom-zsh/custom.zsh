@@ -78,9 +78,9 @@ function updategitdirectory() {
   DIR_NAME="$1"
   LIB_TYPE="$2"
 
-  echo "${BLUE}========================================================${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   echo "${BLUE}Go to ${CYAN}${DIR_NAME}${NC}"
-  echo "${BLUE}========================================================${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   gotopathsafely $DIR_NAME
   echo ""
   local dirs=()
@@ -91,19 +91,19 @@ function updategitdirectory() {
   done
 
   for dir in "${dirs[@]}"; do
-    echo "${BLUE}========================================================${NC}"
+    echo "${BLUE}==============================================================================${NC}"
     echo "${BLUE}Update ${LIB_TYPE}: ${CYAN}${dir}${NC}"
-    echo "${BLUE}========================================================${NC}"
+    echo "${BLUE}==============================================================================${NC}"
     gotopathsafely $DIR_NAME/$dir
     if git rev-parse --is-inside-work-tree &>/dev/null; then
       echo ""
       echo "${BOLD_MAGENTA}Git branch: ${BOLD_GREEN}$(git branch --show-current)${NC}"
       echo ""
-      gpr
+      gpr # git pull --rebase
       echo ""
       PKG_TYPE=$(getlocktype)
       if [[ "$PKG_TYPE" == "yarn" ]]; then
-        yii
+        yii # yarn install --frozen-lockfile
       elif [[ "$PKG_TYPE" == "pnpm" ]]; then
         pnpm install --frozen-lockfile
       elif [[ "$PKG_TYPE" == "npm" ]]; then
@@ -111,38 +111,41 @@ function updategitdirectory() {
       else
         echo "${GREEN}No lock file found. Skipping install.${NC}"
       fi
+    else
+      echo "${GREEN}Not a repo so nothing to pull.${NC}"
     fi
     echo ""
   done
 }
 
 function updatelibs() {
-  echo "${BOLD_BLUE}========================================================${NC}"
-  echo "${BOLD_BLUE}Install latest ${CYAN}node${NC}"
-  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}Install latest ${CYAN}node${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   fnm use lts-latest --corepack-enabled --install-if-missing
+  echo "now on ${CYAN}$(fnm current)${NC}"
   echo ""
-  echo "${BOLD_BLUE}========================================================${NC}"
-  echo "${BOLD_BLUE}Update ${CYAN}npm${NC}"
-  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}Update ${CYAN}npm${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   npm update -g
   echo ""
   updategitdirectory $ZSH_CUSTOM/plugins "plugin"
   echo ""
   updategitdirectory $HOME/projects "lib"
   echo ""
-  updategitdirectory $HOME/projects/dracula-pro/themes "theme"
+  updategitdirectory $HOME/projects/dracula "theme"
   echo ""
   gohome
   echo ""
-  echo "${BOLD_BLUE}========================================================${NC}"
-  echo "${BOLD_BLUE}Update ${CYAN}homebrew${NC}"
-  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}Update ${CYAN}homebrew${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   brew update
   echo ""
-  echo "${BOLD_BLUE}========================================================${NC}"
-  echo "${BOLD_BLUE}Cleanup ${CYAN}homebrew${NC}"
-  echo "${BOLD_BLUE}========================================================${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}Cleanup ${CYAN}homebrew${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   brew cleanup
 }
 
