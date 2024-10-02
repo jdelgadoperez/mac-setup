@@ -42,7 +42,7 @@ brew install findutils
 brew install gnu-sed --with-default-names
 
 # Languages
-## Install a modern version of Bash.
+## Install a modern version of preferred languages
 loginstall "languages"
 brew install bash bash-completion2
 brew install go golangci-lint node php python
@@ -71,6 +71,7 @@ if ! [ $INSTALL_APPS == true || $INSTALL_APPS == 'true' ]; then
   brew install --cask alt-tab
   brew install --cask arc
   brew install --cask background-music
+  brew install devutils
   brew install --cask discord
   brew install --cask gitkraken
   brew install --cask gpg-suite-no-mail
