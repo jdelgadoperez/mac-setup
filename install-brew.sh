@@ -49,7 +49,7 @@ brew install go golangci-lint node php python
 
 # Term utils
 loginstall "term utils"
-brew install bat cmake eza fd fzf jq starship yq xz zoxide
+brew install bat btop cmake eza fd fzf jq navi starship thefuck yq xz zoxide
 
 # Tools
 loginstall "dev tools"
@@ -67,17 +67,23 @@ fi
 if ! [ $INSTALL_APPS == true || $INSTALL_APPS == 'true' ]; then
   loginstall "apps"
   brew install --cask 1password
+  brew install --cask 1password-cli
   brew install --cask alfred
-  brew install --cask alt-tab
+  brew install --cask android-studio
   brew install --cask arc
   brew install --cask background-music
   brew install devutils
   brew install --cask discord
+  brew install --cask flipper
   brew install --cask gitkraken
+  brew install --cask google-chrome
   brew install --cask gpg-suite-no-mail
+  brew install --cask iterm2
   brew install --cask keyclu
   brew install --cask notion
   brew install --cask notion-calendar
+  brew install --cask orbstack
+  brew install --cask pgadmin4
   brew install --cask pocket-casts
   brew install --cask rectangle
   brew install --cask rocket
@@ -97,4 +103,4 @@ brew install --cask 1password-cli
 op signin
 
 # Remove outdated versions from the cellar.
-brew cleanup
+brew cleanup -s

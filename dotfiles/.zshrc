@@ -14,7 +14,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 ## Oh My ZSH
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
-plugins=(1password git dotenv fnm kubectl yarn you-should-use zsh-lazyload)
+plugins=(1password git dotenv fnm kubectl yarn you-should-use z zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
