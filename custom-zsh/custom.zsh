@@ -23,6 +23,7 @@ alias clearnodemodules="find . -type d -name node_modules -prune -exec rm -rf {}
 alias formatchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\|css\)$' | xargs prettier --write --ignore-path .gitignore"
 alias lspipenv='for venv in $HOME/.local/share/virtualenvs/* ; do basename $venv; cat $venv/.project | sed "s/\(.*\)/\t\1\n/" ; done'
 alias rmpipenv="rm -rf $HOME/.local/share/virtualenvs/$@"
+alias navicheats="cd ~/.local/share/navi/cheats"
 
 ## Open config files
 alias omzconfig="openvs ~/.oh-my-zsh"
@@ -131,6 +132,8 @@ function updatelibs() {
   npm update -g
   echo ""
   updategitdirectory $ZSH_CUSTOM/plugins "plugin"
+  echo ""
+  updategitdirectory "$(navi info cheats-path)" "cheats"
   echo ""
   updategitdirectory $HOME/projects "lib"
   echo ""
