@@ -82,8 +82,19 @@ lazyload op -- 'loadop'
 # for GitHub packages
 export NPM_TOKEN=$GIT_NPM_TOKEN
 
+# for GitHub packages
+# export NPM_TOKEN=<token>
+
 # temporal
 lazyload temporal -- 'source <(temporal completion zsh)'
+
+function loadJava() {
+  export JAVA_HOME=$(/usr/libexec/java_home)
+  export PATH="/usr/local/opt/openjdk/bin:$PATH"
+  export PATH="$HOME/.jenv/bin:$PATH"
+  eval "$(jenv init -)"
+}
+lazyload java -- 'loadJava'
 
 if [[ "$ZPROF" = true ]]; then
   zprof

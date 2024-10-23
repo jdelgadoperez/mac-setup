@@ -44,18 +44,20 @@ brew install gnu-sed --with-default-names
 # Languages
 ## Install a modern version of preferred languages
 loginstall "languages"
-brew install bash bash-completion2
-brew install go golangci-lint node php python
+brew install bash bash-completion2 node python
+brew install go golangci-lint php java
 
 # Term utils
 loginstall "term utils"
-brew install bat btop cmake eza fd fzf jq navi starship thefuck yq xz zoxide
+brew install bat btop cmake eza fd fzf jq yq ripgrep
+brew install navi starship thefuck webq xz zoxide
 
 # Tools
 loginstall "dev tools"
 brew install grep gnupg openssl openssh screen gmp
 brew install fnm pyenv readline sqlite3 wget zlib zx
 brew install docker docker-compose git-lfs gh
+brew install awscli localstack neovim
 
 # Ensure terminal font is installed
 if ! fc-list | grep -qi "Fira Code Nerd Font"; then
@@ -67,7 +69,6 @@ fi
 if ! [ $INSTALL_APPS == true || $INSTALL_APPS == 'true' ]; then
   loginstall "apps"
   brew install --cask 1password
-  brew install --cask 1password-cli
   brew install --cask alfred
   brew install --cask android-studio
   brew install --cask arc
@@ -76,6 +77,7 @@ if ! [ $INSTALL_APPS == true || $INSTALL_APPS == 'true' ]; then
   brew install --cask discord
   brew install --cask flipper
   brew install --cask gitkraken
+  brew install --cask gitkraken-cli
   brew install --cask google-chrome
   brew install --cask gpg-suite-no-mail
   brew install --cask iterm2
