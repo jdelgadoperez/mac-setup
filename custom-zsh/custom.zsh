@@ -18,7 +18,9 @@ alias quadconfig="cd $HOME/Library/Application\ Support/iTerm2/Scripts && openvs
 alias gitpersonal="git config --global user.email '$GIT_PERSONAL_EMAIL'"
 
 ## Misc
+alias cl="clear"
 alias npmg="npm $@ -g --depth=0"
+alias pkgscripts="jq '.scripts' package.json"
 alias clearnodemodules="find . -type d -name node_modules -prune -exec rm -rf {} \;"
 alias formatchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\|css\)$' | xargs prettier --write --ignore-path .gitignore"
 alias lspipenv='for venv in $HOME/.local/share/virtualenvs/* ; do basename $venv; cat $venv/.project | sed "s/\(.*\)/\t\1\n/" ; done'
