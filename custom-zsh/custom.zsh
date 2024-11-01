@@ -25,6 +25,7 @@ alias clearnodemodules="find . -type d -name node_modules -prune -exec rm -rf {}
 alias formatchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\|css\)$' | xargs prettier --write --ignore-path .gitignore"
 alias lspipenv='for venv in $HOME/.local/share/virtualenvs/* ; do basename $venv; cat $venv/.project | sed "s/\(.*\)/\t\1\n/" ; done'
 alias rmpipenv="rm -rf $HOME/.local/share/virtualenvs/$@"
+alias rmawsenv="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE"
 alias navicheats="cd ~/.local/share/navi/cheats"
 
 ## Open config files
