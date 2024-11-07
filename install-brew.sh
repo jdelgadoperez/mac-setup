@@ -59,7 +59,7 @@ brew install fnm pyenv readline wget zlib zx
 brew install sqlite3 mailhog neovim
 brew install git-lfs gh
 brew install docker docker-compose
-brew install awscli localstack terraform
+brew install awscli localstack warrensbox/tap/tfswitch terraform terraform-docs
 brew install kubectl kubectx kustomize derailed/k9s/k9s k3d
 
 # Ensure terminal font is installed
