@@ -48,19 +48,22 @@ brew install bash bash-completion2 node python
 brew install go golangci-lint php java
 
 # Term utils
-loginstall "term utils"
-brew install bat btop cmake cmake-docs eza fd fzf jq yq ripgrep
-brew install navi starship thefuck webq xz zoxide
+loginstall "term tools and utils"
+brew install bat cmake cmake-docs eza fd fzf
+brew install starship thefuck xz zoxide jq yq
+brew install grep ripgrep gnupg openssl openssh
+brew install btop dust navi
+brew install screen gmp imagemagick webp
 
 # Tools
-loginstall "dev tools"
-brew install grep gnupg openssl openssh screen gmp imagemagick
-brew install fnm pyenv readline wget zlib zx
-brew install sqlite3 mailhog neovim
-brew install git-lfs gh
+loginstall "infra tools"
 brew install docker docker-compose
 brew install awscli localstack warrensbox/tap/tfswitch terraform terraform-docs
 brew install kubectl kubectx kustomize derailed/k9s/k9s k3d
+loginstall "dev tools"
+brew install git-lfs gh
+brew install fnm pyenv readline wget zlib zx
+brew install sqlite3 mailpit neovim
 
 # Ensure terminal font is installed
 if ! fc-list | grep -qi "Fira Code Nerd Font"; then
