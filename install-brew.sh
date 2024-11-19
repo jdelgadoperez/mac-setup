@@ -7,7 +7,7 @@
 
 source ./shared.sh
 
-INSTALL_APPS=$1
+INSTALL_APPS="${1:-false}"
 
 # Install Homebrew
 if ! [ -x "$(command -v brew)" ]; then
@@ -60,6 +60,7 @@ loginstall "infra tools"
 brew install docker docker-compose
 brew install awscli localstack warrensbox/tap/tfswitch terraform terraform-docs
 brew install kubectl kubectx kustomize derailed/k9s/k9s k3d
+
 loginstall "dev tools"
 brew install git-lfs gh
 brew install fnm pyenv readline wget zlib zx
@@ -72,7 +73,8 @@ if ! fc-list | grep -qi "Fira Code Nerd Font"; then
 fi
 
 # Apps
-if ! [ $INSTALL_APPS == true || $INSTALL_APPS == 'true' ]; then
+echo -e "${BLUE}Install apps: ${GREEN}$INSTALL_APPS${NC}"
+if [ $INSTALL_APPS == 'true' ]; then
   loginstall "apps"
   brew install --cask 1password
   brew install --cask alfred
