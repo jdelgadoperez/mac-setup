@@ -52,8 +52,8 @@ loginstall "term tools and utils"
 brew install bat cmake cmake-docs eza fd fzf
 brew install starship thefuck xz zoxide jq yq
 brew install grep ripgrep gnupg openssl openssh
-brew install btop dust navi
-brew install screen gmp imagemagick webp
+brew install btop dust navi speedtest-cli
+brew install screen gmp imagemagick webp mas
 
 # Tools
 loginstall "infra tools"
