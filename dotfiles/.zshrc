@@ -14,7 +14,8 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 ## Oh My ZSH
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
-plugins=(1password git dotenv fnm kubectl yarn you-should-use z zsh-lazyload)
+plugins=()
+plugins=(1password git dotenv fnm kubectl terraform yarn you-should-use z zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
@@ -81,13 +82,12 @@ lazyload op -- 'loadop'
 
 # for GitHub packages
 export NPM_TOKEN=$GIT_NPM_TOKEN
-
-# for GitHub packages
 # export NPM_TOKEN=<token>
 
 # temporal
 lazyload temporal -- 'source <(temporal completion zsh)'
 
+# Java
 function loadJava() {
   export JAVA_HOME=$(/usr/libexec/java_home)
   export PATH="/usr/local/opt/openjdk/bin:$PATH"
@@ -95,6 +95,16 @@ function loadJava() {
   eval "$(jenv init -)"
 }
 lazyload java -- 'loadJava'
+
+# Terraform
+export PATH="$HOME/.terraform.versions:$PATH"
+
+# Ansible config
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+export no_proxy="*"
+
+# ensure bin
+export PATH="$HOME/bin:$PATH"
 
 if [[ "$ZPROF" = true ]]; then
   zprof
