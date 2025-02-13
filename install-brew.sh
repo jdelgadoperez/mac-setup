@@ -62,7 +62,7 @@ brew install awscli localstack warrensbox/tap/tfswitch terraform terraform-docs
 brew install kubectl kubectx kustomize derailed/k9s/k9s k3d
 
 loginstall "dev tools"
-brew install git-lfs gh
+brew install git-lfs gh devutils
 brew install fnm pyenv readline wget zlib zx
 brew install sqlite3 mailpit neovim
 
@@ -81,7 +81,7 @@ if [ $INSTALL_APPS == 'true' ]; then
   brew install --cask android-studio
   brew install --cask arc
   brew install --cask background-music
-  brew install devutils
+  brew install --cask db-browser-for-sqlite
   brew install --cask discord
   brew install --cask flipper
   brew install --cask gitkraken
