@@ -59,12 +59,13 @@ brew install screen gmp imagemagick webp mas
 loginstall "infra tools"
 brew install docker docker-compose
 brew install awscli localstack warrensbox/tap/tfswitch terraform terraform-docs
-brew install kubectl kubectx kustomize derailed/k9s/k9s k3d
+brew install kubectl kubectx kustomize derailed/k9s/k9s k3d kubecolor
 
 loginstall "dev tools"
-brew install git-lfs gh devutils
+brew install git-lfs git-delta gh
 brew install fnm pyenv readline wget zlib zx
 brew install sqlite3 mailpit neovim
+brew install localstack/tap/localstack-cli
 
 # Ensure terminal font is installed
 if ! fc-list | grep -qi "Fira Code Nerd Font"; then
@@ -76,11 +77,11 @@ fi
 echo -e "${BLUE}Install apps: ${GREEN}$INSTALL_APPS${NC}"
 if [ $INSTALL_APPS == 'true' ]; then
   loginstall "apps"
+  brew install devutils
   brew install --cask 1password
   brew install --cask alfred
   brew install --cask android-studio
   brew install --cask arc
-  brew install --cask background-music
   brew install --cask db-browser-for-sqlite
   brew install --cask discord
   brew install --cask flipper
@@ -93,7 +94,6 @@ if [ $INSTALL_APPS == 'true' ]; then
   brew install --cask notion
   brew install --cask notion-calendar
   brew install --cask orbstack
-  brew install --cask pgadmin4
   brew install --cask pocket-casts
   brew install --cask rectangle
   brew install --cask rocket
