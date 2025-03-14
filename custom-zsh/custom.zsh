@@ -7,12 +7,12 @@ alias restart="sudo shutdown -r now"
 alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
 
 ## Nav
+PROJ_DIR="$HOME/projects"
 alias gohome="cd $HOME/"
-alias proj="cd $HOME/projects"
+alias proj="cd $PROJ_DIR"
 
 ## Quad terminal
 alias quadbox="cd $HOME/Library/Application\ Support/iTerm2/Scripts && python quadbox.py && cd -"
-alias quadconfig="cd $HOME/Library/Application\ Support/iTerm2/Scripts && openvs quadbox.py && cd -"
 
 ## Git and auth
 alias gitpersonal="git config --global user.email '$GIT_PERSONAL_EMAIL'"
@@ -29,24 +29,70 @@ alias rmawsenv="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN 
 alias navicheats="cd ~/.local/share/navi/cheats"
 
 ## Open config files
-alias omzconfig="openvs ~/.oh-my-zsh"
-alias zshconfig="openvs ~/.zshrc"
-alias starconfig="openvs ~/.config/starship.toml"
-alias npmconfig="openvs ~/.npmrc"
-alias sshconfig="openvs ~/.ssh/config"
-alias hosts="openvs /etc/hosts"
-alias gitconfig="openvs ~/.gitconfig"
-alias brewconfig="openvs /opt/homebrew/etc/my.cnf"
-alias dockerconfig="openvs ~/.docker/config.json"
+alias openvs="code $@"
+alias omzconfig="code ~/.oh-my-zsh"
+alias zshconfig="code ~/.zshrc"
+alias starconfig="code ~/.config/starship.toml"
+alias npmconfig="code ~/.npmrc"
+alias sshconfig="code ~/.ssh/config"
+alias hosts="code /etc/hosts"
+alias gitconfig="code ~/.gitconfig"
+alias brewconfig="code /opt/homebrew/etc/my.cnf"
+alias dockerconfig="code ~/.docker/config.json"
+alias itermscripts="code $HOME/Library/Application\ Support/iTerm2/Scripts"
 
 ######################################################################################
 # Functions
 ######################################################################################
 
-## Global helpers
 function ensurepy() {
   if command -v pyenv 1>/dev/null 2>&1 && [[ -z "$PYENV_ROOT" ]]; then
+    echo "${BLUE}==============================================================================${NC}"
+    echo "${BLUE}Init ${CYAN}pyenv${NC}"
+    echo "${BLUE}==============================================================================${NC}"
     pyenv
+  fi
+}
+
+function cleanpkgs() {
+  echo -e "${GREEN}Clearing node modules...${NC}"
+  clearnodemodules
+  echo -e "${GREEN}Node modules cleared${NC}"
+  echo ""
+  pkgman=$1
+  buildCmd="build"
+  prebuildCmd="prebuild"
+
+  if [ "$pkgman" = '' ]; then
+    pkgman="yarn"
+  fi
+
+  if [ "$pkgman" = 'yarn' ]; then
+    ycc
+    ensurepy
+    yii
+  fi
+
+  if [ "$pkgman" = 'npm' ]; then
+    echo ""
+    npm install
+  fi
+
+  if [ "$pkgman" = 'pnpm' ]; then
+    rm pnpm-lock.yaml
+    buildCmd="build:all"
+    prebuildCmd="prebuild:all"
+    echo ""
+    pnpm install
+  fi
+
+  if pkgscripts | jq -e --arg script "$prebuildCmd" 'has($script)' >/dev/null; then
+    echo ""
+    "$pkgman" "$prebuildCmd"
+  fi
+  if pkgscripts | jq -e --arg script "$buildCmd" 'has($script)' >/dev/null; then
+    echo ""
+    "$pkgman" "$buildCmd"
   fi
 }
 
@@ -78,6 +124,45 @@ function getlocktype() {
   fi
 }
 
+function showgitbranch() {
+  DIR_NAME="$1"
+  LIB_TYPE="$2"
+  starting_path=$(pwd)
+  local original_chpwd=$(declare -f chpwd)
+  unset -f chpwd
+
+  if [ ! -d "$DIR_NAME" ]; then
+    echo "${RED}Directory not found: ${DIR_NAME}${NC}"
+    return 1
+  fi
+
+  echo "${BLUE}Checking git branches in ${CYAN}${DIR_NAME}${NC}"
+  cd "$DIR_NAME" 2>/dev/null || return 1
+
+  echo "${BLUE}Go to ${CYAN}${DIR_NAME}${NC}"
+  gotopathsafely $DIR_NAME
+  local dirs=()
+  for dir in */; do
+    if [ -d "$dir" ]; then
+      dirs+=("$dir")
+    fi
+  done
+
+  for dir in "${dirs[@]}"; do
+    echo ""
+    gotopathsafely $DIR_NAME/$dir
+    if git rev-parse --is-inside-work-tree &>/dev/null; then
+      echo "${BLUE}Repo: ${CYAN}${dir}${NC}"
+      echo "${BOLD_MAGENTA}Branch: ${BOLD_GREEN}$(gbc)${NC}"
+    fi
+  done
+
+  if [ "$starting_path" != "$(pwd)" ]; then
+    cd $starting_path
+  fi
+  eval "$original_chpwd"
+}
+
 function updategitdirectory() {
   DIR_NAME="$1"
   LIB_TYPE="$2"
@@ -101,13 +186,13 @@ function updategitdirectory() {
     gotopathsafely $DIR_NAME/$dir
     if git rev-parse --is-inside-work-tree &>/dev/null; then
       echo ""
-      echo "${BOLD_MAGENTA}Git branch: ${BOLD_GREEN}$(git branch --show-current)${NC}"
+      echo "${BOLD_MAGENTA}Git branch: ${BOLD_GREEN}$(gbc)${NC}"
       echo ""
-      gpr # git pull --rebase
+      gpra
       echo ""
       PKG_TYPE=$(getlocktype)
       if [[ "$PKG_TYPE" == "yarn" ]]; then
-        yii # yarn install --frozen-lockfile
+        yii
       elif [[ "$PKG_TYPE" == "pnpm" ]]; then
         pnpm install --frozen-lockfile
       elif [[ "$PKG_TYPE" == "npm" ]]; then
@@ -123,6 +208,8 @@ function updategitdirectory() {
 }
 
 function updatelibs() {
+  ensurepy
+  echo ""
   echo "${BLUE}==============================================================================${NC}"
   echo "${BLUE}Install latest ${CYAN}node${NC}"
   echo "${BLUE}==============================================================================${NC}"
@@ -135,8 +222,6 @@ function updatelibs() {
   npm update -g
   echo ""
   updategitdirectory $ZSH_CUSTOM/plugins "plugin"
-  echo ""
-  updategitdirectory "$(navi info cheats-path)" "cheats"
   echo ""
   updategitdirectory $HOME/projects "lib"
   echo ""
@@ -155,30 +240,33 @@ function updatelibs() {
   brew cleanup
 }
 
-function openvs() {
-  open -a 'Visual Studio Code' $@
-}
-
 function mysqlrm() {
   OLD_VERSION=$1
   # Remove current mysql
   brew services stop $OLD_VERSION
   sleep 10
   sudo killall mysqld
-  brew unlink $OLD_VERSION
-  brew unpin $OLD_VERSION
+  brew unlink --force $OLD_VERSION
+  brew unpin --force $OLD_VERSION
   brew uninstall $OLD_VERSION
   brew cleanup
+  brew doctor
+
   # Remove remaining config
-  sudo rm /opt/homebrew/etc/my.cnf
-  sudo rm /opt/homebrew/etc/my.cnf.d
-  sudo rm -rf /opt/homebrew/var/mysql
-  sudo rm -rf /opt/homebrew/var/log/mysql*
+  sudo rm -f /opt/homebrew/etc/my.cnf
+  sudo rm -rf /opt/homebrew/etc/my.cnf.d
   sudo rm -rf /opt/homebrew/var/mysql*
   sudo rm -rf /opt/homebrew/Cellar/mysql
+  sudo rm -rf /opt/homebrew/Cellar/mysql-client
   sudo rm -rf /opt/homebrew/opt/mysql
   sudo rm -f ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
-  sudo rm -f /Library/LaunchDaemons/com.oracle.oss.mysql.mysqld.plist
+  sudo rm -f /Library/Launch{Agents,Daemons}/*mysql*
+  sudo rm -f /private/etc/mysql*
+
+  # remove any simlinks that point to old mysql
+  cd /opt/homebrew/opt
+  ls -latr mysql*
+  cd -
 }
 
 function mysqladd() {
@@ -216,26 +304,63 @@ function viewports() {
 }
 
 function listhelpers() {
-    local target_file="${2:-.zsh_custom_tools}"
-    case "$1" in
-        aliases)
-            print -rl -- ${(ko)aliases:#_*}
-            ;;
-        functions)
-            local func
-            for func in ${(ko)functions:#_*}; do
-                local funcinfo=$(whence -v $func)
-                local defined_file="${funcinfo#*from }"
-                [[ $defined_file == *$target_file* ]] && echo "$func :: $defined_file"
-            done
-            ;;
-        parameters)
-            print -rl -- ${(ko)parameters:#_*}
-            ;;
-        *)
-            return 1
-            ;;
-    esac
+  local target_dir="${2:-$ZSH_CUSTOM}" # Default to $ZSH_CUSTOM if no directory specified
+  target_dir=$(realpath "$target_dir")
+
+  case "$1" in
+  aliases)
+    alias | cut -d'=' -f1 | sed 's/alias //' | grep -v '^_' | sort | column
+    ;;
+  functions)
+    local func
+    local output=()
+    for func in $(declare -F | cut -d' ' -f3 | grep -v '^_'); do
+      local funcinfo=$(type "$func" 2>/dev/null)
+      if [[ $funcinfo == *"is a function"* ]]; then
+        local source_file=$(type "$func" | grep -oP 'from \K.*' 2>/dev/null)
+        if [[ -n "$source_file" ]]; then
+          source_file=$(realpath "$source_file" 2>/dev/null)
+          if [[ $source_file == $target_dir* ]]; then
+            output+=("$func :: ${source_file#$target_dir/}")
+          fi
+        fi
+      fi
+    done
+    if ((${#output[@]})); then
+      printf '%s\n' "${output[@]}" | sort | column -t -s '::'
+    else
+      echo "No functions found in $target_dir"
+    fi
+    ;;
+  parameters)
+    local output=()
+    while IFS= read -r param; do
+      if [[ -n "$param" ]]; then
+        local source_file=$(grep -l "^[[:space:]]*${param}=" "$target_dir"/* 2>/dev/null)
+        if [[ -n "$source_file" ]]; then
+          source_file=$(realpath "$source_file" 2>/dev/null)
+          if [[ $source_file == $target_dir* ]]; then
+            output+=("$param :: ${source_file#$target_dir/}")
+          fi
+        fi
+      fi
+    done < <(declare -p | cut -d' ' -f3 | cut -d= -f1 | grep -v '^_' | sort)
+
+    if ((${#output[@]})); then
+      printf '%s\n' "${output[@]}" | sort | column -t -s '::'
+    else
+      echo "No parameters found in $target_dir"
+    fi
+    ;;
+  *)
+    echo "Usage: listhelpers [aliases|functions|parameters] [directory]"
+    echo "Examples:"
+    echo "  listhelpers aliases"
+    echo "  listhelpers functions $ZSH_CUSTOM"
+    echo "  listhelpers parameters"
+    return 1
+    ;;
+  esac
 }
 
 function dadjoke() {
@@ -263,4 +388,76 @@ function getmactype() {
   fi
   echo $MY_MAC_CHIP
   echo $MY_MAC_TYPE
+}
+
+function getcommitcount() {
+  # Check if inside a Git repository
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "Not inside a Git repository."
+    exit 1
+  fi
+
+  # Get the author from arguments
+  if [ -z "$1" ]; then
+    echo "You must provide an authoer email or name."
+    exit 1
+  fi
+  AUTHOR="$1"
+
+  # Count commits by the specified author
+  commit_count=$(git log --author="$AUTHOR" --pretty=oneline | wc -l)
+
+  echo "Total commits by '$AUTHOR': $commit_count"
+}
+
+function getcommits() {
+  # Check if inside a Git repository
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "Not inside a Git repository."
+    exit 1
+  fi
+
+  # Get the author from arguments
+  if [ -z "$1" ]; then
+    echo "You must provide an author email or name."
+    exit 1
+  fi
+  AUTHOR="$1"
+
+  # Count commits by the specified author
+  git log --author="$AUTHOR" --pretty=oneline
+
+  echo "Got all commits by '$AUTHOR'"
+}
+
+function getorgcommitcount() {
+  AUTHOR="$1"
+  ORG="$2"
+
+  local original_chpwd=$(declare -f chpwd)
+  unset -f chpwd
+
+  total_commits=0
+  total_repos=0
+
+  local dirs=()
+  for dir in */; do
+    if [ -d "$dir" ]; then
+      dirs+=("$dir")
+    fi
+  done
+
+  for dir in "${dirs[@]}"; do
+    echo "Processing $dir..."
+    cd "$dir" || continue
+    repo_commit_count=$(git log --author="$AUTHOR" --pretty=oneline | wc -l)
+    total_commits=$((total_commits + repo_commit_count))
+    if [[ $repo_commit_count -gt 0 ]]; then
+      total_repos=$((total_repos + 1))
+    fi
+    cd ..
+  done
+
+  echo "Total commits of $total_commits by '$AUTHOR' in $total_repos repos in the '$ORG' org"
+  eval "$original_chpwd"
 }
