@@ -6,6 +6,9 @@ fi
 export ZSH="$HOME/.oh-my-zsh"
 
 source $ZSH/custom/styles.zsh
+if [ -f .env ]; then
+  source .env
+fi
 
 # homebrew
 eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -96,6 +99,16 @@ function loadJava() {
 }
 lazyload java -- 'loadJava'
 
+# Kubernetes
+function loadK8s() {
+  # ref: https://kubecolor.github.io/setup/shells/zsh/
+  # This needs to be added before "compdef kubecolor=kubectl"
+  source <(kubectl completion zsh)
+  # Make "kubecolor" borrow the same completion logic as "kubectl"
+  compdef kubecolor=kubectl
+}
+lazyload kubectl -- 'loadK8s'
+
 # Terraform
 export PATH="$HOME/.terraform.versions:$PATH"
 
@@ -105,6 +118,8 @@ export no_proxy="*"
 
 # ensure bin
 export PATH="$HOME/bin:$PATH"
+
+pyenv
 
 if [[ "$ZPROF" = true ]]; then
   zprof
