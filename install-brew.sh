@@ -44,15 +44,14 @@ brew install gnu-sed --with-default-names
 # Languages
 ## Install a modern version of preferred languages
 loginstall "languages"
-brew install bash bash-completion2 node python
-brew install go golangci-lint php java
+brew install bash node python go php java
 
 # Term utils
 loginstall "term tools and utils"
 brew install bat cmake cmake-docs eza fd fzf
 brew install starship thefuck xz zoxide jq yq
 brew install grep ripgrep gnupg openssl openssh
-brew install btop dust navi speedtest-cli
+brew install btop dust navi speedtest-cli bash-completion2
 brew install screen gmp imagemagick webp mas
 
 # Tools
@@ -62,7 +61,7 @@ brew install awscli localstack warrensbox/tap/tfswitch terraform terraform-docs
 brew install kubectl kubectx kustomize derailed/k9s/k9s k3d kubecolor
 
 loginstall "dev tools"
-brew install git-lfs git-delta gh
+brew install git-lfs git-delta gh golangci-lint
 brew install fnm pyenv readline wget zlib zx
 brew install sqlite3 mailpit neovim
 brew install localstack/tap/localstack-cli
