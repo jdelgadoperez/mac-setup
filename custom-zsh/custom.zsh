@@ -106,9 +106,11 @@ function cleansys() {
   rm -rf ~/Library/Caches/*
   echo -e "${GREEN}Clearing lib logs...${NC}"
   rm -rf ~/Library/Logs/*
+  echo -e "${GREEN}Clearing app state...${NC}"
+  rm -rf ~/Library/Saved\ Application\ State/*
   echo -e "${GREEN}Clearing xcode derived data...${NC}"
   rm -rf ~/Library/Developer/Xcode/DerivedData/*
-  echo -e "${GREEN}Cache cleared${NC}"
+  echo -e "${GREEN}System cleaned${NC}"
 }
 
 function createdirsafely() {
