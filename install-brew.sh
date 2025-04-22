@@ -48,23 +48,23 @@ brew install bash node python go php java
 
 # Term utils
 loginstall "term tools and utils"
-brew install bat cmake cmake-docs eza fd fzf
+brew install bat cmake cmake-docs eza fd fzf less
 brew install starship thefuck xz zoxide jq yq
 brew install grep ripgrep gnupg openssl openssh
-brew install btop dust navi speedtest-cli bash-completion2
-brew install screen gmp imagemagick webp mas
+brew install btop dust navi ncdu speedtest-cli
+brew install imagemagick mas
 
 # Tools
 loginstall "infra tools"
 brew install docker docker-compose
-brew install awscli localstack warrensbox/tap/tfswitch terraform tflint terraform-docs
-brew install kubectl kubectx kustomize derailed/k9s/k9s k3d kubecolor
+brew install awscli localstack
+brew install warrensbox/tap/tfswitch tflint terraform-docs
+brew install kubectl kubectx derailed/k9s/k9s k3d kubecolor
 
 loginstall "dev tools"
 brew install git-lfs git-delta gh golangci-lint
 brew install fnm pyenv readline wget zlib zx
-brew install sqlite3 mailpit neovim
-brew install localstack/tap/localstack-cli
+brew install sqlite3 mailpit neovim bash-completion2
 
 # Ensure terminal font is installed
 if ! fc-list | grep -qi "Fira Code Nerd Font"; then
@@ -79,11 +79,9 @@ if [ $INSTALL_APPS == 'true' ]; then
   brew install devutils
   brew install --cask 1password
   brew install --cask alfred
-  brew install --cask android-studio
   brew install --cask arc
   brew install --cask db-browser-for-sqlite
   brew install --cask discord
-  brew install --cask flipper
   brew install --cask gitkraken
   brew install --cask gitkraken-cli
   brew install --cask google-chrome
