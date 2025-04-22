@@ -57,7 +57,7 @@ brew install screen gmp imagemagick webp mas
 # Tools
 loginstall "infra tools"
 brew install docker docker-compose
-brew install awscli localstack warrensbox/tap/tfswitch terraform terraform-docs
+brew install awscli localstack warrensbox/tap/tfswitch terraform tflint terraform-docs
 brew install kubectl kubectx kustomize derailed/k9s/k9s k3d kubecolor
 
 loginstall "dev tools"
