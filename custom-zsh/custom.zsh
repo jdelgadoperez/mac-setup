@@ -12,10 +12,15 @@ alias gohome="cd $HOME/"
 alias proj="cd $PROJ_DIR"
 
 ## Quad terminal
-alias quadbox="cd $HOME/Library/Application\ Support/iTerm2/Scripts && python quadbox.py && cd -"
+alias quadbox="cd $HOME/Library/Application\ Support/iTerm2/Scripts && python quad_box.py && cd -"
 
-## Git and auth
+## Git
 alias gitpersonal="git config --global user.email '$GIT_PERSONAL_EMAIL'"
+alias gbc="gb --show-current"
+alias sgbp="showgitbranch $PROJ_DIR"
+alias gcmsga="gc --amend -m $@"
+alias grfsch="grf show --date=iso | grep 'checkout'"
+alias gres="g restore $@"
 
 ## Misc
 alias cl="clear"
@@ -23,22 +28,22 @@ alias npmg="npm $@ -g --depth=0"
 alias pkgscripts="jq '.scripts' package.json"
 alias clearnodemodules="find . -type d -name node_modules -prune -exec rm -rf {} \;"
 alias formatchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\|css\)$' | xargs prettier --write --ignore-path .gitignore"
+alias lintfixchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\)$' | xargs -I{} sh -c 'NODE_OPTIONS=\"--max-old-space-size=8192\" eslint --fix \"{}\"'"
 alias lspipenv='for venv in $HOME/.local/share/virtualenvs/* ; do basename $venv; cat $venv/.project | sed "s/\(.*\)/\t\1\n/" ; done'
 alias rmpipenv="rm -rf $HOME/.local/share/virtualenvs/$@"
 alias rmawsenv="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE"
-alias navicheats="cd ~/.local/share/navi/cheats"
 
 ## Open config files
 alias openvs="code $@"
-alias omzconfig="code ~/.oh-my-zsh"
-alias zshconfig="code ~/.zshrc"
-alias starconfig="code ~/.config/starship.toml"
-alias npmconfig="code ~/.npmrc"
-alias sshconfig="code ~/.ssh/config"
+alias omzconfig="code $HOME/.oh-my-zsh"
+alias zshconfig="code $HOME/.zshrc"
+alias starconfig="code $HOME/.config/starship.toml"
+alias npmconfig="code $HOME/.npmrc"
+alias sshconfig="code $HOME/.ssh/config"
 alias hosts="code /etc/hosts"
-alias gitconfig="code ~/.gitconfig"
-alias brewconfig="code /opt/homebrew/etc/my.cnf"
-alias dockerconfig="code ~/.docker/config.json"
+alias gitconfig="code $HOME/.gitconfig"
+alias dbconfig="code /opt/homebrew/etc/my.cnf"
+alias dockerconfig="code $HOME/.docker/config.json"
 alias itermscripts="code $HOME/Library/Application\ Support/iTerm2/Scripts"
 
 ######################################################################################
@@ -94,6 +99,16 @@ function cleanpkgs() {
     echo ""
     "$pkgman" "$buildCmd"
   fi
+}
+
+function cleansys() {
+  echo -e "${GREEN}Clearing lib caches...${NC}"
+  rm -rf ~/Library/Caches/*
+  echo -e "${GREEN}Clearing lib logs...${NC}"
+  rm -rf ~/Library/Logs/*
+  echo -e "${GREEN}Clearing xcode derived data...${NC}"
+  rm -rf ~/Library/Developer/Xcode/DerivedData/*
+  echo -e "${GREEN}Cache cleared${NC}"
 }
 
 function createdirsafely() {
@@ -255,6 +270,8 @@ function mysqlrm() {
   # Remove remaining config
   sudo rm -f /opt/homebrew/etc/my.cnf
   sudo rm -rf /opt/homebrew/etc/my.cnf.d
+  sudo rm -rf /opt/homebrew/var/mysql
+  sudo rm -rf /opt/homebrew/var/log/mysql*
   sudo rm -rf /opt/homebrew/var/mysql*
   sudo rm -rf /opt/homebrew/Cellar/mysql
   sudo rm -rf /opt/homebrew/Cellar/mysql-client
@@ -305,7 +322,7 @@ function viewports() {
 
 function listhelpers() {
   local target_dir="${2:-$ZSH_CUSTOM}" # Default to $ZSH_CUSTOM if no directory specified
-  target_dir=$(realpath "$target_dir")
+  target_dir=$(realpath "$target_dir") # Get absolute path
 
   case "$1" in
   aliases)
@@ -314,12 +331,14 @@ function listhelpers() {
   functions)
     local func
     local output=()
+    # Get all function names without leading underscore
     for func in $(declare -F | cut -d' ' -f3 | grep -v '^_'); do
       local funcinfo=$(type "$func" 2>/dev/null)
       if [[ $funcinfo == *"is a function"* ]]; then
         local source_file=$(type "$func" | grep -oP 'from \K.*' 2>/dev/null)
         if [[ -n "$source_file" ]]; then
           source_file=$(realpath "$source_file" 2>/dev/null)
+          # Only include functions from the target directory
           if [[ $source_file == $target_dir* ]]; then
             output+=("$func :: ${source_file#$target_dir/}")
           fi
@@ -336,6 +355,7 @@ function listhelpers() {
     local output=()
     while IFS= read -r param; do
       if [[ -n "$param" ]]; then
+        # Get the source file for this parameter
         local source_file=$(grep -l "^[[:space:]]*${param}=" "$target_dir"/* 2>/dev/null)
         if [[ -n "$source_file" ]]; then
           source_file=$(realpath "$source_file" 2>/dev/null)
@@ -399,7 +419,7 @@ function getcommitcount() {
 
   # Get the author from arguments
   if [ -z "$1" ]; then
-    echo "You must provide an authoer email or name."
+    echo "You must provide an author email or name."
     exit 1
   fi
   AUTHOR="$1"
