@@ -35,7 +35,6 @@ eval "$(starship init zsh)"
 # Enable fzf extensions
 FZF_TAB_PLUGIN=$ZSH_CUSTOM/plugins/fzf-tab/fzf-tab.plugin.zsh
 FZF_PREVIEW=$ZSH_CUSTOM/fzf-preview.sh
-
 if test -f "$FZF_TAB_PLUGIN"; then
   source $FZF_TAB_PLUGIN
 else
@@ -86,7 +85,6 @@ lazyload op -- 'loadop'
 # for GitHub packages
 export NPM_TOKEN=$GIT_NPM_TOKEN
 # export NPM_TOKEN=<token>
-
 # temporal
 lazyload temporal -- 'source <(temporal completion zsh)'
 
@@ -99,6 +97,13 @@ function loadJava() {
 }
 lazyload java -- 'loadJava'
 
+# Terraform
+export PATH="$HOME/.terraform.versions:$PATH"
+
+# Ansible config
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+export no_proxy="*"
+
 # Kubernetes
 function loadK8s() {
   # ref: https://kubecolor.github.io/setup/shells/zsh/
@@ -109,12 +114,7 @@ function loadK8s() {
 }
 lazyload kubectl -- 'loadK8s'
 
-# Terraform
-export PATH="$HOME/.terraform.versions:$PATH"
-
-# Ansible config
-export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
-export no_proxy="*"
+export EDITOR='code --wait'
 
 # ensure bin
 export PATH="$HOME/bin:$PATH"
