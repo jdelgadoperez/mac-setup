@@ -1,19 +1,19 @@
 [user]
-	name = Jess Delgado Perez
-	email =
-	signingkey =
+        name = Jess Delgado Perez
+        email =
+        signingkey =
 [core]
-    pager = delta
-    excludesfile = ~/.gitignore
-    # fsmonitor = true
-    # untrackedCache = true
+        pager = delta
+        excludesfile = ~/.gitignore
+        # fsmonitor = true
+        # untrackedCache = true
 [gpg]
-	format = ssh
+        format = ssh
 [commit]
-	gpgsign = true
-    verbose = true
+        gpgsign = true
+        verbose = true
 [gpg "ssh"]
-	allowedSignersFiles =
+        allowedSignersFiles =
 [column]
         ui = auto
 [branch]
@@ -47,33 +47,33 @@
         enabled = true
         autoupdate = true
 [filter "lfs"]
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
+        clean = git-lfs clean -- %f
+        smudge = git-lfs smudge -- %f
+        process = git-lfs filter-process
+        required = true
 [merge]
-    conflictstyle = zdiff3
+        conflictstyle = zdiff3
 [alias]
-	logline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+        logline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 [interactive]
-    diffFilter = delta --color-only
+        diffFilter = delta --color-only
 [delta]
-    side-by-side = true
-    navigate = true  # use n and N to move between diff sections
-    line-numbers = true
-	decorations = true
-    syntax-theme = Dracula
-	hyperlinks = true
-	hyperlinks-file-link-format = "vscode://file/{path}:{line}"
-    # plus-style = syntax "#003800"
-    # minus-style = syntax "#3f0001"
+        side-by-side = true
+        navigate = true # use n and N to move between diff sections
+        line-numbers = true
+        decorations = true
+        syntax-theme = Dracula
+        hyperlinks = true
+        hyperlinks-file-link-format = "vscode://file/{path}:{line}"
+        # plus-style = syntax "#003800"
+        # minus-style = syntax "#3f0001"
 [delta "decorations"]
-    commit-decoration-style = bold yellow box ul
-    file-style = bold yellow ul
-    file-decoration-style = none
-    hunk-header-decoration-style = cyan box ul
+        commit-decoration-style = bold yellow box ul
+        file-style = bold yellow ul
+        file-decoration-style = none
+        hunk-header-decoration-style = cyan box ul
 [delta "line-numbers"]
-    line-numbers-left-style = cyan
-    line-numbers-right-style = cyan
-    line-numbers-minus-style = 124
-    line-numbers-plus-style = 28
+        line-numbers-left-style = cyan
+        line-numbers-right-style = cyan
+        line-numbers-minus-style = 124
+        line-numbers-plus-style = 28
