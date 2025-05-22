@@ -43,28 +43,30 @@ brew install gnu-sed --with-default-names
 
 # Languages
 ## Install a modern version of preferred languages
-loginstall "languages"
-brew install bash node python go php java
+loginstall "languages and their helpers"
+brew install bash bash-completion2 node python
+brew install go php java ruby-build
+brew install fnm pyenv rbenv
 
 # Term utils
 loginstall "term tools and utils"
 brew install bat cmake cmake-docs eza fd fzf less
 brew install starship thefuck xz zoxide jq yq
-brew install grep ripgrep gnupg openssl openssh
-brew install btop dust navi ncdu speedtest-cli
-brew install imagemagick mas
+brew install grep ripgrep gnupg openssl openssh speedtest-cli
+brew install btop dust hacker1024/hacker1024/coretemp
+brew install screen gmp imagemagick webp navi
 
 # Tools
 loginstall "infra tools"
 brew install docker docker-compose
 brew install awscli localstack
-brew install warrensbox/tap/tfswitch tflint terraform-docs
-brew install kubectl kubectx derailed/k9s/k9s k3d kubecolor
+brew install warrensbox/tap/tfswitch terraform terraform-docs tflint terraformer
+brew install kubectl kubectx kustomize derailed/k9s/k9s k3d
 
 loginstall "dev tools"
-brew install git-lfs git-delta gh golangci-lint
-brew install fnm pyenv readline wget zlib zx
-brew install sqlite3 mailpit neovim bash-completion2
+brew install gh git-lfs git-delta
+brew install readline wget zlib zx
+brew install sqlite3 mailpit neovim
 
 # Ensure terminal font is installed
 if ! fc-list | grep -qi "Fira Code Nerd Font"; then
