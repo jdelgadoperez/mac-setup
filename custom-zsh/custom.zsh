@@ -257,6 +257,26 @@ function updatelibs() {
   brew cleanup
 }
 
+function listAlfredWorkflows() {
+  for plist in ~/Library/Application\ Support/Alfred/Alfred.alfredpreferences/workflows/*/info.plist; do
+    name=$(defaults read "$plist" name 2>/dev/null)
+    bundleid=$(defaults read "$plist" bundleid 2>/dev/null)
+    echo "$name — $bundleid"
+  done
+}
+
+function listAlfredWorkflowIds() {
+  cd ~/Library/Application\ Support/Alfred/Alfred.alfredpreferences/workflows
+  find user.workflow.* -type f -name info.plist | while read -r plist; do
+    name=$(/usr/libexec/PlistBuddy -c "Print name" "$plist" 2>/dev/null)
+    if [[ -n "$name" ]]; then
+      uuid_folder=$(echo "$plist" | cut -d'/' -f1)
+      echo "$uuid_folder → $name"
+    fi
+    cd -
+  done
+}
+
 function mysqlrm() {
   OLD_VERSION=$1
   # Remove current mysql
