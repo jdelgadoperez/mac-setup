@@ -5,9 +5,12 @@ fi
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
-source $ZSH/custom/styles.zsh
-if [ -f .env ]; then
-  source .env
+# Source custom files
+if [ -f "$ZSH/custom/styles.zsh" ]; then
+  source "$ZSH/custom/styles.zsh"
+fi
+if [ -f "$ZSH/custom/.env" ]; then
+  source "$ZSH/custom/.env"
 fi
 
 # homebrew
@@ -84,7 +87,7 @@ lazyload op -- 'loadop'
 
 # for GitHub packages
 export NPM_TOKEN=$GIT_NPM_TOKEN
-# export NPM_TOKEN=<token>
+
 # temporal
 lazyload temporal -- 'source <(temporal completion zsh)'
 
@@ -119,7 +122,9 @@ export EDITOR='code --wait'
 # ensure bin
 export PATH="$HOME/bin:$PATH"
 
-pyenv
+if [[ "$ZPROF" != true && "$ZTIMEPROF" != true ]]; then
+  pyenv
+fi
 
 if [[ "$ZPROF" = true ]]; then
   zprof

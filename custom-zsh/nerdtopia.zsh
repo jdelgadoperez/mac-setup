@@ -47,14 +47,31 @@ function batdiffbranch() {
 
 # https://blog.mattclemente.com/2020/06/26/oh-my-zsh-slow-to-load/#how-to-test-your-shell-load-time
 function timezsh() {
-  shell=${1-$SHELL}
-  for i in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
+  local original_chpwd=$(declare -f chpwd)
+  unset -f chpwd
+
+  local shell="${1:-$SHELL}"
+  export ZTIMEPROF=true
+
+  for i in {1..10}; do
+    /usr/bin/time "$shell" -i -c exit
+  done
+
+  export ZTIMEPROF=false
+  eval "$original_chpwd"
 }
 
 # https://blog.tarkalabs.com/optimize-zsh-fce424fcfd5#5038
 function profzsh() {
-  shell=${1-$SHELL}
-  ZPROF=true $shell -i -c exit
+  local original_chpwd=$(declare -f chpwd)
+  unset -f chpwd
+
+  local shell="${1:-$SHELL}"
+  export ZPROF=true
+  "$shell" -i -c exit
+  export ZPROF=false
+
+  eval "$original_chpwd"
 }
 
 ######################################################################################
