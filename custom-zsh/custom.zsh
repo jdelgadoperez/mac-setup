@@ -32,6 +32,7 @@ alias lintfixchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\
 alias lspipenv='for venv in $HOME/.local/share/virtualenvs/* ; do basename $venv; cat $venv/.project | sed "s/\(.*\)/\t\1\n/" ; done'
 alias rmpipenv="rm -rf $HOME/.local/share/virtualenvs/$@"
 alias rmawsenv="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE"
+alias speed="speedtest-cli"
 
 ## Open config files
 alias openvs="code $@"
@@ -101,15 +102,33 @@ function cleanpkgs() {
   fi
 }
 
+function delete_writable_recursive() {
+  local target_dir="$1"
+  echo -e "${GREEN}Cleaning: $target_dir${NC}"
+  find "$target_dir" -mindepth 1 -exec bash -c '
+    for path; do
+      if [ -w "$path" ]; then
+        echo "Deleting: $path"
+        rm -rf "$path"
+      else
+        echo "Skipped (not permitted): $path"
+      fi
+    done
+  ' bash {} +
+}
+
 function cleansys() {
-  echo -e "${GREEN}Clearing lib caches...${NC}"
-  rm -rf ~/Library/Caches/*
-  echo -e "${GREEN}Clearing lib logs...${NC}"
-  rm -rf ~/Library/Logs/*
-  echo -e "${GREEN}Clearing app state...${NC}"
-  rm -rf ~/Library/Saved\ Application\ State/*
-  echo -e "${GREEN}Clearing xcode derived data...${NC}"
-  rm -rf ~/Library/Developer/Xcode/DerivedData/*
+  delete_writable_recursive ~/Library/Caches
+  delete_writable_recursive ~/Library/Logs
+  delete_writable_recursive "~/Library/Saved Application State"
+  delete_writable_recursive ~/Library/Developer/Xcode/DerivedData
+  delete_writable_recursive ~/.Trash
+  # echo -e "${GREEN}Emptying volume trash...${NC}"
+  # sudo rm -rf /Volumes/*/.Trashes
+  echo -e "${GREEN}Clearing docker data...${NC}"
+  docker image prune -f
+  docker container prune -f
+  docker volume prune -f
   echo -e "${GREEN}System cleaned${NC}"
 }
 
@@ -183,6 +202,7 @@ function showgitbranch() {
 function updategitdirectory() {
   DIR_NAME="$1"
   LIB_TYPE="$2"
+  CLEAN_LIBS="$3"
 
   echo "${BLUE}==============================================================================${NC}"
   echo "${BLUE}Go to ${CYAN}${DIR_NAME}${NC}"
@@ -208,14 +228,19 @@ function updategitdirectory() {
       gpra
       echo ""
       PKG_TYPE=$(getlocktype)
-      if [[ "$PKG_TYPE" == "yarn" ]]; then
-        yii
-      elif [[ "$PKG_TYPE" == "pnpm" ]]; then
-        pnpm install --frozen-lockfile
-      elif [[ "$PKG_TYPE" == "npm" ]]; then
-        npm i --no-package-lock
+
+      if [[ -n "$CLEAN_LIBS" ]]; then
+        cleanpkgs "$PKG_TYPE"
       else
-        echo "${GREEN}No lock file found. Skipping install.${NC}"
+        if [[ "$PKG_TYPE" == "yarn" ]]; then
+          yii
+        elif [[ "$PKG_TYPE" == "pnpm" ]]; then
+          pnpm install --frozen-lockfile
+        elif [[ "$PKG_TYPE" == "npm" ]]; then
+          npm i --no-package-lock
+        else
+          echo "${GREEN}No lock file found. Skipping install.${NC}"
+        fi
       fi
     else
       echo "${GREEN}Not a repo so nothing to pull.${NC}"
@@ -225,6 +250,7 @@ function updategitdirectory() {
 }
 
 function updatelibs() {
+  CLEAN_LIBS="$1"
   ensurepy
   echo ""
   echo "${BLUE}==============================================================================${NC}"
@@ -238,11 +264,11 @@ function updatelibs() {
   echo "${BLUE}==============================================================================${NC}"
   npm update -g
   echo ""
-  updategitdirectory $ZSH_CUSTOM/plugins "plugin"
+  updategitdirectory $ZSH_CUSTOM/plugins "plugin" "$CLEAN_LIBS"
   echo ""
-  updategitdirectory $HOME/projects "lib"
+  updategitdirectory $HOME/projects "lib" "$CLEAN_LIBS"
   echo ""
-  updategitdirectory $HOME/projects/dracula "theme"
+  updategitdirectory $HOME/projects/dracula "theme" "$CLEAN_LIBS"
   echo ""
   gohome
   echo ""
