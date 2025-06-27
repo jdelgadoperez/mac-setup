@@ -31,6 +31,7 @@ fi
 # Clone plugins
 loginstall "zsh plugins"
 REPO_ZSH_USERS="$GITHUB/zsh-users/"
+
 git clone $REPO_ZSH_USERS/zsh-autosuggestions.git $ZSH_CUSTOM/plugins/zsh-autosuggestions
 git clone $REPO_ZSH_USERS/zsh-completions.git $ZSH_CUSTOM/plugins/zsh-completions
 git clone $REPO_ZSH_USERS/zsh-history-substring-search.git $ZSH_CUSTOM/plugins/zsh-history-substring-search
@@ -40,16 +41,17 @@ git clone $GITHUB/MichaelAquilina/zsh-you-should-use.git $ZSH_CUSTOM/plugins/you
 git clone $GITHUB/qoomon/zsh-lazyload $ZSH_CUSTOM/plugins/zsh-lazyload
 
 # Copy custom config files
-createdirsafely "$ROOT_DIR/.config"
+createdirsafely "$DIR_ROOT/.config"
 
 loginstall "zsh customizations"
-cp ./dotfiles/.zshrc $ROOT_DIR/.bash_profile
-cp ./dotfiles/.zshrc $ROOT_DIR/.bashrc
-cp ./dotfiles/.zshrc $ROOT_DIR/.zprofile
-cp ./dotfiles/.zshrc $ROOT_DIR/.zshrc
-cp ./.config/starship.toml $CONFIG/starship.toml
+cp ./dotfiles/.zshrc $DIR_ROOT/.bash_profile
+cp ./dotfiles/.zshrc $DIR_ROOT/.bashrc
+cp ./dotfiles/.zshrc $DIR_ROOT/.zprofile
+cp ./dotfiles/.zshrc $DIR_ROOT/.zshrc
+cp ./.config/starship.toml $DIR_CONFIG/starship.toml
 cp ./custom-zsh/fzf-preview.sh $ZSH_CUSTOM/fzf-preview.sh
 cp ./custom-zsh/history.zsh $ZSH_CUSTOM/history.zsh
 cp ./custom-zsh/custom.zsh $ZSH_CUSTOM/custom.zsh
 cp ./custom-zsh/nerdtopia.zsh $ZSH_CUSTOM/nerdtopia.zsh
+cp ./custom-zsh/migration.zsh $ZSH_CUSTOM/migration.zsh
 cp ./custom-zsh/styles.zsh $ZSH_CUSTOM/styles.zsh
