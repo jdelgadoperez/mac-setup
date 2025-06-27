@@ -48,6 +48,13 @@ fi
 export PATH="~/Library/Application Support/fnm:$PATH"
 eval "$(fnm env --use-on-cd)"
 
+# for GitHub packages
+export NPM_TOKEN=$GIT_NPM_TOKEN
+# for dtctl
+export HOMEBREW_GITHUB_API_TOKEN=$HOMEBREW_TOKEN
+# for vscode
+export EDITOR='code --wait'
+
 ## python tools
 function loadPyTooling() {
   export LANG=en_US.UTF-8
@@ -85,9 +92,6 @@ function loadop() {
 }
 lazyload op -- 'loadop'
 
-# for GitHub packages
-export NPM_TOKEN=$GIT_NPM_TOKEN
-
 # temporal
 lazyload temporal -- 'source <(temporal completion zsh)'
 
@@ -116,6 +120,12 @@ function loadK8s() {
   compdef kubecolor=kubectl
 }
 lazyload kubectl -- 'loadK8s'
+
+function loadBasher() {
+  export PATH="$HOME/.basher/bin:$PATH" ##basher5ea843
+  eval "$(basher init - zsh)"           ##basher5ea843
+}
+lazyload basher -- 'loadBasher'
 
 export EDITOR='code --wait'
 
