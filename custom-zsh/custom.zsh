@@ -102,6 +102,35 @@ function cleanpkgs() {
   fi
 }
 
+function clone_org_repos() {
+  if [[ $# -lt 2 ]]; then
+    echo "Usage: clone_org_repos <org-name> <repo1> [repo2 ...]"
+    return 1
+  fi
+
+  local org="$1"
+  shift
+
+  for repo in "$@"; do
+    echo "Cloning https://github.com/${org}/${repo}.git"
+    g clone "https://github.com/${org}/${repo}.git"
+  done
+}
+
+# Utility function to format bytes into human-readable format
+function format_bytes() {
+  local bytes=$1
+  if ((bytes >= 1073741824)); then
+    printf "%.2f GB" $((bytes / 1073741824.0))
+  elif ((bytes >= 1048576)); then
+    printf "%.2f MB" $((bytes / 1048576.0))
+  elif ((bytes >= 1024)); then
+    printf "%.2f KB" $((bytes / 1024.0))
+  else
+    printf "%d bytes" $bytes
+  fi
+}
+
 function delete_writable_recursive() {
   local target_dir="$1"
   echo -e "${GREEN}Cleaning: $target_dir${NC}"
@@ -118,6 +147,7 @@ function delete_writable_recursive() {
 }
 
 function cleansys() {
+  echo -e "${GREEN}Starting system cleanup...${NC}"
   delete_writable_recursive ~/Library/Caches
   delete_writable_recursive ~/Library/Logs
   delete_writable_recursive "~/Library/Saved Application State"
@@ -157,6 +187,30 @@ function getlocktype() {
     echo "npm"
   else
     echo "none"
+  fi
+}
+
+function gccd() {
+  repo=$1
+
+  if [ -z "$repo" ]; then
+    echo "Usage: gccd <git-repo-url>"
+    return 1
+  fi
+
+  # Extract repository name from various Git URL formats
+  # Handle SSH format: git@github.com:owner/repo.git
+  # Handle HTTPS format: https://github.com/owner/repo.git
+  # Remove .git suffix if present
+  repo_name=$(basename "$repo" .git)
+
+  g clone "$repo"
+
+  if [ $? -eq 0 ] && [ -d "$repo_name" ]; then
+    cd "$repo_name"
+  else
+    echo "Failed to clone repository or directory '$repo_name' not found"
+    return 1
   fi
 }
 
