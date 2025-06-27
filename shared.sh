@@ -26,14 +26,15 @@ BOLD_MAGENTA="\033[1;35m"
 BOLD_CYAN="\033[1;36m"
 BOLD_WHITE="\033[1;37m"
 
-ROOT_DIR="${PWD%%/projects/*}"
 GITHUB="https://github.com"
 GITHUB_RAW="https://raw.githubusercontent.com"
-DIR_CONFIG="$ROOT_DIR/.config"
-DIR_PROJECTS="$ROOT_DIR/projects"
+DIR_ROOT="${PWD%%/projects/*}"
+DIR_CONFIG="$DIR_ROOT/.config"
+DIR_PROJECTS="$DIR_ROOT/projects"
 DIR_DRACULA="$DIR_PROJECTS/dracula"
 THEME_PRO="dracula-pro"
 DIR_DRACULA_PRO="$DIR_PROJECTS/$THEME_PRO"
+ZSH_CUSTOM="$DIR_ROOT/.oh-my-zsh/custom"
 
 function createdirsafely() {
   DIR_NAME=$@
