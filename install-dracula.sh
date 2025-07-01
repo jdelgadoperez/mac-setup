@@ -13,6 +13,7 @@ echo -e "Current dir: ${BLUE}${CUR_DIR}${NC}"
 loginstall "dracula themes"
 REPO_DRACULA="$GITHUB/dracula"
 git clone $REPO_DRACULA/gitkraken.git $DIR_DRACULA/gitkraken
+git clone $REPO_DRACULA/sequel-ace.git $DIR_DRACULA/sequel-ace
 git clone $REPO_DRACULA/visual-studio-code.git $DIR_DRACULA/visual-studio-code
 git clone $REPO_DRACULA/xcode.git $DIR_DRACULA/xcode
 git clone $REPO_DRACULA/zsh.git $DIR_DRACULA/zsh
