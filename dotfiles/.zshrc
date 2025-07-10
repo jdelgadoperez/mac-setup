@@ -50,10 +50,13 @@ eval "$(fnm env --use-on-cd)"
 
 # for GitHub packages
 export NPM_TOKEN=$GIT_NPM_TOKEN
-# for dtctl
+# for private homebrew taps
 export HOMEBREW_GITHUB_API_TOKEN=$HOMEBREW_TOKEN
 # for vscode
 export EDITOR='code --wait'
+# Dracula theme for BSD grep - https://draculatheme.com/grep
+export GREP_COLOR="1;38;2;255;85;85"
+export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
 
 ## python tools
 function loadPyTooling() {
