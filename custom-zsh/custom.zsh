@@ -284,7 +284,11 @@ function updategitdirectory() {
       PKG_TYPE=$(getlocktype)
 
       if [[ -n "$CLEAN_LIBS" ]]; then
-        cleanpkgs "$PKG_TYPE"
+        if [[ "$PKG_TYPE" == "none" ]]; then
+          echo "${GREEN}No lock file found. Skipping clean operation.${NC}"
+        else
+          cleanpkgs "$PKG_TYPE"
+        fi
       else
         if [[ "$PKG_TYPE" == "yarn" ]]; then
           yii
@@ -332,9 +336,9 @@ function updatelibs() {
   brew update
   echo ""
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}Cleanup ${CYAN}homebrew${NC}"
+  echo "${BLUE}Upgrade ${CYAN}homebrew${NC}"
   echo "${BLUE}==============================================================================${NC}"
-  brew cleanup
+  brew upgrade
 }
 
 function listAlfredWorkflows() {
@@ -363,8 +367,8 @@ function mysqlrm() {
   brew services stop $OLD_VERSION
   sleep 10
   sudo killall mysqld
-  brew unlink --force $OLD_VERSION
-  brew unpin --force $OLD_VERSION
+  brew unlink $OLD_VERSION
+  brew unpin $OLD_VERSION
   brew uninstall $OLD_VERSION
   brew cleanup
   brew doctor
@@ -390,6 +394,8 @@ function mysqlrm() {
 
 function mysqladd() {
   NEW_VERSION=$1
+  # Extract version number from package name (e.g., "mysql@8.4" -> "8.4")
+  VERSION_NUMBER=${NEW_VERSION#mysql@}
   # Update and install new
   brew update
   brew install $NEW_VERSION
@@ -582,4 +588,19 @@ function getorgcommitcount() {
 
   echo "Total commits of $total_commits by '$AUTHOR' in $total_repos repos in the '$ORG' org"
   eval "$original_chpwd"
+}
+
+function clone_org_repos() {
+  if [[ $# -lt 2 ]]; then
+    echo "Usage: clone_org_repos <org-name> <repo1> [repo2 ...]"
+    return 1
+  fi
+
+  local org="$1"
+  shift
+
+  for repo in "$@"; do
+    echo "Cloning https://github.com/${org}/${repo}.git"
+    git clone "https://github.com/${org}/${repo}.git"
+  done
 }
