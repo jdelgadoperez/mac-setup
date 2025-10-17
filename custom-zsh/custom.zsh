@@ -21,6 +21,7 @@ alias sgbp="showgitbranch $PROJ_DIR"
 alias gcmsga="gc --amend -m $@"
 alias grfsch="grf show --date=iso | grep 'checkout'"
 alias gres="g restore $@"
+alias gsft="grhs HEAD~1"
 
 ## Misc
 alias cl="clear"
@@ -70,13 +71,19 @@ function cleanpkgs() {
   prebuildCmd="prebuild"
 
   if [ "$pkgman" = '' ]; then
-    pkgman="yarn"
+    PKG_TYPE=$(getlocktype)
+    if [ "$PKG_TYPE" = 'none' ]; then
+      pkgman="yarn"
+    else;
+      pkgman="$PKG_TYPE"
+    fi
   fi
+
 
   if [ "$pkgman" = 'yarn' ]; then
     ycc
     ensurepy
-    yii
+    yin
   fi
 
   if [ "$pkgman" = 'npm' ]; then
@@ -331,13 +338,9 @@ function updatelibs() {
   gohome
   echo ""
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}Update ${CYAN}homebrew${NC}"
+  echo "${BLUE}Update & upgrade: ${CYAN}homebrew${NC}"
   echo "${BLUE}==============================================================================${NC}"
   brew update
-  echo ""
-  echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}Upgrade ${CYAN}homebrew${NC}"
-  echo "${BLUE}==============================================================================${NC}"
   brew upgrade
 }
 
@@ -398,11 +401,9 @@ function mysqladd() {
   VERSION_NUMBER=${NEW_VERSION#mysql@}
   # Update and install new
   brew update
-  brew install $NEW_VERSION
+  install_mysql $VERSION_NUMBER
   brew link --force $NEW_VERSION
   brew pin $NEW_VERSION
-  brew services start $NEW_VERSION
-  sleep 10
   brew services list
 }
 
