@@ -1,0 +1,105 @@
+{
+  "numStartups": 13,
+  "installMethod": "unknown",
+  "autoUpdates": true,
+  "tipsHistory": {
+    "new-user-warmup": 8,
+    "plan-mode-for-complex-tasks": 9,
+    "memory-command": 5,
+    "theme-command": 5,
+    "status-line": 5,
+    "prompt-queue": 11,
+    "shift-enter": 7,
+    "enter-to-steer-in-relatime": 7,
+    "todo-list": 7,
+    "# for memory": 7,
+    "install-github-app": 7,
+    "drag-and-drop-images": 7,
+    "paste-images-mac": 7,
+    "double-esc-code-restore": 7,
+    "continue": 7,
+    "shift-tab": 7,
+    "image-paste": 7,
+    "tab-toggle-thinking": 8,
+    "ultrathink-keyword": 8,
+    "custom-agents": 8,
+    "permissions": 12,
+    "custom-commands": 12
+  },
+  "cachedStatsigGates": {
+    "tengu_disable_bypass_permissions_mode": false,
+    "tengu_tool_pear": false
+  },
+  "cachedDynamicConfigs": {
+    "tengu-top-of-feed-tip": {
+      "tip": "",
+      "color": ""
+    }
+  },
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Desktop", "~/Documents", "~/projects"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {
+        "MEMORY_FILE_PATH": "~/.mcp/memory.json"
+      }
+    }
+  },
+  "firstStartTime": "",
+  "userID": "",
+  "sonnet45MigrationComplete": true,
+  "iterm2SetupInProgress": false,
+  "iterm2BackupPath": "/Users/me/Library/Preferences/com.googlecode.iterm2.plist.bak",
+  "shiftEnterKeyBindingInstalled": true,
+  "hasCompletedOnboarding": true,
+  "lastOnboardingVersion": "",
+  "projects": {
+    "/Users/jessdelgadoperez": {
+      "allowedTools": [],
+      "history": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": false,
+      "ignorePatterns": [],
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": [],
+      "lastCost": 4.319638300000001,
+      "lastAPIDuration": 664460,
+      "lastToolDuration": 1388693,
+      "lastDuration": 6963156,
+      "lastLinesAdded": 95,
+      "lastLinesRemoved": 83,
+      "lastTotalInputTokens": 7557,
+      "lastTotalOutputTokens": 23196,
+      "lastTotalCacheCreationInputTokens": 517594,
+      "lastTotalCacheReadInputTokens": 6700646,
+      "lastTotalWebSearchRequests": 0,
+      "lastSessionId": ""
+    }
+  },
+  "hasOpusPlanDefault": false,
+  "lastReleaseNotesSeen": "2.0.24",
+  "s1mAccessCache": {},
+  "fallbackAvailableWarningThreshold": 0.5,
+  "feedbackSurveyState": {}
+}
