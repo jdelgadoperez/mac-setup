@@ -1,80 +1,95 @@
 [user]
-name = Jess Delgado Perez
-email =
-signingkey =
+    name = Jess Delgado Perez
+    email =
+    signingkey =
 [gpg]
-format = ssh
+    format = ssh
+	program = /opt/homebrew/bin/gpg
 [gpg "ssh"]
-program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
-allowedSignersFiles =
+    program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+    allowedSignersFile = "$/Users/me/.ssh/allowed_signers"
 [commit]
-gpgsign = true
-verbose = true
+    gpgsign = true
+    verbose = true
 [core]
-pager = delta
-excludesfile = ~/.gitignore
-# fsmonitor = true
-# untrackedCache = true
+    pager = delta
+    excludesfile = ~/.gitignore[user]
+        name = Jess Delgado Perez
+        email = 
+        username = jdelgadoperez
+        signingkey = 
+[commit]
+    gpgsign = true
+    verbose = true
+[core]
+    pager = delta
+    excludesfile = ~/.gitignore
+    # fsmonitor = true
+    # untrackedCache = true
 [column]
-ui = auto
+    ui = auto
 [branch]
-sort = -committerdate
+    sort = -committerdate
 [tag]
-sort = version:refname
+    sort = version:refname
 [init]
-defaultBranch = main
+    defaultBranch = main
 [diff]
-algorithm = histogram
-colorMoved = plain
-mnemonicPrefix = true
-renames = true
+    algorithm = histogram
+    colorMoved = plain
+    mnemonicPrefix = true
+    renames = true
 [push]
-default = simple
-autoSetupRemote = true
-followTags = true
+    default = simple
+    autoSetupRemote = true
+    followTags = true
 [pull]
-rebase = true
+    rebase = true
 [fetch]
-prune = true
-pruneTags = true
-all = true
+    prune = true
+    pruneTags = true
+    all = true
 [rebase]
-autoSquash = true
-autoStash = true
-updateRefs = true
+    autoSquash = true
+    autoStash = true
+    updateRefs = true
 [help]
-autocorrect = prompt
+    autocorrect = prompt
 [rerere]
-enabled = true
-autoupdate = true
+    enabled = true
+    autoupdate = true
 [filter "lfs"]
-clean = git-lfs clean -- %f
-smudge = git-lfs smudge -- %f
-process = git-lfs filter-process
-required = true
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
 [merge]
-conflictstyle = zdiff3
+    conflictstyle = zdiff3
 [alias]
-logline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    logline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 [interactive]
-diffFilter = delta --color-only
+    diffFilter = delta --color-only
 [delta]
-side-by-side = true
-navigate = true # use n and N to move between diff sections
-line-numbers = true
-decorations = true
-syntax-theme = Dracula
-hyperlinks = true
-hyperlinks-file-link-format = "vscode://file/{path}:{line}"
-# plus-style = syntax "#003800"
-# minus-style = syntax "#3f0001"
+    side-by-side = true
+    navigate = true # use n and N to move between diff sections
+    line-numbers = true
+    decorations = true
+    syntax-theme = Dracula
+    hyperlinks = true
+    hyperlinks-file-link-format = "vscode://file/{path}:{line}"
+    # plus-style = syntax "#003800"
+    # minus-style = syntax "#3f0001"
 [delta "decorations"]
-commit-decoration-style = bold yellow box ul
-file-style = bold yellow ul
-file-decoration-style = none
-hunk-header-decoration-style = cyan box ul
+    commit-decoration-style = bold yellow box ul
+    file-style = bold yellow ul
+    file-decoration-style = none
+    hunk-header-decoration-style = cyan box ul
 [delta "line-numbers"]
-line-numbers-left-style = cyan
-line-numbers-right-style = cyan
-line-numbers-minus-style = 124
-line-numbers-plus-style = 28
+    line-numbers-left-style = cyan
+    line-numbers-right-style = cyan
+    line-numbers-minus-style = 124
+    line-numbers-plus-style = 28
+[credential]
+	helper =
+[url "git@github.com:"]
+	insteadOf = https://github.com/
