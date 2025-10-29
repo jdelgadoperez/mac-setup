@@ -21,7 +21,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
 plugins=()
-plugins=(1password git dotenv fnm terraform yarn you-should-use z zsh-lazyload)
+plugins=(1password git dotenv fnm pyenv pipenv terraform you-should-use z zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
@@ -51,7 +51,7 @@ eval "$(fnm env --use-on-cd)"
 # for GitHub packages
 export NPM_TOKEN=$GIT_NPM_TOKEN
 # for private homebrew taps
-export HOMEBREW_GITHUB_API_TOKEN=$HOMEBREW_TOKEN
+# export HOMEBREW_GITHUB_API_TOKEN=$HOMEBREW_TOKEN
 # for vscode
 export EDITOR='code --wait'
 # Dracula theme for BSD grep - https://draculatheme.com/grep
@@ -59,17 +59,7 @@ export GREP_COLOR="1;38;2;255;85;85"
 export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
 
 ## python tools
-function loadPyTooling() {
-  export LANG=en_US.UTF-8
-  export PYENV_ROOT="$HOME/.pyenv"
-  [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init -)"
-  alias python="$(pyenv which python)"
-  alias pip="$(pyenv which pip)"
-  ## pipenv
-  eval "$(_PIPENV_COMPLETE=zsh_source pipenv)"
-}
-lazyload pyenv -- 'loadPyTooling'
+export LANG=en_US.UTF-8
 
 # ruby
 export GEM_HOME="$HOME/.gem/ruby/2.6.0"
@@ -124,14 +114,8 @@ function loadBasher() {
 }
 lazyload basher -- 'loadBasher'
 
-export EDITOR='code --wait'
-
 # ensure bin
 export PATH="$HOME/bin:$PATH"
-
-if [[ "$ZPROF" != true && "$ZTIMEPROF" != true ]]; then
-  pyenv
-fi
 
 if [[ "$ZPROF" = true ]]; then
   zprof
