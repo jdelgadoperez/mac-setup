@@ -4,13 +4,6 @@
 ######################################################################################
 
 ######################################################################################
-# Aliases
-######################################################################################
-
-## Augment wrapper
-alias aug="auggie $@"
-
-######################################################################################
 # Functions
 ######################################################################################
 
@@ -69,4 +62,166 @@ function getabspath() {
 
 function timestamp_now() {
   date -u +%Y-%m-%dT%H:%M:%SZ
+}
+
+function caff() {
+  # Source styles if available
+  if [[ -f "$ZSH_CUSTOM/styles.sh" ]]; then
+    source "$ZSH_CUSTOM/styles.sh"
+  fi
+
+  # Show help
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo -e "${BOLD}${CYAN}caff${NC} - Caffeinate wrapper with time conversion\n"
+    echo -e "${BOLD}Usage:${NC} caff [FLAGS] [TIME]\n"
+    echo -e "${BOLD}TIME formats:${NC}"
+    echo -e "  ${GREEN}2${NC}       → 2 hours"
+    echo -e "  ${GREEN}2h${NC}      → 2 hours"
+    echo -e "  ${GREEN}30m${NC}     → 30 minutes"
+    echo -e "  ${GREEN}90s${NC}     → 90 seconds\n"
+    echo -e "${BOLD}FLAGS${NC} (passed to caffeinate):"
+    echo -e "  ${YELLOW}-d${NC}      → Prevent display from sleeping"
+    echo -e "  ${YELLOW}-i${NC}      → Prevent system from idle sleeping"
+    echo -e "  ${YELLOW}-m${NC}      → Prevent disk from idle sleeping"
+    echo -e "  ${YELLOW}-s${NC}      → Prevent system from sleeping (AC power only)"
+    echo -e "  ${YELLOW}-u${NC}      → Prevent system from sleeping (declare user activity)"
+    echo -e "  ${YELLOW}-w PID${NC}  → Wait for process PID to exit\n"
+    echo -e "${BOLD}Examples:${NC}"
+    echo -e "  ${CYAN}caff 2${NC}              → Keep awake for 2 hours"
+    echo -e "  ${CYAN}caff 30m${NC}            → Keep awake for 30 minutes"
+    echo -e "  ${CYAN}caff -d 1.5h${NC}        → Keep display awake for 1.5 hours"
+    echo -e "  ${CYAN}caff -i 45m${NC}         → Prevent idle sleep for 45 minutes"
+    echo -e "  ${CYAN}caff -w 12345${NC}       → Keep awake while process 12345 runs"
+    echo -e "  ${CYAN}caff${NC}                → Keep awake indefinitely (Ctrl+C to stop)\n"
+    return 0
+  fi
+
+  local time_seconds=""
+  local caff_flags=()
+  local time_value=""
+  local time_display=""
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -d|-i|-m|-s|-u)
+        caff_flags+=("$1")
+        shift
+        ;;
+      -w|-t)
+        caff_flags+=("$1" "$2")
+        shift 2
+        ;;
+      *)
+        # Check if this is a time value
+        if [[ "$1" =~ ^[0-9]*\.?[0-9]+([hms])?$ ]]; then
+          time_value="$1"
+          shift
+        else
+          echo "Error: Unknown argument '$1'"
+          echo "Use 'caff --help' for usage information"
+          return 1
+        fi
+        ;;
+    esac
+  done
+
+  # Convert time to seconds if provided
+  if [[ -n "$time_value" ]]; then
+    local num="${time_value%[hms]}"
+    local unit="${time_value##*[0-9]}"
+
+    # Default to hours if no unit specified
+    if [[ -z "$unit" || "$unit" == "$num" ]]; then
+      unit="h"
+    fi
+
+    case "$unit" in
+      h)
+        time_seconds=$(awk "BEGIN {printf \"%.0f\", $num * 3600}")
+        if (( $(awk "BEGIN {print ($num == 1)}") )); then
+          time_display="$num hour"
+        else
+          time_display="$num hours"
+        fi
+        ;;
+      m)
+        time_seconds=$(awk "BEGIN {printf \"%.0f\", $num * 60}")
+        if (( $(awk "BEGIN {print ($num == 1)}") )); then
+          time_display="$num minute"
+        else
+          time_display="$num minutes"
+        fi
+        ;;
+      s)
+        time_seconds=$(awk "BEGIN {printf \"%.0f\", $num}")
+        if (( $(awk "BEGIN {print ($num == 1)}") )); then
+          time_display="$num second"
+        else
+          time_display="$num seconds"
+        fi
+        ;;
+    esac
+
+    caff_flags+=("-t" "$time_seconds")
+  fi
+
+  # Build caffeinate command
+  local cmd="caffeinate"
+  if [[ ${#caff_flags[@]} -gt 0 ]]; then
+    cmd="$cmd ${caff_flags[@]}"
+  fi
+
+  # Show status message
+  echo ""
+  echo "${BOLD}${GREEN}☕ Caffeinating your Mac...${NC}"
+  echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+  if [[ -n "$time_display" ]]; then
+    echo "  ${BOLD}Duration:${NC} ${YELLOW}$time_display${NC}"
+
+    # Calculate and display end time
+    local end_time=$(date -v+${time_seconds}S "+%I:%M %p")
+    local end_date=$(date -v+${time_seconds}S "+%Y-%m-%d")
+    local today=$(date "+%Y-%m-%d")
+
+    if [[ "$end_date" == "$today" ]]; then
+      echo "  ${BOLD}Ends at:${NC}  ${GREEN}$end_time${NC}"
+    else
+      local end_display=$(date -v+${time_seconds}S "+%a, %b %d at %I:%M %p")
+      echo "  ${BOLD}Ends at:${NC}  ${GREEN}$end_display${NC}"
+    fi
+  else
+    echo "  ${BOLD}Duration:${NC} ${YELLOW}indefinite${NC} ${CYAN}(Ctrl+C to stop)${NC}"
+  fi
+
+  if [[ ${#caff_flags[@]} -gt 0 ]]; then
+    # Show flags excluding -t and its value
+    local display_flags=()
+    local i=0
+    while [[ $i -lt ${#caff_flags[@]} ]]; do
+      if [[ "${caff_flags[$i]}" != "-t" ]]; then
+        display_flags+=("${caff_flags[$i]}")
+        # Skip next arg if it's a flag that takes an argument
+        if [[ "${caff_flags[$i]}" == "-w" ]]; then
+          ((i++))
+          if [[ $i -lt ${#caff_flags[@]} ]]; then
+            display_flags+=("${caff_flags[$i]}")
+          fi
+        fi
+      else
+        ((i++)) # Skip the time value
+      fi
+      ((i++))
+    done
+    if [[ ${#display_flags[@]} -gt 0 ]]; then
+      echo "  ${BOLD}Flags:${NC}    ${MAGENTA}${display_flags[@]}${NC}"
+    fi
+  fi
+
+  echo "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+
+  # Execute caffeinate
+  eval "$cmd"
 }
