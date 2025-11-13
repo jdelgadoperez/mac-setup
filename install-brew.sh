@@ -5,7 +5,8 @@
 # ref: https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh          #
 ###############################################################################
 
-source ./shared.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/shared.sh"
 
 INSTALL_APPS="${1:-false}"
 
@@ -52,7 +53,7 @@ brew install fnm pyenv rbenv
 loginstall "term tools and utils"
 brew install bat cmake cmake-docs eza fd fzf less
 brew install starship thefuck xz zoxide jq yq
-brew install grep ripgrep gnupg openssl openssh speedtest-cli
+brew install grep ripgrep gnupg openssl openssh
 brew install btop dust hacker1024/hacker1024/coretemp
 brew install screen gmp imagemagick webp navi
 
@@ -75,7 +76,7 @@ if ! fc-list | grep -qi "Fira Code Nerd Font"; then
 fi
 
 # Apps
-echo -e "${BLUE}Install apps: ${GREEN}$INSTALL_APPS${NC}"
+printf "${BLUE}Install apps: ${GREEN}%s${NC}\n" "$INSTALL_APPS"
 if [ $INSTALL_APPS == 'true' ]; then
   loginstall "apps"
   brew install devutils
@@ -98,9 +99,7 @@ if [ $INSTALL_APPS == 'true' ]; then
   brew install --cask rocket
   brew install --cask setapp
   brew install --cask slack
-  brew install --cask spotify
   brew install --cask steam
-  brew install --cask surfshark
   brew install --cask visual-studio-code
   brew install --cask zoom
   brew tap teamookla/speedtest
