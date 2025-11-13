@@ -13,9 +13,6 @@ if [ -f "$ZSH/custom/.env" ]; then
   source "$ZSH/custom/.env"
 fi
 
-# homebrew
-eval "$(/opt/homebrew/bin/brew shellenv)"
-
 ####################
 ## Oh My ZSH
 ####################
@@ -44,37 +41,8 @@ else
   echo "fzf-tab is not installed, install it from https://github.com/Aloxaf/fzf-tab and set FZF_TAB_PLUGIN"
 fi
 
-# fnm
-export PATH="~/Library/Application Support/fnm:$PATH"
+# fnm - interactive shell initialization
 eval "$(fnm env --use-on-cd)"
-
-# for GitHub packages
-export NPM_TOKEN=$GIT_NPM_TOKEN
-# for private homebrew taps
-# export HOMEBREW_GITHUB_API_TOKEN=$HOMEBREW_TOKEN
-# for vscode
-export EDITOR='code --wait'
-# Dracula theme for BSD grep - https://draculatheme.com/grep
-export GREP_COLOR="1;38;2;255;85;85"
-export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
-
-## python tools
-export LANG=en_US.UTF-8
-
-# ruby
-export GEM_HOME="$HOME/.gem/ruby/2.6.0"
-export PATH="$GEM_HOME/bin:$PATH"
-
-# pnpm
-function loadPnpm() {
-  export PNPM_HOME="~/Library/pnpm"
-  case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-  esac
-  export PATH="./node_modules/.bin:$PATH"
-}
-lazyload pnpm -- 'loadPnpm'
 
 # 1Password
 source $HOME/.config/op/plugins.sh
@@ -82,7 +50,7 @@ eval "$(op completion zsh)"
 compdef _op op
 export OP_BIOMETRIC_UNLOCK_ENABLED=true
 
-# Java
+# Java - lazy loaded
 function loadJava() {
   export JAVA_HOME=$(/usr/libexec/java_home)
   export PATH="/usr/local/opt/openjdk/bin:$PATH"
@@ -91,14 +59,7 @@ function loadJava() {
 }
 lazyload java -- 'loadJava'
 
-# Terraform
-export PATH="$HOME/.terraform.versions:$PATH"
-
-# Ansible config
-export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
-export no_proxy="*"
-
-# Kubernetes
+# Kubernetes - lazy loaded
 function loadK8s() {
   # ref: https://kubecolor.github.io/setup/shells/zsh/
   # This needs to be added before "compdef kubecolor=kubectl"
@@ -108,14 +69,12 @@ function loadK8s() {
 }
 lazyload kubectl -- 'loadK8s'
 
+# Basher - lazy loaded
 function loadBasher() {
   export PATH="$HOME/.basher/bin:$PATH" ##basher5ea843
   eval "$(basher init - zsh)"           ##basher5ea843
 }
 lazyload basher -- 'loadBasher'
-
-# ensure bin
-export PATH="$HOME/bin:$PATH"
 
 if [[ "$ZPROF" = true ]]; then
   zprof
