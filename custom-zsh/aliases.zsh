@@ -7,7 +7,7 @@
 alias restart="sudo shutdown -r now"
 alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
 alias cl="clear"
-alias speed="speedtest-cli"
+alias speed="speedtest $@"
 
 ## Navigation
 PROJ_DIR="$HOME/projects"
@@ -33,9 +33,10 @@ alias lintfixchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\
 alias lspipenv='for venv in $HOME/.local/share/virtualenvs/* ; do basename $venv; cat $venv/.project | sed "s/\(.*\)/\t\1\n/" ; done'
 alias rmpipenv="rm -rf $HOME/.local/share/virtualenvs/$@"
 alias rmawsenv="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE"
+alias clearawscache="rm -rf $HOME/.aws/cli/cache"
+alias navicheats="cd ~/.local/share/navi/cheats"
 
 ## Open config files
-alias openvs="code $@"
 alias omzconfig="code $HOME/.oh-my-zsh"
 alias zshconfig="code $HOME/.zshrc"
 alias starconfig="code $HOME/.config/starship.toml"
@@ -46,3 +47,8 @@ alias gitconfig="code $HOME/.gitconfig"
 alias dbconfig="code /opt/homebrew/etc/my.cnf"
 alias dockerconfig="code $HOME/.docker/config.json"
 alias itermscripts="code $HOME/Library/Application\ Support/iTerm2/Scripts"
+alias awsconfig="code ~/.aws"
+alias brewconfig="code /opt/homebrew/etc/my.cnf"
+
+## Quad terminal
+alias quadconfig="cd $HOME/Library/Application\ Support/iTerm2/Scripts && code quadbox.py && cd -"
