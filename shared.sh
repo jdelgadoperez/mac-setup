@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source ./env.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/env.sh"
 
 PADDING="-36"
 COLOR_OFF="\033[0m" # Text Reset
@@ -28,7 +29,7 @@ BOLD_WHITE="\033[1;37m"
 
 GITHUB="https://github.com"
 GITHUB_RAW="https://raw.githubusercontent.com"
-DIR_ROOT="${PWD%%/projects/*}"
+DIR_ROOT="$HOME"
 DIR_CONFIG="$DIR_ROOT/.config"
 DIR_PROJECTS="$DIR_ROOT/projects"
 DIR_DRACULA="$DIR_PROJECTS/dracula"
@@ -39,12 +40,36 @@ ZSH_CUSTOM="$DIR_ROOT/.oh-my-zsh/custom"
 function createdirsafely() {
   DIR_NAME=$@
   if [ ! -d "$DIR_NAME" ]; then
-    echo -e "${BLUE}Create directory: ${GREEN}${DIR_NAME}${NC}"
+    printf "${BLUE}Create directory: ${GREEN}${DIR_NAME}${NC}\n"
     mkdir -p "$DIR_NAME"
   fi
 }
 
 function loginstall() {
-  echo -e "${BLUE}========================================================${NC}"
-  echo -e "${BLUE}Installing: ${GREEN}$@${NC}"
+  printf "${BLUE}========================================================${NC}\n"
+  printf "${BLUE}Installing: ${GREEN}%s${NC}\n" "$@"
+}
+
+function gitclonesafely() {
+  REPO_URL="$1"
+  DEST_PATH="$2"
+
+  if [ -d "$DEST_PATH" ]; then
+    printf "${YELLOW}Directory already exists: ${DEST_PATH}${NC}\n"
+    printf "${BLUE}Checking if it's a valid git repository...${NC}\n"
+
+    if [ -d "$DEST_PATH/.git" ]; then
+      printf "${GREEN}Valid git repository found. Pulling latest changes...${NC}\n"
+      cd "$DEST_PATH"
+      git pull origin HEAD 2>/dev/null || git pull 2>/dev/null || printf "${YELLOW}Could not pull updates${NC}\n"
+      cd - > /dev/null
+    else
+      printf "${RED}Directory exists but is not a git repository. Removing and cloning fresh...${NC}\n"
+      rm -rf "$DEST_PATH"
+      git clone "$REPO_URL" "$DEST_PATH"
+    fi
+  else
+    printf "${BLUE}Cloning ${GREEN}${REPO_URL}${BLUE} to ${GREEN}${DEST_PATH}${NC}\n"
+    git clone "$REPO_URL" "$DEST_PATH"
+  fi
 }

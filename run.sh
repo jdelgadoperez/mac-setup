@@ -1,10 +1,13 @@
 #!/bin/bash
 
-source ./shared.sh
-sh ./install-xcode.sh
-sh ./install-brew.sh true
-sh ./config-git.sh
-sh ./install-zsh.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/shared.sh"
+
+sh "$SCRIPT_DIR/install-xcode.sh"
+sh "$SCRIPT_DIR/install-brew.sh" false
+sh "$SCRIPT_DIR/config-git.sh"
+sh "$SCRIPT_DIR/install-zsh.sh"
 exec zsh
-sh ./install-dracula.sh
+
+sh "$SCRIPT_DIR/install-dracula.sh"
 exec zsh

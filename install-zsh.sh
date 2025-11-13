@@ -1,10 +1,11 @@
 #!/bin/bash
 
-source ./shared.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/shared.sh"
 
 # Update and install Zsh if not already installed
 if ! [ -x "$(command -v zsh)" ]; then
-  echo -e "${YELLOW}ZSH is not installed${NC}"
+  printf "${YELLOW}ZSH is not installed${NC}\n"
   loginstall "zsh"
   if [[ "$OSTYPE" == "darwin"* ]]; then
     # Install Zsh on macOS
@@ -18,7 +19,7 @@ fi
 
 # Change default shell to Zsh
 if [ "$SHELL" != "$(which zsh)" ]; then
-  echo -e "${BLUE}Changing default shell to ${CYAN}zsh${NC}"
+  printf "${BLUE}Changing default shell to ${CYAN}zsh${NC}\n"
   chsh -s "$(which zsh)"
 fi
 
@@ -30,28 +31,33 @@ fi
 
 # Clone plugins
 loginstall "zsh plugins"
-REPO_ZSH_USERS="$GITHUB/zsh-users/"
+REPO_ZSH_USERS="$GITHUB/zsh-users"
 
-git clone $REPO_ZSH_USERS/zsh-autosuggestions.git $ZSH_CUSTOM/plugins/zsh-autosuggestions
-git clone $REPO_ZSH_USERS/zsh-completions.git $ZSH_CUSTOM/plugins/zsh-completions
-git clone $REPO_ZSH_USERS/zsh-history-substring-search.git $ZSH_CUSTOM/plugins/zsh-history-substring-search
-git clone $REPO_ZSH_USERS/zsh-syntax-highlighting.git $ZSH_CUSTOM/plugins/zsh-syntax-highlighting
-git clone $GITHUB/Aloxaf/fzf-tab $ZSH_CUSTOM/plugins/fzf-tab
-git clone $GITHUB/MichaelAquilina/zsh-you-should-use.git $ZSH_CUSTOM/plugins/you-should-use
-git clone $GITHUB/qoomon/zsh-lazyload $ZSH_CUSTOM/plugins/zsh-lazyload
+gitclonesafely "$REPO_ZSH_USERS/zsh-autosuggestions.git" "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+gitclonesafely "$REPO_ZSH_USERS/zsh-completions.git" "$ZSH_CUSTOM/plugins/zsh-completions"
+gitclonesafely "$REPO_ZSH_USERS/zsh-history-substring-search.git" "$ZSH_CUSTOM/plugins/zsh-history-substring-search"
+gitclonesafely "$REPO_ZSH_USERS/zsh-syntax-highlighting.git" "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+gitclonesafely "$GITHUB/Aloxaf/fzf-tab" "$ZSH_CUSTOM/plugins/fzf-tab"
+gitclonesafely "$GITHUB/MichaelAquilina/zsh-you-should-use.git" "$ZSH_CUSTOM/plugins/you-should-use"
+gitclonesafely "$GITHUB/qoomon/zsh-lazyload" "$ZSH_CUSTOM/plugins/zsh-lazyload"
 
 # Copy custom config files
 createdirsafely "$DIR_ROOT/.config"
 
-loginstall "zsh customizations"
-cp ./dotfiles/.zshrc $DIR_ROOT/.bash_profile
-cp ./dotfiles/.zshrc $DIR_ROOT/.bashrc
-cp ./dotfiles/.zshrc $DIR_ROOT/.zprofile
-cp ./dotfiles/.zshrc $DIR_ROOT/.zshrc
-cp ./.config/starship.toml $DIR_CONFIG/starship.toml
-cp ./custom-zsh/fzf-preview.sh $ZSH_CUSTOM/fzf-preview.sh
-cp ./custom-zsh/history.zsh $ZSH_CUSTOM/history.zsh
-cp ./custom-zsh/custom.zsh $ZSH_CUSTOM/custom.zsh
-cp ./custom-zsh/nerdtopia.zsh $ZSH_CUSTOM/nerdtopia.zsh
-cp ./custom-zsh/migration.zsh $ZSH_CUSTOM/migration.zsh
-cp ./custom-zsh/styles.zsh $ZSH_CUSTOM/styles.zsh
+loginstall "setup zsh customizations"
+cp "$SCRIPT_DIR/dotfiles/.zshrc" "$DIR_ROOT/.bash_profile"
+cp "$SCRIPT_DIR/dotfiles/.zshrc" "$DIR_ROOT/.bashrc"
+cp "$SCRIPT_DIR/dotfiles/.zshrc" "$DIR_ROOT/.zprofile"
+cp "$SCRIPT_DIR/dotfiles/.zshrc" "$DIR_ROOT/.zshrc"
+cp "$SCRIPT_DIR/dotfiles/.config/starship.toml" "$DIR_CONFIG/starship.toml"
+cp "$SCRIPT_DIR/custom-zsh/aliases.zsh" "$ZSH_CUSTOM/aliases.zsh"
+cp "$SCRIPT_DIR/custom-zsh/development.zsh" "$ZSH_CUSTOM/development.zsh"
+cp "$SCRIPT_DIR/custom-zsh/fzf-preview.sh" "$ZSH_CUSTOM/fzf-preview.sh"
+cp "$SCRIPT_DIR/custom-zsh/git-tools.zsh" "$ZSH_CUSTOM/git-tools.zsh"
+cp "$SCRIPT_DIR/custom-zsh/history.zsh" "$ZSH_CUSTOM/history.zsh"
+cp "$SCRIPT_DIR/custom-zsh/migration.zsh" "$ZSH_CUSTOM/migration.zsh"
+cp "$SCRIPT_DIR/custom-zsh/nerdtopia.zsh" "$ZSH_CUSTOM/nerdtopia.zsh"
+cp "$SCRIPT_DIR/custom-zsh/styles.zsh" "$ZSH_CUSTOM/styles.zsh"
+cp "$SCRIPT_DIR/custom-zsh/system-tools.zsh" "$ZSH_CUSTOM/system-tools.zsh"
+cp "$SCRIPT_DIR/custom-zsh/utilities.zsh" "$ZSH_CUSTOM/utilities.zsh"
+cp "$SCRIPT_DIR/custom-zsh/zsh-syntax-highlighting.zsh" "$ZSH_CUSTOM/zsh-syntax-highlighting.zsh"
