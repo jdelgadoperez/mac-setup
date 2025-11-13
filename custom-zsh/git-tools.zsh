@@ -3,6 +3,30 @@
 # Git-related functions and utilities
 ######################################################################################
 
+function gitclonesafely() {
+  REPO_URL="$1"
+  DEST_PATH="$2"
+
+  if [ -d "$DEST_PATH" ]; then
+    printf "${YELLOW}Directory already exists: ${DEST_PATH}${NC}\n"
+    printf "${BLUE}Checking if it's a valid git repository...${NC}\n"
+
+    if [ -d "$DEST_PATH/.git" ]; then
+      printf "${GREEN}Valid git repository found. Pulling latest changes...${NC}\n"
+      cd "$DEST_PATH"
+      git pull origin HEAD 2>/dev/null || git pull 2>/dev/null || printf "${YELLOW}Could not pull updates${NC}\n"
+      cd - > /dev/null
+    else
+      printf "${RED}Directory exists but is not a git repository. Removing and cloning fresh...${NC}\n"
+      rm -rf "$DEST_PATH"
+      git clone "$REPO_URL" "$DEST_PATH"
+    fi
+  else
+    printf "${BLUE}Cloning ${GREEN}${REPO_URL}${BLUE} to ${GREEN}${DEST_PATH}${NC}\n"
+    git clone "$REPO_URL" "$DEST_PATH"
+  fi
+}
+
 function gccd() {
   repo=$1
 
@@ -17,9 +41,9 @@ function gccd() {
   # Remove .git suffix if present
   repo_name=$(basename "$repo" .git)
 
-  g clone "$repo"
+  gitclonesafely "$repo" "$repo_name"
 
-  if [ $? -eq 0 ] && [ -d "$repo_name" ]; then
+  if [ -d "$repo_name" ]; then
     cd "$repo_name"
   else
     echo "Failed to clone repository or directory '$repo_name' not found"
@@ -37,8 +61,9 @@ function clone_org_repos() {
   shift
 
   for repo in "$@"; do
-    echo "Cloning https://github.com/${org}/${repo}.git"
-    g clone "https://github.com/${org}/${repo}.git"
+    local repo_url="git@github.com:${org}/${repo}.git"
+    gitclonesafely "$repo_url" "$repo"
+    echo ""
   done
 }
 

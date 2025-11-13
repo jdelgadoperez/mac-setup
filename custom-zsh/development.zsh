@@ -22,7 +22,6 @@ function cleanpkgs() {
   echo ""
   pkgman=$1
   buildCmd="build"
-  prebuildCmd="prebuild"
 
   if [ "$pkgman" = '' ]; then
     PKG_TYPE=$(getlocktype)
@@ -41,20 +40,16 @@ function cleanpkgs() {
   if [ "$pkgman" = 'npm' ]; then
     echo ""
     npm install
+    buildCmd="run build"
   fi
 
   if [ "$pkgman" = 'pnpm' ]; then
     rm pnpm-lock.yaml
     buildCmd="build:all"
-    prebuildCmd="prebuild:all"
     echo ""
     pnpm install
   fi
 
-  if pkgscripts | jq -e --arg script "$prebuildCmd" 'has($script)' >/dev/null; then
-    echo ""
-    "$pkgman" "$prebuildCmd"
-  fi
   if pkgscripts | jq -e --arg script "$buildCmd" 'has($script)' >/dev/null; then
     echo ""
     "$pkgman" "$buildCmd"
