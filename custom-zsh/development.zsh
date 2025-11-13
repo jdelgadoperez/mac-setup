@@ -3,15 +3,6 @@
 # Package management, environment setup, and development tools
 ######################################################################################
 
-function ensurepy() {
-  if command -v pyenv 1>/dev/null 2>&1 && [[ -z "$PYENV_ROOT" ]]; then
-    echo "${BLUE}==============================================================================${NC}"
-    echo "${BLUE}Init ${CYAN}pyenv${NC}"
-    echo "${BLUE}==============================================================================${NC}"
-    pyenv
-  fi
-}
-
 function getlocktype() {
   if [ -f "yarn.lock" ]; then
     echo "yarn"
@@ -44,7 +35,6 @@ function cleanpkgs() {
 
   if [ "$pkgman" = 'yarn' ]; then
     ycc
-    ensurepy
     yin
   fi
 
@@ -127,7 +117,6 @@ function updategitdirectory() {
 
 function updatelibs() {
   CLEAN_LIBS="$1"
-  ensurepy
   echo ""
   echo "${BLUE}==============================================================================${NC}"
   echo "${BLUE}Install latest ${CYAN}node${NC}"
@@ -145,6 +134,8 @@ function updatelibs() {
   updategitdirectory $HOME/projects "lib" "$CLEAN_LIBS"
   echo ""
   updategitdirectory $HOME/projects/dracula "theme" "$CLEAN_LIBS"
+  echo ""
+  updategitdirectory $HOME/projects/sandbox "project" "$CLEAN_LIBS"
   echo ""
   gohome
   echo ""
