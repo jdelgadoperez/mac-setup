@@ -83,6 +83,8 @@ if [ $INSTALL_APPS == 'true' ]; then
   brew install --cask 1password
   brew install --cask alfred
   brew install --cask arc
+  brew install --cask claude
+  brew install --cask claude-code
   brew install --cask db-browser-for-sqlite
   brew install --cask discord
   brew install --cask gitkraken
