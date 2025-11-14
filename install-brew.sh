@@ -34,7 +34,7 @@ brew install coreutils
 ln -s "${BREW_PREFIX}/bin/gsha256sum" "${BREW_PREFIX}/bin/sha256sum"
 
 # Install some other useful utilities like `sponge`.
-brew install moreutils
+brew install moreutils`
 
 # Install GNU `find`, `locate`, `updatedb`, and `xargs`, `g`-prefixed.
 brew install findutils
@@ -97,6 +97,10 @@ if [ $INSTALL_APPS == 'true' ]; then
   brew install --cask notion-calendar
   brew install --cask orbstack
   brew install --cask pocket-casts
+  brew install --cask proton-drive
+  brew install --cask proton-mail
+  brew install --cask proton-mail-bridge
+  brew install --cask proton-pass
   brew install --cask rectangle
   brew install --cask rocket
   brew install --cask setapp
