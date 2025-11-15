@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 ###############################################################################
 # Homebrew setup                                                              #
 # ref: https://github.com/mathiasbynens/dotfiles/blob/master/brew.sh          #
@@ -8,21 +11,47 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/shared.sh"
 
-INSTALL_APPS="${1:-false}"
+# Use argument if provided, otherwise use environment variable, default to false
+INSTALL_APPS="${1:-${INSTALL_APPS:-false}}"
 
 # Install Homebrew
-if ! [ -x "$(command -v brew)" ]; then
-  loginstall "homebrew"
-  sh -c "$(curl -fsSL $GITHUB_RAW/Homebrew/install/HEAD/install.sh)"
+if ! command -v brew &> /dev/null; then
+  if [ "${DRY_RUN:-false}" = "true" ]; then
+    echo -e "${YELLOW}[DRY-RUN]${NC} Would install Homebrew\n"
+  else
+    loginstall "homebrew"
+    /bin/bash -c "$(curl -fsSL $GITHUB_RAW/Homebrew/install/HEAD/install.sh)"
+    logsuccess "Homebrew installed"
+  fi
+else
+  loginfo "Homebrew is already installed"
 fi
 
-# Make sure we’re using the latest Homebrew.
-brew update
+if [ "${DRY_RUN:-false}" = "true" ]; then
+  echo -e "${YELLOW}[DRY-RUN]${NC} Would update Homebrew\n"
+  echo -e "${YELLOW}[DRY-RUN]${NC} Would upgrade Homebrew packages\n"
+  echo -e "${YELLOW}[DRY-RUN]${NC} Would install ~60 Homebrew packages\n"
+  if [ "$INSTALL_APPS" = "true" ]; then
+    echo -e "${YELLOW}[DRY-RUN]${NC} Would install GUI applications\n"
+  fi
+  echo -e "${YELLOW}[DRY-RUN]${NC} Would install 1Password CLI\n"
+  echo -e "${YELLOW}[DRY-RUN]${NC} Would run brew cleanup\n"
+  exit 0
+fi
 
-# Upgrade any already-installed formulae.
-brew upgrade
+# Make sure we're using the latest Homebrew (skip if recently updated)
+if [ "${BREW_SKIP_UPDATE:-false}" != "true" ]; then
+  loginfo "Updating Homebrew"
+  brew update
+fi
 
-# Save Homebrew’s installed location.
+# Upgrade any already-installed formulae (optional)
+if [ "${BREW_UPGRADE:-true}" = "true" ]; then
+  loginfo "Upgrading Homebrew packages"
+  brew upgrade
+fi
+
+# Save Homebrew's installed location.
 BREW_PREFIX=$(brew --prefix)
 
 # Install more recent versions of some macOS tools.
@@ -76,8 +105,8 @@ if ! fc-list | grep -qi "Fira Code Nerd Font"; then
 fi
 
 # Apps
-printf "${BLUE}Install apps: ${GREEN}%s${NC}\n" "$INSTALL_APPS"
-if [ $INSTALL_APPS == 'true' ]; then
+loginfo "Install GUI apps: $INSTALL_APPS"
+if [ "$INSTALL_APPS" = "true" ]; then
   loginstall "apps"
   brew install devutils
   brew install --cask 1password
@@ -117,4 +146,7 @@ brew install --cask 1password-cli
 op signin
 
 # Remove outdated versions from the cellar.
+loginfo "Cleaning up Homebrew"
 brew cleanup -s
+
+logsuccess "Homebrew setup complete"
