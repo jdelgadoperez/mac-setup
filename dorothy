@@ -1,0 +1,702 @@
+#!/bin/bash
+
+###############################################################################
+# Dorothy - macOS Development Environment Setup CLI                          #
+###############################################################################
+
+set -e
+
+# Resolve the actual script directory, following symlinks
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+source "$SCRIPT_DIR/shared.sh"
+
+VERSION="1.0.0"
+DRY_RUN=false
+INTERACTIVE=false
+
+###############################################################################
+# Utility Functions                                                           #
+###############################################################################
+
+show_version() {
+  echo -e "dorothy version $VERSION"
+}
+
+show_help() {
+  cat << EOF
+${BLUE}Dorothy${NC} - Your friendly macOS development environment setup assistant
+
+${YELLOW}USAGE:${NC}
+  dorothy <command> [options]
+
+${YELLOW}COMMANDS:${NC}
+  ${GREEN}install${NC}      Run full setup or install specific components
+  ${GREEN}update${NC}       Update all managed tools and dependencies
+  ${GREEN}list${NC}         List available components and their status
+  ${GREEN}sync${NC}         Sync dotfiles (create symlinks)
+  ${GREEN}doctor${NC}       Check system health and diagnose issues
+  ${GREEN}help${NC}         Show this help message
+  ${GREEN}version${NC}      Show version information
+
+${YELLOW}OPTIONS:${NC}
+  ${GREEN}-i, --interactive${NC}    Run in interactive mode with prompts
+  ${GREEN}-d, --dry-run${NC}        Preview changes without executing
+  ${GREEN}-h, --help${NC}           Show help for a specific command
+
+${YELLOW}EXAMPLES:${NC}
+  dorothy install                    # Full setup
+  dorothy install --interactive      # Guided installation
+  dorothy install --dry-run          # Preview what would be installed
+  dorothy install brew zsh           # Install only brew and zsh
+  dorothy update                     # Update everything
+  dorothy list                       # Show available components
+  dorothy doctor                     # Check system health
+
+${YELLOW}COMPONENTS:${NC}
+  ${GREEN}xcode${NC}        - XCode Command Line Tools
+  ${GREEN}brew${NC}         - Homebrew and packages
+  ${GREEN}git${NC}          - Git configuration
+  ${GREEN}zsh${NC}          - Zsh and Oh My Zsh
+  ${GREEN}dracula${NC}      - Dracula theme for iTerm2
+  ${GREEN}dotfiles${NC}     - Symlink dotfiles to home directory
+
+For more information, visit: https://github.com/yourusername/mac-setup
+EOF
+}
+
+show_install_help() {
+  cat << EOF
+${BLUE}dorothy install${NC} - Install development environment components
+
+${YELLOW}USAGE:${NC}
+  dorothy install [components...] [options]
+
+${YELLOW}OPTIONS:${NC}
+  ${GREEN}-i, --interactive${NC}    Interactive mode with guided prompts
+  ${GREEN}-d, --dry-run${NC}        Preview what would be installed
+  ${GREEN}--apps${NC}               Install GUI applications via Homebrew
+  ${GREEN}--no-apps${NC}            Skip GUI applications (default)
+
+${YELLOW}COMPONENTS:${NC}
+  ${GREEN}all${NC}          - Install everything (default)
+  ${GREEN}xcode${NC}        - XCode Command Line Tools
+  ${GREEN}brew${NC}         - Homebrew and packages
+  ${GREEN}git${NC}          - Git configuration
+  ${GREEN}zsh${NC}          - Zsh and Oh My Zsh
+  ${GREEN}dracula${NC}      - Dracula theme
+  ${GREEN}dotfiles${NC}     - Symlink dotfiles
+
+${YELLOW}EXAMPLES:${NC}
+  dorothy install                    # Install everything
+  dorothy install --interactive      # Guided installation
+  dorothy install brew zsh           # Install only brew and zsh
+  dorothy install --dry-run --apps   # Preview full install with apps
+EOF
+}
+
+show_update_help() {
+  cat << EOF
+${BLUE}dorothy update${NC} - Update all managed tools and dependencies
+
+${YELLOW}USAGE:${NC}
+  dorothy update [options]
+
+${YELLOW}OPTIONS:${NC}
+  ${GREEN}-d, --dry-run${NC}        Preview what would be updated
+  ${GREEN}--clean${NC}              Clean reinstall of dependencies
+
+${YELLOW}EXAMPLES:${NC}
+  dorothy update                     # Update everything
+  dorothy update --dry-run           # Preview updates
+  dorothy update --clean             # Clean reinstall
+EOF
+}
+
+###############################################################################
+# Component Management                                                        #
+###############################################################################
+
+# Check if a component is installed
+is_installed() {
+  local component=$1
+  case $component in
+    xcode)
+      xcode-select -p &> /dev/null
+      ;;
+    brew)
+      command -v brew &> /dev/null
+      ;;
+    git)
+      [ -f "$HOME/.gitconfig" ]
+      ;;
+    zsh)
+      [ -d "$HOME/.oh-my-zsh" ]
+      ;;
+    dracula)
+      [ -d "$DIR_DRACULA" ]
+      ;;
+    dotfiles)
+      [ -L "$HOME/.zshrc" ]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# List all components and their status
+list_components() {
+  echo -e "${BLUE}Available Components:${NC}"
+  echo ""
+
+  local components=("xcode" "brew" "git" "zsh" "dracula" "dotfiles")
+  local descriptions=(
+    "XCode Command Line Tools"
+    "Homebrew package manager and packages"
+    "Git configuration"
+    "Zsh shell and Oh My Zsh framework"
+    "Dracula color theme for iTerm2"
+    "Dotfiles symlinked to home directory"
+  )
+
+  for i in "${!components[@]}"; do
+    local component="${components[$i]}"
+    local desc="${descriptions[$i]}"
+
+    if is_installed "$component"; then
+      printf "  ${GREEN}✓${NC} %-12s %s\n" "$component" "$desc"
+    else
+      printf "  ${RED}✗${NC} %-12s %s\n" "$component" "$desc"
+    fi
+  done
+
+  echo ""
+}
+
+# Interactive component selection
+select_components_interactive() {
+  echo -e "${BLUE}Select components to install:${NC}"
+  echo ""
+
+  local components=("xcode" "brew" "git" "zsh" "dracula" "dotfiles")
+  local descriptions=(
+    "XCode Command Line Tools"
+    "Homebrew and packages"
+    "Git configuration"
+    "Zsh and Oh My Zsh"
+    "Dracula theme"
+    "Symlink dotfiles"
+  )
+  local selected=()
+
+  for i in "${!components[@]}"; do
+    local component="${components[$i]}"
+    local desc="${descriptions[$i]}"
+
+    if is_installed "$component"; then
+      echo -e "  ${GREEN}[installed]${NC} $component - $desc"
+    else
+      echo -e "  ${YELLOW}$((i+1)))${NC} $component - $desc"
+      selected+=("$component")
+    fi
+  done
+
+  echo ""
+  read -p "${BLUE}Enter component numbers (space-separated, or 'all'):${NC} " choice
+
+  if [ "$choice" = "all" ]; then
+    printf "%s\n" "${selected[@]}"
+  else
+    local result=()
+    for num in $choice; do
+      local idx=$((num-1))
+      if [ $idx -ge 0 ] && [ $idx -lt ${#selected[@]} ]; then
+        result+=("${selected[$idx]}")
+      fi
+    done
+    printf "%s\n" "${result[@]}"
+  fi
+}
+
+###############################################################################
+# Installation Functions                                                      #
+###############################################################################
+
+install_component() {
+  local component=$1
+  local dry_run=$2
+  local install_apps=${3:-false}
+
+  # Export environment variables for scripts
+  if $dry_run; then
+    export DRY_RUN=true
+  fi
+
+  if $INTERACTIVE; then
+    export NON_INTERACTIVE=false
+  else
+    export NON_INTERACTIVE=true
+  fi
+
+  # Export INSTALL_APPS for scripts that need it
+  if [ "$install_apps" = "true" ]; then
+    export INSTALL_APPS=true
+  fi
+
+  case $component in
+    xcode)
+      if ! $dry_run; then
+        loginfo "Installing XCode Command Line Tools"
+      fi
+      sh "$SCRIPT_DIR/install-xcode.sh"
+      ;;
+    brew)
+      if ! $dry_run; then
+        loginfo "Installing Homebrew and packages"
+      fi
+      # Pass as argument for backward compatibility, but also set env var
+      sh "$SCRIPT_DIR/install-brew.sh" "$install_apps"
+      ;;
+    git)
+      if ! $dry_run; then
+        loginfo "Configuring Git"
+      fi
+      sh "$SCRIPT_DIR/config-git.sh"
+      ;;
+    zsh)
+      if ! $dry_run; then
+        loginfo "Installing Zsh and Oh My Zsh"
+      fi
+      sh "$SCRIPT_DIR/install-zsh.sh"
+      ;;
+    dracula)
+      if ! $dry_run; then
+        loginfo "Installing Dracula theme"
+      fi
+      sh "$SCRIPT_DIR/install-dracula.sh"
+      ;;
+    dotfiles)
+      if ! $dry_run; then
+        loginfo "Syncing dotfiles"
+      fi
+      sync_dotfiles "$dry_run"
+      ;;
+    *)
+      logerror "Unknown component: $component"
+      return 1
+      ;;
+  esac
+
+  # Unset exported variables
+  unset DRY_RUN
+  unset NON_INTERACTIVE
+  unset INSTALL_APPS
+}
+
+sync_dotfiles() {
+  local dry_run=$1
+
+  loginfo "Syncing dotfiles to $HOME"
+
+  local dotfiles_dir="$SCRIPT_DIR/dotfiles"
+
+  if [ ! -d "$dotfiles_dir" ]; then
+    logerror "Dotfiles directory not found: $dotfiles_dir"
+    return 1
+  fi
+
+  # Find all files in dotfiles directory (excluding .git and .DS_Store)
+  find "$dotfiles_dir" -type f ! -path "*/.git/*" ! -name ".DS_Store" | while read -r file; do
+    local rel_path="${file#$dotfiles_dir/}"
+    local target="$HOME/$rel_path"
+    local target_dir=$(dirname "$target")
+
+    if $dry_run; then
+      printf "${YELLOW}[DRY RUN]${NC} Would link: %s -> %s\n" "$rel_path" "$target"
+    else
+      # Create directory if it doesn't exist
+      if [ ! -d "$target_dir" ]; then
+        mkdir -p "$target_dir"
+      fi
+
+      # Remove existing file/link if it exists
+      if [ -e "$target" ] || [ -L "$target" ]; then
+        rm -f "$target"
+      fi
+
+      # Create symlink
+      ln -s "$file" "$target"
+      printf "${GREEN}✓${NC} Linked: %s\n" "$rel_path"
+    fi
+  done
+}
+
+###############################################################################
+# Command Handlers                                                            #
+###############################################################################
+
+cmd_install() {
+  local components=()
+  local install_apps=false
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -h|--help)
+        show_install_help
+        exit 0
+        ;;
+      --apps)
+        install_apps=true
+        shift
+        ;;
+      --no-apps)
+        install_apps=false
+        shift
+        ;;
+      -*)
+        # Skip global options, already parsed
+        shift
+        ;;
+      *)
+        components+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  # Interactive mode
+  if $INTERACTIVE; then
+    echo -e "${BLUE}Dorothy Interactive Installation${NC}"
+    echo ""
+
+    # Ask about apps
+    read -p "${BLUE}Install GUI applications via Homebrew? (y/N):${NC} " install_apps_choice
+    if [[ "$install_apps_choice" =~ ^[Yy]$ ]]; then
+      install_apps=true
+    fi
+
+    echo ""
+    local selected=$(select_components_interactive)
+    components=($selected)
+  fi
+
+  # Default to all if no components specified
+  if [ ${#components[@]} -eq 0 ] || [[ " ${components[@]} " =~ " all " ]]; then
+    components=("xcode" "brew" "git" "zsh" "dracula" "dotfiles")
+  fi
+
+  # Show installation plan
+  echo ""
+  echo -e "${BLUE}Installation Plan:${NC}"
+  for component in "${components[@]}"; do
+    if $DRY_RUN; then
+      printf "  ${YELLOW}[DRY RUN]${NC} %s\n" "$component"
+    else
+      printf "  ${GREEN}✓${NC} %s\n" "$component"
+    fi
+  done
+
+  if $install_apps; then
+    printf "  ${GREEN}✓${NC} GUI applications\n"
+  fi
+
+  echo ""
+
+  if ! $INTERACTIVE && ! $DRY_RUN; then
+    read -p "${BLUE}Proceed with installation? (y/N):${NC} " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+      echo -e "Installation cancelled."
+      exit 0
+    fi
+  fi
+
+  # Install components
+  for component in "${components[@]}"; do
+    install_component "$component" "$DRY_RUN" "$install_apps"
+  done
+
+  if ! $DRY_RUN; then
+    echo ""
+    logsuccess "Installation complete!"
+
+    # Suggest next steps
+    if [[ " ${components[@]} " =~ " zsh " ]]; then
+      echo ""
+      echo -e "${BLUE}Next steps:${NC}"
+      printf "  1. Restart your terminal or run: exec zsh\n"
+      printf "  2. Run: dorothy doctor (to verify installation)\n"
+    fi
+  fi
+}
+
+cmd_update() {
+  local clean=false
+
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -h|--help)
+        show_update_help
+        exit 0
+        ;;
+      --clean)
+        clean=true
+        shift
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+
+  echo -e "${BLUE}Dorothy Update${NC}"
+  echo ""
+
+  if $DRY_RUN; then
+    echo -e "${YELLOW}[DRY RUN] Preview of updates:${NC}"
+  fi
+
+  # Update Homebrew
+  if command -v brew &> /dev/null; then
+    if $DRY_RUN; then
+      echo -e "${YELLOW}[DRY RUN]${NC} Would update Homebrew packages"
+    else
+      loginfo "Updating Homebrew"
+      brew update
+      brew upgrade
+      brew cleanup -s
+    fi
+  fi
+
+  # Update Oh My Zsh
+  if [ -d "$HOME/.oh-my-zsh" ]; then
+    if $DRY_RUN; then
+      echo -e "${YELLOW}[DRY RUN]${NC} Would update Oh My Zsh"
+    else
+      loginfo "Updating Oh My Zsh"
+      cd "$HOME/.oh-my-zsh" && git pull
+    fi
+  fi
+
+  # Update custom zsh files
+  if [ -d "$ZSH_CUSTOM" ]; then
+    if $DRY_RUN; then
+      echo -e "${YELLOW}[DRY RUN]${NC} Would update custom Zsh files"
+    else
+      loginfo "Updating custom Zsh files"
+      cp -r "$SCRIPT_DIR/custom-zsh/"* "$ZSH_CUSTOM/"
+    fi
+  fi
+
+  # Run updatelibs if available
+  if command -v updatelibs &> /dev/null; then
+    if $DRY_RUN; then
+      echo -e "${YELLOW}[DRY RUN]${NC} Would run updatelibs"
+    else
+      loginfo "Running updatelibs"
+      if $clean; then
+        updatelibs clean
+      else
+        updatelibs
+      fi
+    fi
+  fi
+
+  if ! $DRY_RUN; then
+    echo ""
+    logsuccess "Update complete!"
+  fi
+}
+
+cmd_list() {
+  list_components
+}
+
+cmd_sync() {
+  echo -e "${BLUE}Syncing dotfiles${NC}"
+  echo ""
+  sync_dotfiles "$DRY_RUN"
+
+  if ! $DRY_RUN; then
+    echo ""
+    logsuccess "Dotfiles synced!"
+  fi
+}
+
+cmd_doctor() {
+  echo -e "${BLUE}Dorothy System Check${NC}"
+  echo ""
+
+  local issues=0
+
+  # Check XCode
+  if xcode-select -p &> /dev/null; then
+    echo -e "${GREEN}✓${NC} XCode Command Line Tools installed"
+  else
+    echo -e "${RED}✗${NC} XCode Command Line Tools not installed"
+    echo -e "  Run: dorothy install xcode"
+    ((issues++))
+  fi
+
+  # Check Homebrew
+  if command -v brew &> /dev/null; then
+    printf "${GREEN}✓${NC} Homebrew installed (%s)\n" "$(brew --version | head -n1)"
+
+    # Check for outdated packages
+    local outdated=$(brew outdated | wc -l | tr -d ' ')
+    if [ "$outdated" -gt 0 ]; then
+      printf "${YELLOW}!${NC} %s Homebrew package(s) can be updated\n" "$outdated"
+      echo -e "  Run: dorothy update"
+    fi
+  else
+    echo -e "${RED}✗${NC} Homebrew not installed"
+    echo -e "  Run: dorothy install brew"
+    ((issues++))
+  fi
+
+  # Check Git
+  if command -v git &> /dev/null; then
+    printf "${GREEN}✓${NC} Git installed (%s)\n" "$(git --version)"
+
+    if [ -f "$HOME/.gitconfig" ]; then
+      echo -e "${GREEN}✓${NC} Git configured"
+    else
+      echo -e "${YELLOW}!${NC} Git not configured"
+      echo -e "  Run: dorothy install git"
+    fi
+  else
+    echo -e "${RED}✗${NC} Git not installed"
+    ((issues++))
+  fi
+
+  # Check Zsh
+  if [ -d "$HOME/.oh-my-zsh" ]; then
+    echo -e "${GREEN}✓${NC} Oh My Zsh installed"
+  else
+    echo -e "${YELLOW}!${NC} Oh My Zsh not installed"
+    echo -e "  Run: dorothy install zsh"
+  fi
+
+  # Check if using Zsh
+  if [ "$SHELL" = "$(which zsh)" ]; then
+    echo -e "${GREEN}✓${NC} Using Zsh as default shell"
+  else
+    printf "${YELLOW}!${NC} Not using Zsh as default shell (currently: %s)\n" "$SHELL"
+    printf "  Run: chsh -s %s\n" "$(which zsh)"
+  fi
+
+  # Check dotfiles
+  if [ -L "$HOME/.zshrc" ]; then
+    echo -e "${GREEN}✓${NC} Dotfiles symlinked"
+  else
+    echo -e "${YELLOW}!${NC} Dotfiles not symlinked"
+    echo -e "  Run: dorothy sync"
+  fi
+
+  # Check Starship
+  if command -v starship &> /dev/null; then
+    echo -e "${GREEN}✓${NC} Starship prompt installed"
+  else
+    echo -e "${YELLOW}!${NC} Starship not installed"
+    echo -e "  Run: brew install starship"
+  fi
+
+  echo ""
+  if [ $issues -eq 0 ]; then
+    logsuccess "All checks passed!"
+  else
+    printf "${YELLOW}Found %s issue(s). See suggestions above.${NC}\n" "$issues"
+  fi
+}
+
+###############################################################################
+# Main Entry Point                                                            #
+###############################################################################
+
+main() {
+  # Parse global options
+  local command=""
+  local args=()
+
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -i|--interactive)
+        INTERACTIVE=true
+        shift
+        ;;
+      -d|--dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+      -h|--help)
+        if [ -z "$command" ]; then
+          show_help
+          exit 0
+        else
+          args+=("$1")
+          shift
+        fi
+        ;;
+      -v|--version)
+        show_version
+        exit 0
+        ;;
+      install|update|list|sync|doctor|help|version)
+        command=$1
+        shift
+        ;;
+      *)
+        args+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  # Default to help if no command
+  if [ -z "$command" ]; then
+    show_help
+    exit 0
+  fi
+
+  # Execute command
+  case $command in
+    install)
+      cmd_install "${args[@]}"
+      ;;
+    update)
+      cmd_update "${args[@]}"
+      ;;
+    list)
+      cmd_list
+      ;;
+    sync)
+      cmd_sync
+      ;;
+    doctor)
+      cmd_doctor
+      ;;
+    help)
+      show_help
+      ;;
+    version)
+      show_version
+      ;;
+    *)
+      logerror "Unknown command: $command"
+      printf "Run 'dorothy help' for usage information.\n"
+      exit 1
+      ;;
+  esac
+}
+
+# Run main if not sourced
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+  main "$@"
+fi
