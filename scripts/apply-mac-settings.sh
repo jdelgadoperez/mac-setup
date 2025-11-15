@@ -11,8 +11,8 @@ defaults import com.apple.screencapture macos-screencapture.plist
 # Apply pmset (power management)
 sudo pmset restoredefaults
 while read -r line; do
-  setting=$(echo "$line" | awk '{print $1}')
-  value=$(echo "$line" | awk '{print $2}')
+  setting=$(printf "%s" "$line" | awk '{print $1}')
+  value=$(printf "%s" "$line" | awk '{print $2}')
   sudo pmset -a "$setting" "$value"
 done < <(grep -E '^\S+\s+\d+' macos-pmset.txt)
 
@@ -20,11 +20,11 @@ done < <(grep -E '^\S+\s+\d+' macos-pmset.txt)
 sudo scutil --set HostName "$(cat macos-hostname.txt)"
 
 # Gatekeeper status (optional, requires manual enable/disable)
-echo "⚠️ Gatekeeper status saved as: $(cat macos-gatekeeper.txt)"
-echo "Enable/disable with: sudo spctl --master-enable|--master-disable"
+printf "⚠️ Gatekeeper status saved as: %s\n" "$(cat macos-gatekeeper.txt)"
+printf "Enable/disable with: sudo spctl --master-enable|--master-disable\n"
 
 # Restart apps to apply
 killall Finder
 killall Dock
 
-echo "✅ macOS settings applied."
+printf "✅ macOS settings applied.\n"
