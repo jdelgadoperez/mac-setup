@@ -8,21 +8,21 @@ function gitclonesafely() {
   DEST_PATH="$2"
 
   if [ -d "$DEST_PATH" ]; then
-    printf "${YELLOW}Directory already exists: ${DEST_PATH}${NC}\n"
-    printf "${BLUE}Checking if it's a valid git repository...${NC}\n"
+    echo -e "${YELLOW}Directory already exists: ${DEST_PATH}${NC}"
+    echo -e "${BLUE}Checking if it's a valid git repository...${NC}"
 
     if [ -d "$DEST_PATH/.git" ]; then
-      printf "${GREEN}Valid git repository found. Pulling latest changes...${NC}\n"
+      echo -e "${GREEN}Valid git repository found. Pulling latest changes...${NC}"
       cd "$DEST_PATH"
-      git pull origin HEAD 2>/dev/null || git pull 2>/dev/null || printf "${YELLOW}Could not pull updates${NC}\n"
+      git pull origin HEAD 2>/dev/null || git pull 2>/dev/null || echo -e "${YELLOW}Could not pull updates${NC}"
       cd - > /dev/null
     else
-      printf "${RED}Directory exists but is not a git repository. Removing and cloning fresh...${NC}\n"
+      echo -e "${RED}Directory exists but is not a git repository. Removing and cloning fresh...${NC}"
       rm -rf "$DEST_PATH"
       git clone "$REPO_URL" "$DEST_PATH"
     fi
   else
-    printf "${BLUE}Cloning ${GREEN}${REPO_URL}${BLUE} to ${GREEN}${DEST_PATH}${NC}\n"
+    echo -e "${BLUE}Cloning ${GREEN}${REPO_URL}${BLUE} to ${GREEN}${DEST_PATH}${NC}"
     git clone "$REPO_URL" "$DEST_PATH"
   fi
 }
