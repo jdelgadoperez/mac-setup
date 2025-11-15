@@ -2,6 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Claude Code Workflow
+
+### Planning and Documentation
+
+When working on complex tasks that require planning:
+
+1. **Store all plans in `.llm/plans/`**: Create detailed implementation plans, architecture decisions, and task breakdowns in markdown files within this directory.
+2. **Plan naming convention**: Use descriptive names like `feature-name-plan.md`, `refactor-component-plan.md`, or `YYYY-MM-DD-task-description.md`.
+3. **Version control**: Plans are tracked in git to maintain a history of decision-making and implementation approaches.
+4. **Reference plans**: When executing tasks, reference the relevant plan document to maintain context and track progress.
+
+The `.llm/plans/` directory serves as a knowledge base for:
+- Feature implementation roadmaps
+- Refactoring strategies
+- Bug fix approaches
+- Architecture decisions
+- Complex debugging sessions
+
 ## Repository Overview
 
 This is a macOS development environment setup and dotfiles repository. It automates the installation and configuration of development tools, shell customizations, and system settings for a new or existing Mac.
@@ -10,7 +28,20 @@ This is a macOS development environment setup and dotfiles repository. It automa
 
 ### Installation Flow
 
-The main entry point is `run.sh`, which orchestrates the setup in this order:
+**Recommended: Dorothy CLI**
+
+The primary interface is the `dorothy` CLI tool, which provides a modern command-line experience:
+
+```bash
+sh ./install-dorothy.sh          # Install dorothy globally
+dorothy install --interactive    # Guided installation
+dorothy update                   # Update everything
+dorothy doctor                   # Check system health
+```
+
+**Legacy: Direct Scripts**
+
+Alternatively, `run.sh` orchestrates the setup in this order:
 1. XCode Command Line Tools (`install-xcode.sh`)
 2. Homebrew and packages (`install-brew.sh`)
 3. Git configuration (`config-git.sh`)
@@ -18,6 +49,14 @@ The main entry point is `run.sh`, which orchestrates the setup in this order:
 5. Dracula theme (`install-dracula.sh`)
 
 ### Directory Structure
+
+- **`dorothy`**: Main CLI tool (installed globally via `install-dorothy.sh`)
+  - Bash-based command-line interface with subcommand routing
+  - Provides: install, update, sync, list, doctor, help, version
+  - Features: interactive mode, dry-run, component selection, health checks
+  - Wraps existing installation scripts with better UX
+
+- **`install-dorothy.sh`**: Installer for Dorothy CLI (creates symlink in `/usr/local/bin`)
 
 - **`dotfiles/`**: Source dotfiles that get symlinked to `$HOME`
   - `.zshrc` - Main Zsh configuration with lazy-loading patterns for performance
@@ -40,9 +79,15 @@ The main entry point is `run.sh`, which orchestrates the setup in this order:
 
 - **`scripts/`**: macOS system preference automation
 
-- **`shared.sh`**: Common bash utilities used across installation scripts (color definitions, logging functions, directory variables)
+- **`shared.sh`**: Common bash utilities used across installation scripts
+  - Color definitions (BLUE, GREEN, RED, YELLOW, etc.)
+  - Logging functions (loginstall, loginfo, logsuccess, logerror)
+  - Directory variables (DIR_ROOT, DIR_PROJECTS, ZSH_CUSTOM, etc.)
+  - Utility functions (createdirsafely, gitclonesafely)
 
 - **`env.sh`**: Environment variable definitions (sourced by `shared.sh`)
+
+- **`DOROTHY.md`**: Comprehensive Dorothy CLI reference documentation
 
 ### Key Design Patterns
 
@@ -56,7 +101,32 @@ The main entry point is `run.sh`, which orchestrates the setup in this order:
 
 ## Common Commands
 
-### Installation
+### Dorothy CLI (Recommended)
+
+```bash
+# Installation
+sh ./install-dorothy.sh                # Install Dorothy globally
+
+# Setup & Installation
+dorothy install                        # Full setup with confirmation
+dorothy install --interactive          # Guided installation with prompts
+dorothy install --dry-run              # Preview what would be installed
+dorothy install brew zsh               # Install specific components
+dorothy install --apps                 # Include GUI applications
+
+# Maintenance
+dorothy update                         # Update all tools
+dorothy update --clean                 # Clean reinstall
+dorothy sync                           # Sync dotfiles
+dorothy doctor                         # Check system health
+dorothy list                           # Show component status
+
+# Help
+dorothy help                           # General help
+dorothy install --help                 # Command-specific help
+```
+
+### Direct Script Installation (Legacy)
 ```bash
 # Run full setup (installs everything)
 sh ./run.sh
