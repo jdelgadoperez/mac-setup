@@ -27,4 +27,4 @@ defaults read com.apple.screencapture >macos-screencapture.plist
 # Gatekeeper (e.g., app install permissions)
 spctl --status >macos-gatekeeper.txt
 
-echo "✅ Settings exported."
+printf "✅ Settings exported.\n"
