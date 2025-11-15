@@ -4,6 +4,40 @@ Automated macOS development environment configuration and dotfiles management. T
 
 ## Quick Start
 
+### Using Dorothy CLI (Recommended)
+
+Dorothy is a friendly CLI that makes setup easier with interactive prompts, dry-run mode, and component selection.
+
+**Install Dorothy:**
+```bash
+sh ./install-dorothy.sh
+```
+
+**Quick Examples:**
+```bash
+dorothy install --interactive    # Guided installation with prompts
+dorothy install --dry-run        # Preview what would be installed
+dorothy install brew zsh         # Install only specific components
+dorothy update                   # Update all tools
+dorothy doctor                   # Check system health
+dorothy list                     # Show available components
+```
+
+**Available Commands:**
+- `dorothy install` - Install components (full setup or selective)
+- `dorothy update` - Update all managed tools and dependencies
+- `dorothy sync` - Sync dotfiles (create symlinks)
+- `dorothy list` - List available components and installation status
+- `dorothy doctor` - System health check and diagnostics
+- `dorothy help` - Show detailed help
+
+**Options:**
+- `-i, --interactive` - Interactive mode with guided prompts
+- `-d, --dry-run` - Preview changes without executing
+- `--apps` - Include GUI applications (1Password, VS Code, etc.)
+
+### Using Scripts Directly (Alternative)
+
 Run the complete setup:
 
 ```bash
@@ -97,7 +131,9 @@ See `custom-zsh/` directory for complete list of functions and aliases.
 
 ```
 mac-setup/
-├── run.sh                    # Main orchestrator script
+├── dorothy                   # Main CLI tool (install via install-dorothy.sh)
+├── install-dorothy.sh        # Install Dorothy globally
+├── run.sh                    # Legacy orchestrator script
 ├── install-*.sh              # Individual installation scripts
 ├── config-git.sh             # Git configuration
 ├── shared.sh                 # Common utilities and colors
@@ -180,6 +216,15 @@ Edit files in `dotfiles/` directory, then:
 
 ## Tips
 
+**Using Dorothy:**
+```bash
+dorothy list                    # See what's installed
+dorothy doctor                  # Check for issues
+dorothy install --dry-run       # Preview changes
+dorothy install brew --apps     # Install Homebrew with GUI apps
+dorothy update                  # Update everything
+```
+
 **List all custom commands:**
 ```bash
 listhelpers functions   # Show all custom functions
@@ -188,8 +233,9 @@ listhelpers aliases     # Show all aliases
 
 **Update everything:**
 ```bash
-updatelibs              # Normal update
-updatelibs clean        # Clean reinstall
+dorothy update          # Update via Dorothy (recommended)
+updatelibs              # Normal update (legacy)
+updatelibs clean        # Clean reinstall (legacy)
 ```
 
 **Git with 1Password:**
