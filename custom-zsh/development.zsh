@@ -3,6 +3,36 @@
 # Package management, environment setup, and development tools
 ######################################################################################
 
+function ensurerancher() {
+  local cmd=("$@")
+  if pgrep -f "Rancher Desktop" > /dev/null; then
+    echo "🟢 Rancher is already running."
+  else
+    echo "🟡 Rancher is not running. Launching now..."
+    open -a "Rancher Desktop"
+    echo "⏳ Waiting for Rancher to launch..."
+    while ! pgrep -f "Rancher Desktop" > /dev/null; do
+      sleep 1
+    done
+    echo "✅ Rancher launched."
+  fi
+}
+
+function ensuredocker() {
+  local cmd=("$@")
+  if docker info > /dev/null 2>&1; then
+    echo "🟢 Docker daemon is already running."
+  else
+    echo "🟡 Docker daemon is not available."
+    ensurerancher
+    echo "⏳ Waiting for Docker daemon to be ready..."
+    while ! docker info > /dev/null 2>&1; do
+      sleep 2
+    done
+    echo "✅ Docker daemon is ready."
+  fi
+}
+
 function getlocktype() {
   if [ -f "yarn.lock" ]; then
     echo "yarn"
