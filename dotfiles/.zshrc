@@ -50,6 +50,11 @@ eval "$(op completion zsh)"
 compdef _op op
 export OP_BIOMETRIC_UNLOCK_ENABLED=true
 
+# OrbStack - command-line tools and integration (if installed)
+if [ -f "$HOME/.orbstack/shell/init.zsh" ]; then
+  source ~/.orbstack/shell/init.zsh 2>/dev/null || :
+fi
+
 # Java - lazy loaded
 function loadJava() {
   export JAVA_HOME=$(/usr/libexec/java_home)
