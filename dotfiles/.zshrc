@@ -23,6 +23,10 @@ plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-sear
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
 
+####################
+# User configuration
+####################
+
 # Set up fzf key bindings and fuzzy completion
 source <(fzf --zsh)
 
@@ -41,14 +45,22 @@ else
   echo "fzf-tab is not installed, install it from https://github.com/Aloxaf/fzf-tab and set FZF_TAB_PLUGIN"
 fi
 
-# fnm - interactive shell initialization
-eval "$(fnm env --use-on-cd)"
-
 # 1Password
 source $HOME/.config/op/plugins.sh
 eval "$(op completion zsh)"
 compdef _op op
 export OP_BIOMETRIC_UNLOCK_ENABLED=true
+
+# Dracula theme for BSD grep
+export GREP_COLOR="1;38;2;255;85;85"
+export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
+
+####################
+## Development Tools
+####################
+
+# fnm - interactive shell initialization
+eval "$(fnm env --use-on-cd)"
 
 # OrbStack - command-line tools and integration (if installed)
 if [ -f "$HOME/.orbstack/shell/init.zsh" ]; then
@@ -81,10 +93,6 @@ function loadBasher() {
 }
 lazyload basher -- 'loadBasher'
 
-####################
-## Development Tools
-####################
-
 # Editor configuration
 if command -v code &> /dev/null; then
   export EDITOR='code --wait'
@@ -93,10 +101,6 @@ elif command -v vim &> /dev/null; then
 else
   export EDITOR='nano'
 fi
-
-# Dracula theme for BSD grep
-export GREP_COLOR="1;38;2;255;85;85"
-export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
 
 # Python tools
 export LANG=en_US.UTF-8

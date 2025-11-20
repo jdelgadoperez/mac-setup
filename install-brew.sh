@@ -97,6 +97,7 @@ loginstall "dev tools"
 brew install gh git-lfs git-delta
 brew install readline wget zlib zx
 brew install sqlite3 mailpit neovim
+brew install dotenvx/brew/dotenvx
 
 # Ensure terminal font is installed
 if ! fc-list | grep -qi "Fira Code Nerd Font"; then
@@ -136,6 +137,7 @@ if [ "$INSTALL_APPS" = "true" ]; then
   brew install --cask slack
   brew install --cask steam
   brew install --cask visual-studio-code
+  brew install --cask zed
   brew install --cask zoom
   brew tap teamookla/speedtest
 fi
