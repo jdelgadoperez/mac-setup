@@ -55,6 +55,7 @@ ${YELLOW}EXAMPLES:${NC}
   dorothy install --interactive      # Guided installation
   dorothy install --dry-run          # Preview what would be installed
   dorothy install brew zsh           # Install only brew and zsh
+  dorothy install dracula --force    # Force reinstall Dracula theme
   dorothy update                     # Update everything
   dorothy list                       # Show available components
   dorothy doctor                     # Check system health
@@ -81,6 +82,7 @@ ${YELLOW}USAGE:${NC}
 ${YELLOW}OPTIONS:${NC}
   ${GREEN}-i, --interactive${NC}    Interactive mode with guided prompts
   ${GREEN}-d, --dry-run${NC}        Preview what would be installed
+  ${GREEN}-f, --force${NC}          Force reinstall even if already installed
   ${GREEN}--apps${NC}               Install GUI applications via Homebrew
   ${GREEN}--no-apps${NC}            Skip GUI applications (default)
 
@@ -98,6 +100,7 @@ ${YELLOW}EXAMPLES:${NC}
   dorothy install --interactive      # Guided installation
   dorothy install brew zsh           # Install only brew and zsh
   dorothy install --dry-run --apps   # Preview full install with apps
+  dorothy install dracula --force    # Force reinstall Dracula theme
 EOF
 }
 
@@ -140,7 +143,8 @@ is_installed() {
       [ -d "$HOME/.oh-my-zsh" ]
       ;;
     dracula)
-      [ -d "$DIR_DRACULA" ]
+      # Check if either free or pro theme is installed
+      [ -f "$ZSH_CUSTOM/themes/dracula.zsh-theme" ] || [ -f "$ZSH_CUSTOM/themes/dracula-pro.zsh-theme" ]
       ;;
     dotfiles)
       [ -L "$HOME/.zshrc" ]
@@ -233,16 +237,32 @@ install_component() {
   local component=$1
   local dry_run=$2
   local install_apps=${3:-false}
+  local force_install=${4:-false}
 
   # Export environment variables for scripts
   if $dry_run; then
     export DRY_RUN=true
+  else
+    export DRY_RUN=false
+  fi
+
+  if $force_install; then
+    export FORCE_INSTALL=true
+  else
+    export FORCE_INSTALL=false
   fi
 
   if $INTERACTIVE; then
     export NON_INTERACTIVE=false
   else
     export NON_INTERACTIVE=true
+  fi
+
+  # Export force flag
+  if $force_install; then
+    export FORCE_INSTALL=true
+  else
+    export FORCE_INSTALL=false
   fi
 
   # Export INSTALL_APPS for scripts that need it
@@ -298,6 +318,7 @@ install_component() {
   unset DRY_RUN
   unset NON_INTERACTIVE
   unset INSTALL_APPS
+  unset FORCE_INSTALL
 }
 
 sync_dotfiles() {
@@ -345,6 +366,7 @@ sync_dotfiles() {
 cmd_install() {
   local components=()
   local install_apps=false
+  local force_install=false
 
   # Parse arguments
   while [[ $# -gt 0 ]]; do
@@ -359,6 +381,10 @@ cmd_install() {
         ;;
       --no-apps)
         install_apps=false
+        shift
+        ;;
+      -f|--force)
+        force_install=true
         shift
         ;;
       -*)
@@ -420,7 +446,7 @@ cmd_install() {
 
   # Install components
   for component in "${components[@]}"; do
-    install_component "$component" "$DRY_RUN" "$install_apps"
+    install_component "$component" "$DRY_RUN" "$install_apps" "$force_install"
   done
 
   if ! $DRY_RUN; then

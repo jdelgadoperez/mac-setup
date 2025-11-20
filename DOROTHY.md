@@ -18,10 +18,11 @@ Install components with flexible options:
 
 ```bash
 dorothy install                    # Full setup (prompts for confirmation)
-dorothy install --interactive      # Guided installation with prompts
+dorothy install --interactive      # Guided installation
 dorothy install --dry-run          # Preview without executing
 dorothy install brew zsh           # Install specific components
 dorothy install brew --apps        # Install brew + GUI applications
+dorothy install dracula --force    # Force reinstall Dracula theme
 dorothy install --help             # Show install help
 ```
 
@@ -36,8 +37,15 @@ dorothy install --help             # Show install help
 **Options:**
 - `-i, --interactive` - Interactive mode with prompts
 - `-d, --dry-run` - Preview changes without executing
+- `-f, --force` - Force reinstall even if already installed (useful for updates)
 - `--apps` - Include GUI applications (1Password, VS Code, etc.)
 - `--no-apps` - Skip GUI applications (default)
+
+**When to use --force:**
+- Update Dracula theme to latest version from a new zip file
+- Repair corrupted or modified theme files
+- Switch between Dracula theme variants
+- Re-apply installation after manual changes
 
 ### `dorothy update`
 
@@ -54,6 +62,8 @@ Updates:
 - Oh My Zsh
 - Custom Zsh files
 - Project dependencies (via `updatelibs` if available)
+
+**Note:** For theme updates, use `dorothy install dracula --force` after downloading a new Dracula Pro zip file.
 
 ### `dorothy list`
 
@@ -244,6 +254,54 @@ sh ./install-dorothy.sh
 - Run `dorothy doctor` to see what's detected
 - Some components may show as "not installed" if installed in non-standard locations
 - The detection logic is in the `is_installed()` function in `dorothy`
+
+**Dracula theme installation issues:**
+
+The Dracula installer supports both the free theme and Dracula Pro. Common issues:
+
+1. **Dracula Pro not installing - wrong filename:**
+   - The installer looks for: `dracula-pro.zip`, `Dracula PRO Archive.zip`, or `dracula_pro.zip`
+   - Download location must be: `~/Downloads/`
+   - If your file has a different name, rename it to one of the above
+
+2. **Checking if Dracula Pro is installed:**
+   ```bash
+   ls -la ~/.oh-my-zsh/custom/themes/ | grep dracula
+   # Should show dracula-pro.zsh-theme (Pro) or dracula.zsh-theme (free)
+   ```
+
+3. **Dracula Pro already extracted:**
+   - If `~/projects/dracula-pro/` exists with theme files, run `dorothy install dracula`
+   - The installer will detect the existing installation and offer to reinstall
+   - Theme file location: `~/projects/dracula-pro/themes/zsh/dracula-pro.zsh-theme`
+
+4. **Manual Dracula Pro installation:**
+   ```bash
+   # If you have the zip file but installer didn't work:
+   cd ~/Downloads
+   unzip "Dracula PRO Archive.zip" -d ~/projects/dracula-pro
+   cp ~/projects/dracula-pro/themes/zsh/dracula-pro.zsh-theme ~/.oh-my-zsh/custom/themes/
+   ```
+
+5. **Activating the theme:**
+   - Edit `~/.zshrc` and set: `ZSH_THEME="dracula-pro"` (or `"dracula"` for free)
+   - Run: `exec zsh` to reload
+
+6. **Confusing output during installation:**
+   - The installer now provides clearer messages about what's already installed
+   - In interactive mode, it will prompt before reinstalling existing themes
+   - In non-interactive mode, it skips Pro installation but reports if already installed
+
+7. **Forcing a reinstall or update:**
+   ```bash
+   # Force reinstall both free and Pro themes
+   dorothy install dracula --force
+   
+   # This will:
+   # - Reinstall free Dracula theme even if already present
+   # - Re-extract and reinstall Dracula Pro if zip file is available
+   # - Update themes to latest version from zip archive
+   ```
 
 ## Development
 
