@@ -40,13 +40,13 @@ ZSH_CUSTOM="$DIR_ROOT/.oh-my-zsh/custom"
 function createdirsafely() {
   DIR_NAME=$@
   if [ ! -d "$DIR_NAME" ]; then
-    echo -e "${BLUE}Create directory: ${GREEN}${DIR_NAME}${NC}"
+    printf "${BLUE}Create directory: ${GREEN}${DIR_NAME}${NC}\n"
     mkdir -p "$DIR_NAME"
   fi
 }
 
 function loginstall() {
-  echo -e "${BLUE}========================================================${NC}"
+  printf "${BLUE}========================================================${NC}\n"
   printf "${BLUE}Installing: ${GREEN}%s${NC}\n" "$@"
 }
 
@@ -67,21 +67,21 @@ function gitclonesafely() {
   DEST_PATH="$2"
 
   if [ -d "$DEST_PATH" ]; then
-    echo -e "${YELLOW}Directory already exists: ${DEST_PATH}${NC}"
-    echo -e "${BLUE}Checking if it's a valid git repository...${NC}"
+    printf "${YELLOW}Directory already exists: ${DEST_PATH}${NC}\n"
+    printf "${BLUE}Checking if it's a valid git repository...${NC}\n"
 
     if [ -d "$DEST_PATH/.git" ]; then
-      echo -e "${GREEN}Valid git repository found. Pulling latest changes...${NC}"
+      printf "${GREEN}Valid git repository found. Pulling latest changes...${NC}\n"
       cd "$DEST_PATH"
-      git pull origin HEAD 2>/dev/null || git pull 2>/dev/null || echo -e "${YELLOW}Could not pull updates${NC}"
+      git pull origin HEAD 2>/dev/null || git pull 2>/dev/null || printf "${YELLOW}Could not pull updates${NC}\n"
       cd - > /dev/null
     else
-      echo -e "${RED}Directory exists but is not a git repository. Removing and cloning fresh...${NC}"
+      printf "${RED}Directory exists but is not a git repository. Removing and cloning fresh...${NC}\n"
       rm -rf "$DEST_PATH"
       git clone "$REPO_URL" "$DEST_PATH"
     fi
   else
-    echo -e "${BLUE}Cloning ${GREEN}${REPO_URL}${BLUE} to ${GREEN}${DEST_PATH}${NC}"
+    printf "${BLUE}Cloning ${GREEN}${REPO_URL}${BLUE} to ${GREEN}${DEST_PATH}${NC}\n"
     git clone "$REPO_URL" "$DEST_PATH"
   fi
 }
