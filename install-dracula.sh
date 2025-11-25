@@ -7,6 +7,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/shared.sh"
 
 if [ "${DRY_RUN:-false}" = "true" ]; then
+  if command -v brew &> /dev/null; then
+    if brew tap | grep -q "^dracula/install$"; then
+      printf "${YELLOW}[DRY-RUN]${NC} Dracula tap already present\n"
+    else
+      printf "${YELLOW}[DRY-RUN]${NC} Would add dracula/install tap to Homebrew\n"
+    fi
+
+    if brew list --cask dracula-macos-color-picker &> /dev/null; then
+      printf "${YELLOW}[DRY-RUN]${NC} Dracula macOS Color Picker already installed\n"
+    else
+      printf "${YELLOW}[DRY-RUN]${NC} Would install dracula-macos-color-picker cask\n"
+    fi
+  else
+    printf "${YELLOW}[DRY-RUN]${NC} Homebrew not found, would skip tap and cask installation\n"
+  fi
+
   printf "${YELLOW}[DRY-RUN]${NC} Would create directories for Dracula themes\n"
   printf "${YELLOW}[DRY-RUN]${NC} Would clone 6 Dracula theme repositories\n"
 
@@ -24,6 +40,31 @@ if [ "${DRY_RUN:-false}" = "true" ]; then
     printf "${YELLOW}[DRY-RUN]${NC} Would check for Dracula Pro installation\n"
   fi
   exit 0
+fi
+
+# Check for Homebrew and add Dracula tap if present
+if command -v brew &> /dev/null; then
+  loginfo "Homebrew found, checking for Dracula tap"
+
+  # Check if dracula/install tap is already present
+  if brew tap | grep -q "^dracula/install$"; then
+    loginfo "Dracula tap already added"
+  else
+    loginstall "dracula homebrew tap"
+    brew tap dracula/install
+    logsuccess "Dracula tap added successfully"
+  fi
+
+  # Install Dracula macOS Color Picker via Homebrew cask
+  if brew list --cask dracula-macos-color-picker &> /dev/null; then
+    loginfo "Dracula macOS Color Picker already installed"
+  else
+    loginstall "dracula macOS color picker"
+    brew install --cask dracula-macos-color-picker
+    logsuccess "Dracula macOS Color Picker installed successfully"
+  fi
+else
+  loginfo "Homebrew not found, skipping tap and cask installation"
 fi
 
 createdirsafely "$DIR_PROJECTS"
