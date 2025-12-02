@@ -7,7 +7,7 @@
 alias cl="clear"
 alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
 alias restart="sudo shutdown -r now"
-alias speed="speedtest $@"
+alias speed="speedtest"
 
 ## Navigation
 PROJ_DIR="$HOME/projects"
@@ -26,7 +26,7 @@ alias gsft="grhs HEAD~1"
 alias sgbp="showgitbranch $PROJ_DIR"
 
 ## Development tools
-alias clearawscache="rm -rf $HOME/.aws/cli/cache"
+alias clearawscache="rm -rf $HOME/.aws/cli/cache && rm -rf $HOME/.aws/sso/cache"
 alias clearnodemodules="find . -type d -name node_modules -prune -exec rm -rf {} \;"
 alias formatchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\|css\)$' | xargs prettier --write --ignore-path .gitignore"
 alias lintfixchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\)$' | xargs -I{} sh -c 'NODE_OPTIONS=\"--max-old-space-size=8192\" eslint --fix \"{}\"'"
@@ -35,6 +35,7 @@ alias npmg="npm $@ -g --depth=0"
 alias pkgscripts="jq '.scripts' package.json"
 alias rmawsenv="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE"
 alias rmpipenv="rm -rf $HOME/.local/share/virtualenvs/$@"
+alias clearaws="clearawscache && rmawsenv"
 
 ## Open config files
 alias awsconfig="code ~/.aws"
@@ -50,3 +51,5 @@ alias quadconfig="cd $HOME/Library/Application\ Support/iTerm2/Scripts && code q
 alias sshconfig="code $HOME/.ssh/config"
 alias starconfig="code $HOME/.config/starship.toml"
 alias zshconfig="code $HOME/.zshrc"
+alias claudecodeconfig="code $HOME/.claude.json"
+alias claudeconfig="code $HOME/Library/Application Support/Claude/claude_desktop_config.json"

@@ -27,30 +27,6 @@ function listAlfredWorkflowIds() {
   done
 }
 
-function auggie() {
-  # Check if augment is installed
-  if ! command -v augment &> /dev/null; then
-    echo "Augment not found. Installing..."
-   npm install -g @augmentcode/auggie
-
-    # Confirm installation and show version
-    if command -v augment &> /dev/null; then
-      echo "Augment installed successfully!"
-      augment -v
-    else
-      echo "Failed to install augment"
-      return 1
-    fi
-  fi
-
-  # Run augment with provided arguments, or show help if no arguments
-  if [ $# -eq 0 ]; then
-    augment -h
-  else
-    augment "$@"
-  fi
-}
-
 function dadjoke() {
   curl -s -H "Accept: text/plain" https://icanhazdadjoke.com/
 }

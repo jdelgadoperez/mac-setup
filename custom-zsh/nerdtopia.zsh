@@ -6,7 +6,6 @@
 ######################################################################################
 alias cat=bat
 alias lsz="eza --icons=always --color=always --git"
-alias lsza="lsz -a"
 alias kubectl=kubecolor
 
 # Enable history navigation using the up and down keys
@@ -21,14 +20,9 @@ zstyle ':fzf-tab:*' switch-group '<' '>'
 
 # Enable auto-complete of aliases
 setopt complete_aliases
+
 # Enable comments
 setopt interactive_comments
-# Append to history file immediately
-setopt inc_append_history
-# Share history between all sessions
-setopt share_history
-# Disable immediate job notifications (prevents spam during long operations like brew upgrade)
-unsetopt notify
 
 # Tool Exports
 export BAT_THEME="Monokai Extended Bright"
@@ -41,7 +35,14 @@ export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
 export FZF_DEFAULT_OPTS='--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 --color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6 --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4'
 
 function batdiff() {
-  git diff --name-only --relative --diff-filter=d | xargs bat --diff
+  local diff_filter=${1:-d} # Default to "d" if no parameter is provided
+  git diff --name-only --relative --diff-filter="$diff_filter" | xargs bat --diff
+}
+
+function batdiffbranch() {
+  local branch1=${1:-main}
+  local branch2=${2:-HEAD} # Default to HEAD if only one branch is provided
+  git diff --name-only "$branch1...$branch2" | xargs bat --diff
 }
 
 # https://blog.mattclemente.com/2020/06/26/oh-my-zsh-slow-to-load/#how-to-test-your-shell-load-time
@@ -78,6 +79,6 @@ function profzsh() {
 ######################################################################################
 
 function chpwd() {
-  lsza
+  lsz -a
   echo ""
 }
