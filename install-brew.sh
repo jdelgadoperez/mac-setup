@@ -85,6 +85,8 @@ brew install starship thefuck xz zoxide jq yq
 brew install grep ripgrep gnupg openssl openssh
 brew install btop dust hacker1024/hacker1024/coretemp
 brew install screen gmp imagemagick webp navi
+brew install ncdu lazygit zsh-syntax-highlighting
+brew install teamookla/speedtest/speedtest
 
 # Tools
 loginstall "infra tools"
@@ -92,12 +94,15 @@ brew install docker docker-compose
 brew install awscli localstack
 brew install warrensbox/tap/tfswitch terraform terraform-docs tflint terraformer
 brew install kubectl kubectx kustomize derailed/k9s/k9s k3d
+brew install redis temporal
 
 loginstall "dev tools"
 brew install gh git-lfs git-delta
 brew install readline wget zlib zx
 brew install sqlite3 mailpit neovim
 brew install dotenvx/brew/dotenvx
+brew install --formula tlrc
+brew install golangci-lint
 
 # Ensure terminal font is installed
 if ! fc-list | grep -qi "Fira Code Nerd Font"; then
@@ -139,7 +144,6 @@ if [ "$INSTALL_APPS" = "true" ]; then
   brew install --cask visual-studio-code
   brew install --cask zed
   brew install --cask zoom
-  brew tap teamookla/speedtest
 fi
 
 # 1Password cli
