@@ -32,6 +32,13 @@ function delete_writable_recursive() {
   ' bash {} +
 }
 
+function cleandocker() {
+  echo -e "${GREEN}Pruning docker...${NC}"
+  docker image prune -f
+  docker container prune -f
+  docker volume prune -f
+}
+
 function cleansys() {
   echo -e "${GREEN}Starting system cleanup...${NC}"
   delete_writable_recursive ~/Library/Caches
@@ -41,10 +48,7 @@ function cleansys() {
   delete_writable_recursive ~/.Trash
   # echo -e "${GREEN}Emptying volume trash...${NC}"
   # sudo rm -rf /Volumes/*/.Trashes
-  echo -e "${GREEN}Clearing docker data...${NC}"
-  docker image prune -f
-  docker container prune -f
-  docker volume prune -f
+  cleandocker
   echo -e "${GREEN}System cleaned${NC}"
 }
 
