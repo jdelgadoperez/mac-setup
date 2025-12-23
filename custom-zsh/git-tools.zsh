@@ -68,16 +68,18 @@ function clone_org_repos() {
 }
 
 function showgitbranch() {
-  DIR_NAME="$1"
+  local input_dir="${1:-.}"
   LIB_TYPE="$2"
   starting_path=$(pwd)
   local original_chpwd=$(declare -f chpwd)
   unset -f chpwd
 
-  if [ ! -d "$DIR_NAME" ]; then
-    echo "${RED}Directory not found: ${DIR_NAME}${NC}"
+  if [ ! -d "$input_dir" ]; then
+    echo "${RED}Directory not found: ${input_dir}${NC}"
     return 1
   fi
+
+  DIR_NAME="$(cd "$input_dir" 2>/dev/null && pwd)"
 
   echo "${BLUE}Checking git branches in ${CYAN}${DIR_NAME}${NC}"
   cd "$DIR_NAME" 2>/dev/null || return 1
