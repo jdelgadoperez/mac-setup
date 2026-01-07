@@ -84,6 +84,8 @@ function getmactype() {
 
 function mysqlrm() {
   OLD_VERSION=$1
+  local BREW_PREFIX=$(brew --prefix)
+
   # Remove current mysql
   brew services stop $OLD_VERSION
   sleep 10
@@ -95,20 +97,20 @@ function mysqlrm() {
   brew doctor
 
   # Remove remaining config
-  sudo rm -f /opt/homebrew/etc/my.cnf
-  sudo rm -rf /opt/homebrew/etc/my.cnf.d
-  sudo rm -rf /opt/homebrew/var/mysql
-  sudo rm -rf /opt/homebrew/var/log/mysql*
-  sudo rm -rf /opt/homebrew/var/mysql*
-  sudo rm -rf /opt/homebrew/Cellar/mysql
-  sudo rm -rf /opt/homebrew/Cellar/mysql-client
-  sudo rm -rf /opt/homebrew/opt/mysql
+  sudo rm -f $BREW_PREFIX/etc/my.cnf
+  sudo rm -rf $BREW_PREFIX/etc/my.cnf.d
+  sudo rm -rf $BREW_PREFIX/var/mysql
+  sudo rm -rf $BREW_PREFIX/var/log/mysql*
+  sudo rm -rf $BREW_PREFIX/var/mysql*
+  sudo rm -rf $BREW_PREFIX/Cellar/mysql
+  sudo rm -rf $BREW_PREFIX/Cellar/mysql-client
+  sudo rm -rf $BREW_PREFIX/opt/mysql
   sudo rm -f ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
   sudo rm -f /Library/Launch{Agents,Daemons}/*mysql*
   sudo rm -f /private/etc/mysql*
 
   # remove any simlinks that point to old mysql
-  cd /opt/homebrew/opt
+  cd $BREW_PREFIX/opt
   ls -latr mysql*
   cd -
 }

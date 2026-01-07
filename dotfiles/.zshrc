@@ -70,7 +70,9 @@ fi
 # Java - lazy loaded
 function loadJava() {
   export JAVA_HOME=$(/usr/libexec/java_home)
-  export PATH="/usr/local/opt/openjdk/bin:$PATH"
+  if command -v brew &>/dev/null; then
+    export PATH="$(brew --prefix openjdk)/bin:$PATH"
+  fi
   export PATH="$HOME/.jenv/bin:$PATH"
   eval "$(jenv init -)"
 }
@@ -116,8 +118,10 @@ export PATH="$HOME/.terraform.versions:$PATH"
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 export no_proxy="*"
 
-# MySQL
-export PATH="/opt/homebrew/opt/mysql@8.4/bin:$PATH"
+# MySQL - architecture-aware
+if command -v brew &>/dev/null; then
+  export PATH="$(brew --prefix mysql@8.4)/bin:$PATH"
+fi
 
 # Personal bin
 export PATH="$HOME/bin:$PATH"
