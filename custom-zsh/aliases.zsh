@@ -39,8 +39,8 @@ alias clearaws="clearawscache && rmawsenv"
 
 ## Open config files
 alias awsconfig="code ~/.aws"
-alias brewconfig="code /opt/homebrew/etc/my.cnf"
-alias dbconfig="code /opt/homebrew/etc/my.cnf"
+alias brewconfig="code \$(brew --prefix)/etc/my.cnf"
+alias dbconfig="code \$(brew --prefix)/etc/my.cnf"
 alias dockerconfig="code $HOME/.docker/config.json"
 alias gitconfig="code $HOME/.gitconfig"
 alias hosts="code /etc/hosts"

@@ -96,6 +96,7 @@ function updategitdirectory() {
   echo "${BLUE}==============================================================================${NC}"
   gotopathsafely $DIR_NAME
   echo ""
+
   local dirs=()
   for dir in */; do
     if [ -d "$dir" ]; then
@@ -103,68 +104,230 @@ function updategitdirectory() {
     fi
   done
 
+  local total=${#dirs[@]}
+  local current=0
+  local success_count=0
+  local skip_count=0
+  local fail_count=0
+
   for dir in "${dirs[@]}"; do
+    ((current++))
     echo "${BLUE}==============================================================================${NC}"
-    echo "${BLUE}Update ${LIB_TYPE}: ${CYAN}${dir}${NC}"
+    echo "${BLUE}[$current/$total] Update ${LIB_TYPE}: ${CYAN}${dir}${NC}"
     echo "${BLUE}==============================================================================${NC}"
     gotopathsafely $DIR_NAME/$dir
+
     if git rev-parse --is-inside-work-tree &>/dev/null; then
       echo ""
       echo "${BOLD_MAGENTA}Git branch: ${BOLD_GREEN}$(gbc)${NC}"
       echo ""
-      gpra
-      echo ""
-      PKG_TYPE=$(getlocktype)
 
-      if [[ -n "$CLEAN_LIBS" ]]; then
-        if [[ "$PKG_TYPE" == "none" ]]; then
-          echo "${GREEN}No lock file found. Skipping clean operation.${NC}"
+      # Git pull with timeout (30 seconds)
+      # Use SIGINT for gentler interruption
+      echo "${BLUE}⏳ Pulling latest changes...${NC}"
+      local TIMEOUT_CMD="timeout"
+      if command -v gtimeout &>/dev/null; then
+        TIMEOUT_CMD="gtimeout"
+      fi
+
+      if $TIMEOUT_CMD --signal=INT 30 git pull --rebase --autostash 2>&1; then
+        echo "${GREEN}✅ Git pull successful${NC}"
+
+        PKG_TYPE=$(getlocktype)
+
+        if [[ -n "$CLEAN_LIBS" ]]; then
+          if [[ "$PKG_TYPE" == "none" ]]; then
+            echo "${GREEN}No lock file found. Skipping clean operation.${NC}"
+          else
+            echo "${BLUE}⏳ Cleaning and rebuilding packages...${NC}"
+            if cleanpkgs "$PKG_TYPE" 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  Package clean failed, continuing...${NC}"
+              ((fail_count++))
+            fi
+          fi
         else
-          cleanpkgs "$PKG_TYPE"
+          if [[ "$PKG_TYPE" == "yarn" ]]; then
+            echo "${BLUE}⏳ Installing with yarn...${NC}"
+            if yii 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  Yarn install failed, continuing...${NC}"
+              ((fail_count++))
+            fi
+          elif [[ "$PKG_TYPE" == "pnpm" ]]; then
+            echo "${BLUE}⏳ Installing with pnpm...${NC}"
+            if pnpm install --frozen-lockfile 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  pnpm install failed, continuing...${NC}"
+              ((fail_count++))
+            fi
+          elif [[ "$PKG_TYPE" == "npm" ]]; then
+            echo "${BLUE}⏳ Installing with npm...${NC}"
+            if npm i --no-package-lock 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  npm install failed, continuing...${NC}"
+              ((fail_count++))
+            fi
+          else
+            echo "${GREEN}No lock file found. Skipping install.${NC}"
+            ((success_count++))
+          fi
         fi
       else
-        if [[ "$PKG_TYPE" == "yarn" ]]; then
-          yii
-        elif [[ "$PKG_TYPE" == "pnpm" ]]; then
-          pnpm install --frozen-lockfile
-        elif [[ "$PKG_TYPE" == "npm" ]]; then
-          npm i --no-package-lock
+        local exit_code=$?
+        if [[ $exit_code -eq 124 ]]; then
+          echo "${YELLOW}⚠️  Git pull timed out (30s) - skipping ${dir}${NC}"
         else
-          echo "${GREEN}No lock file found. Skipping install.${NC}"
+          echo "${YELLOW}⚠️  Git pull failed - skipping ${dir}${NC}"
         fi
+        ((fail_count++))
       fi
     else
-      echo "${GREEN}Not a repo so nothing to pull.${NC}"
+      echo "${CYAN}Not a git repository - skipping${NC}"
+      ((skip_count++))
     fi
     echo ""
   done
+
+  # Summary
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BOLD}Summary for ${LIB_TYPE}s:${NC}"
+  echo "  ${GREEN}✅ Successful: $success_count${NC}"
+  if [[ $skip_count -gt 0 ]]; then
+    echo "  ${CYAN}⏭  Skipped: $skip_count${NC}"
+  fi
+  if [[ $fail_count -gt 0 ]]; then
+    echo "  ${YELLOW}⚠️  Failed: $fail_count${NC}"
+  fi
+  echo "${BLUE}==============================================================================${NC}"
+  echo ""
 }
 
 function updatelibs() {
   CLEAN_LIBS="$1"
+  local start_time=$(date +%s)
+
+  # Detect timeout command (prefer gtimeout from coreutils)
+  local TIMEOUT_CMD="timeout"
+  if command -v gtimeout &>/dev/null; then
+    TIMEOUT_CMD="gtimeout"
+  elif ! command -v timeout &>/dev/null; then
+    echo "${YELLOW}⚠️  Warning: timeout command not found. Operations may hang.${NC}"
+    echo "${YELLOW}   Install with: brew install coreutils${NC}"
+    TIMEOUT_CMD=""
+  fi
+
   echo ""
-  echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}Install latest ${CYAN}node${NC}"
-  echo "${BLUE}==============================================================================${NC}"
-  fnm use lts-latest --corepack-enabled --install-if-missing
-  echo "now on ${CYAN}$(fnm current)${NC}"
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo "${BOLD}${BLUE}🔄 Update All Libraries & Tools${NC}"
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
   echo ""
+
+  # Node.js
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}Update ${CYAN}npm${NC}"
+  echo "${BLUE}[1/6] Install latest ${CYAN}node${NC}"
   echo "${BLUE}==============================================================================${NC}"
-  npm update -g
+  if fnm use lts-latest --corepack-enabled --install-if-missing 2>&1; then
+    echo "${GREEN}✅ Now on Node $(fnm current)${NC}"
+  else
+    echo "${YELLOW}⚠️  Failed to update Node.js${NC}"
+  fi
   echo ""
+
+  # npm
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[2/6] Update ${CYAN}npm${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  if npm update -g 2>&1; then
+    echo "${GREEN}✅ npm updated${NC}"
+  else
+    echo "${YELLOW}⚠️  Failed to update npm${NC}"
+  fi
+  echo ""
+
+  # Oh My Zsh plugins
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[3/6] Update ${CYAN}Oh My Zsh plugins${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $ZSH_CUSTOM/plugins "plugin" "$CLEAN_LIBS"
-  echo ""
+
+  # Project repositories
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[4/6] Update ${CYAN}project repositories${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects "lib" "$CLEAN_LIBS"
-  echo ""
+
+  # Dracula themes
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[5/6] Update ${CYAN}Dracula themes${NC}"
+  echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects/dracula "theme" "$CLEAN_LIBS"
-  echo ""
+
   gohome
+
+  # Homebrew
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[6/6] Update & upgrade ${CYAN}Homebrew${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+
+  if [[ -n "$TIMEOUT_CMD" ]]; then
+    echo "${BLUE}⏳ Updating Homebrew (timeout: 5 minutes)...${NC}"
+    # Use SIGINT for gentler interruption that Homebrew handles better
+    if $TIMEOUT_CMD --signal=INT 300 brew update; then
+      echo "${GREEN}✅ Homebrew updated${NC}"
+      echo ""
+      echo "${BLUE}⏳ Upgrading Homebrew packages (timeout: 20 minutes)...${NC}"
+
+      if $TIMEOUT_CMD --signal=INT 1200 brew upgrade; then
+        echo "${GREEN}✅ Homebrew packages upgraded${NC}"
+      else
+        local exit_code=$?
+        if [[ $exit_code -eq 124 ]]; then
+          echo "${YELLOW}⚠️  Homebrew upgrade timed out after 20 minutes${NC}"
+        else
+          echo "${YELLOW}⚠️  Some Homebrew packages failed to upgrade${NC}"
+        fi
+      fi
+    else
+      local exit_code=$?
+      if [[ $exit_code -eq 124 ]]; then
+        echo "${YELLOW}⚠️  Homebrew update timed out after 5 minutes${NC}"
+      else
+        echo "${YELLOW}⚠️  Homebrew update failed${NC}"
+      fi
+    fi
+  else
+    # No timeout available - run without it
+    echo "${BLUE}⏳ Updating Homebrew (no timeout)...${NC}"
+    if brew update; then
+      echo "${GREEN}✅ Homebrew updated${NC}"
+      echo ""
+      echo "${BLUE}⏳ Upgrading Homebrew packages...${NC}"
+      if brew upgrade; then
+        echo "${GREEN}✅ Homebrew packages upgraded${NC}"
+      else
+        echo "${YELLOW}⚠️  Some Homebrew packages failed to upgrade${NC}"
+      fi
+    else
+      echo "${YELLOW}⚠️  Homebrew update failed${NC}"
+    fi
+  fi
   echo ""
-  echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}Update & upgrade: ${CYAN}homebrew${NC}"
-  echo "${BLUE}==============================================================================${NC}"
-  brew update
-  brew upgrade
+
+  # Overall summary
+  local end_time=$(date +%s)
+  local duration=$((end_time - start_time))
+  local minutes=$((duration / 60))
+  local seconds=$((duration % 60))
+
+  echo ""
+  echo "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo "${BOLD}${GREEN}✅ Update Complete!${NC}"
+  echo "${GREEN}   Total time: ${CYAN}${minutes}m ${seconds}s${NC}"
+  echo "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo ""
 }
