@@ -8,11 +8,13 @@ I prefer code that is named with clarity and doesn't use abbreviations.
 I prefer not to add unnecessary dependencies and always prefer to use existing dependencies or custom functions where reasonable.
 I prefer to always have strong typing.
 I prefer to not hard code values in expect statements while writing tests.
-I prefer to use javascript date objects over Moment. Prefer using date-fns, if availble.
+I prefer to use javascript date objects over Moment. Prefer using date-fns, if available.
 I prefer you give me an outline of your approach and changes before you make them.
 I prefer not to add unnecessary comments. Comments should only be added to clarify something that isn't obvious and add context, not restate what the code is already clearly doing.
 Whenever being asked about a code library, please use Context7.
 Avoid type assertions as much as possible, with the exception of writing tests. NEVER use the ! assertion. I HATE THAT.
+Prefer smaller, themed commits over large grouped commits.
+[Important] DO NOT add the Claude co-authored footer to commits or PR descriptions.
 
 # Node versions
 I do not use `nvm`. All repos use `fnm` instead: https://github.com/Schniz/fnm.
