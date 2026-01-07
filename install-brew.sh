@@ -87,6 +87,7 @@ brew install btop dust hacker1024/hacker1024/coretemp
 brew install screen gmp imagemagick webp navi
 brew install ncdu lazygit zsh-syntax-highlighting
 brew install teamookla/speedtest/speedtest
+brew install act poppler
 
 # Tools
 loginstall "infra tools"

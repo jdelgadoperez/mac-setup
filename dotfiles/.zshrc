@@ -18,7 +18,7 @@ fi
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
 plugins=()
-plugins=(1password git dotenv fnm pyenv pipenv terraform you-should-use z zsh-lazyload)
+plugins=(1password git dotenv fnm pyenv pipenv terraform yarn you-should-use z zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
