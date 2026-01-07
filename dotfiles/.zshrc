@@ -30,9 +30,6 @@ source $ZSH/oh-my-zsh.sh
 # Set up fzf key bindings and fuzzy completion
 source <(fzf --zsh)
 
-# Enable zoxide, override `cd`
-eval "$(zoxide init zsh --cmd cd)"
-
 # Starship
 eval "$(starship init zsh)"
 
@@ -125,6 +122,12 @@ fi
 
 # Personal bin
 export PATH="$HOME/bin:$PATH"
+
+# Enable zoxide, override `cd`
+# Disable zoxide doctor warning (Rancher Desktop auto-adds lines after this)
+export _ZO_DOCTOR=0
+eval "$(zoxide init zsh --cmd cd)"
+
 
 if [[ "$ZPROF" = true ]]; then
   zprof
