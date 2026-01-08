@@ -6,11 +6,11 @@ fi
 export ZSH="$HOME/.oh-my-zsh"
 
 # Source custom files
-if [ -f "$ZSH/custom/styles.zsh" ]; then
-  source "$ZSH/custom/styles.zsh"
-fi
 if [ -f "$ZSH/custom/.env" ]; then
   source "$ZSH/custom/.env"
+fi
+if [ -f "$ZSH/custom/styles.zsh" ]; then
+  source "$ZSH/custom/styles.zsh"
 fi
 
 ####################
