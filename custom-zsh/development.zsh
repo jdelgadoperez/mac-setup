@@ -33,28 +33,34 @@ function ensuredocker() {
   fi
 }
 
-function getlocktype() {
+function getpkgtype() {
+  # Node.js
   if [ -f "yarn.lock" ]; then
     echo "yarn"
   elif [ -f "pnpm-lock.yaml" ]; then
     echo "pnpm"
   elif [ -f "package-lock.json" ]; then
     echo "npm"
+  # Python
+  elif [ -f "poetry.lock" ]; then
+    echo "poetry"
+  elif [ -f "uv.lock" ]; then
+    echo "uv"
+  elif [ -f "Pipfile.lock" ]; then
+    echo "pipenv"
+  elif [ -f "requirements.txt" ]; then
+    echo "pip"
   else
     echo "none"
   fi
 }
 
 function cleanpkgs() {
-  echo -e "${GREEN}Clearing node modules...${NC}"
-  clearnodemodules
-  echo -e "${GREEN}Node modules cleared${NC}"
-  echo ""
   pkgman=$1
   buildCmd="build"
 
   if [ "$pkgman" = '' ]; then
-    PKG_TYPE=$(getlocktype)
+    PKG_TYPE=$(getpkgtype)
     if [ "$PKG_TYPE" = 'none' ]; then
       pkgman="yarn"
     else;
@@ -62,24 +68,74 @@ function cleanpkgs() {
     fi
   fi
 
+  # Node.js package managers
   if [ "$pkgman" = 'yarn' ]; then
+    echo -e "${GREEN}Clearing node modules...${NC}"
+    clearnodemodules
+    echo -e "${GREEN}Node modules cleared${NC}"
+    echo ""
     ycc
     yin
   fi
 
   if [ "$pkgman" = 'npm' ]; then
+    echo -e "${GREEN}Clearing node modules...${NC}"
+    clearnodemodules
+    echo -e "${GREEN}Node modules cleared${NC}"
     echo ""
     npm install
     buildCmd="run build"
   fi
 
   if [ "$pkgman" = 'pnpm' ]; then
+    echo -e "${GREEN}Clearing node modules...${NC}"
+    clearnodemodules
+    echo -e "${GREEN}Node modules cleared${NC}"
     rm pnpm-lock.yaml
     buildCmd="build:all"
     echo ""
     pnpm install
   fi
 
+  # Python package managers
+  if [ "$pkgman" = 'poetry' ]; then
+    echo -e "${GREEN}Clearing Python venv...${NC}"
+    rm -rf .venv
+    echo -e "${GREEN}Python venv cleared${NC}"
+    echo ""
+    poetry install --no-interaction
+    return
+  fi
+
+  if [ "$pkgman" = 'uv' ]; then
+    echo -e "${GREEN}Clearing Python venv...${NC}"
+    rm -rf .venv
+    echo -e "${GREEN}Python venv cleared${NC}"
+    echo ""
+    uv sync
+    return
+  fi
+
+  if [ "$pkgman" = 'pipenv' ]; then
+    echo -e "${GREEN}Clearing Pipenv environment...${NC}"
+    pipenv --rm 2>/dev/null || true
+    echo -e "${GREEN}Pipenv environment cleared${NC}"
+    echo ""
+    pipenv install
+    return
+  fi
+
+  if [ "$pkgman" = 'pip' ]; then
+    echo -e "${GREEN}Clearing Python venv...${NC}"
+    rm -rf .venv venv
+    echo -e "${GREEN}Python venv cleared${NC}"
+    echo ""
+    python3 -m venv .venv
+    .venv/bin/pip install -r requirements.txt
+    return
+  fi
+
+  # Node.js build step (only for Node projects)
   if pkgscripts | jq -e --arg script "$buildCmd" 'has($script)' >/dev/null; then
     echo ""
     "$pkgman" "$buildCmd"
@@ -133,7 +189,7 @@ function updategitdirectory() {
       if $TIMEOUT_CMD --signal=INT 30 git pull --rebase --autostash 2>&1; then
         echo "${GREEN}✅ Git pull successful${NC}"
 
-        PKG_TYPE=$(getlocktype)
+        PKG_TYPE=$(getpkgtype)
 
         if [[ -n "$CLEAN_LIBS" ]]; then
           if [[ "$PKG_TYPE" == "none" ]]; then
@@ -172,8 +228,40 @@ function updategitdirectory() {
               echo "${YELLOW}⚠️  npm install failed, continuing...${NC}"
               ((fail_count++))
             fi
+          elif [[ "$PKG_TYPE" == "poetry" ]]; then
+            echo "${BLUE}⏳ Installing with poetry...${NC}"
+            if poetry install --no-interaction 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  Poetry install failed, continuing...${NC}"
+              ((fail_count++))
+            fi
+          elif [[ "$PKG_TYPE" == "uv" ]]; then
+            echo "${BLUE}⏳ Installing with uv...${NC}"
+            if uv sync 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  uv sync failed, continuing...${NC}"
+              ((fail_count++))
+            fi
+          elif [[ "$PKG_TYPE" == "pipenv" ]]; then
+            echo "${BLUE}⏳ Installing with pipenv...${NC}"
+            if pipenv install 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  Pipenv install failed, continuing...${NC}"
+              ((fail_count++))
+            fi
+          elif [[ "$PKG_TYPE" == "pip" ]]; then
+            echo "${BLUE}⏳ Installing with pip...${NC}"
+            if pip install -r requirements.txt 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  pip install failed, continuing...${NC}"
+              ((fail_count++))
+            fi
           else
-            echo "${GREEN}No lock file found. Skipping install.${NC}"
+            echo "${GREEN}No package file found. Skipping install.${NC}"
             ((success_count++))
           fi
         fi
