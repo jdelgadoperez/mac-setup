@@ -2,26 +2,28 @@
   "mcpServers": {
     "context7": {
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "disabled": false
     },
     "sequential-thinking": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "disabled": false
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Desktop", "~/Documents", "~/projects"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Desktop", "~/Documents", "~/projects"],
+      "disabled": false
     },
-    "memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "env": {
-        "MEMORY_FILE_PATH": "~/.config/memory.json"
-      }
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp",
+      "disabled": false
     },
     "playwright": {
       "command": "npx",
-      "args": ["@playwright/mcp@latest"]
+      "args": ["@playwright/mcp@latest"],
+      "disabled": true
     }
   }
 }
