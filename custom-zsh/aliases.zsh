@@ -36,6 +36,7 @@ alias pkgscripts="jq '.scripts' package.json"
 alias rmawsenv="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE"
 alias rmpipenv="rm -rf $HOME/.local/share/virtualenvs/$@"
 alias clearaws="clearawscache && rmawsenv"
+alias laws='aws --endpoint-url=http://localhost:4566'
 
 ## Open config files
 alias awsconfig="code ~/.aws"
