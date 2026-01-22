@@ -4,7 +4,6 @@
 ### https://www.daveyshafik.com/archives/70863-finding-terminal-utopia.html
 ### https://gist.github.com/dshafik/67fe3e0ba5096a00c91cccb0792a884b#file-zshrc
 ######################################################################################
-alias cat=bat
 alias lsz="eza --icons=always --color=always --git"
 alias kubectl=kubecolor
 

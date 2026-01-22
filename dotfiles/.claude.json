@@ -52,13 +52,6 @@
     "filesystem": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Desktop", "~/Documents", "~/projects"]
-    },
-    "memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "env": {
-        "MEMORY_FILE_PATH": "~/.mcp/memory.json"
-      }
     }
   },
   "firstStartTime": "",
