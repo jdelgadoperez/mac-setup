@@ -38,7 +38,6 @@ ssh_symbol = " "
 format = "[$user]($style) on "
 style_user = "bold cyan"
 
-
 [aws]
 symbol = " aws "
 style = "bold orange"

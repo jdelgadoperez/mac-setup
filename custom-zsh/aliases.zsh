@@ -26,6 +26,8 @@ alias gsft="grhs HEAD~1"
 alias sgbp="showgitbranch $PROJ_DIR"
 
 ## Development tools
+alias dorothy="$PROJ_DIR/mac-setup/dorothy"
+alias substacker="cd $PROJ_DIR/substacker && uv run python substack_reads.py"
 alias clearawscache="rm -rf $HOME/.aws/cli/cache && rm -rf $HOME/.aws/sso/cache"
 alias clearnodemodules="find . -type d -name node_modules -prune -exec rm -rf {} \;"
 alias formatchanges="gd --name-only --diff-filter=ACMRT main...HEAD | grep '\.\(js\|ts\|css\)$' | xargs prettier --write --ignore-path .gitignore"
