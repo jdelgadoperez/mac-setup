@@ -3,6 +3,8 @@ if [[ "$ZPROF" = true ]]; then
 fi
 
 # Path to your oh-my-zsh installation.
+# Unset first to prevent conflicts with inherited ZSH variable during `exec zsh`
+unset ZSH
 export ZSH="$HOME/.oh-my-zsh"
 
 # Source custom files
@@ -121,6 +123,7 @@ if command -v brew &>/dev/null; then
 fi
 
 # Personal bin
+export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/bin:$PATH"
 
 # Enable zoxide, override `cd`
