@@ -1,71 +1,30 @@
 #!/bin/bash
 
-# Read JSON input from stdin
-input=$(cat)
+# Dracula Color Palette (matching Starship config)
+# Using standard Dracula colors from your starship.toml
 
-# Get username and hostname
-USER=$(whoami)
-HOSTNAME=$(hostname -s)
-
-# Get current time in 12-hour format
-CURRENT_TIME=$(date +"%I:%M %p")
-
-# Extract values using jq
-CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir')
-CONTEXT_REMAINING=$(echo "$input" | jq -r '.context_window.remaining_percentage // empty')
-LINES_ADDED=$(echo "$input" | jq -r '.cost.total_lines_added // 0')
-LINES_REMOVED=$(echo "$input" | jq -r '.cost.total_lines_removed // 0')
-COST_LINES=$((LINES_ADDED + LINES_REMOVED))
-COST_USD=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
-DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
-DURATION=$(awk "BEGIN {printf \"%.0f\", $DURATION_MS/1000}")
-MODEL_NAME=$(echo "$input" | jq -r '.model.display_name')
-PROJECT_DIR=$(echo "$input" | jq -r '.workspace.project_dir')
-SESSION_ID=$(echo "$input" | jq -r '.session_id // "unknown"')
-VERSION=$(echo "$input" | jq -r '.version // "unknown"')
-DIR_NAME=$(basename "$CURRENT_DIR")
-
-# Get directory (abbreviate home directory)
-DIR_PATH="${CURRENT_DIR/#$HOME/~}"
-
-# Dracula Pro Color Palette (more muted than standard Dracula)
-PADDING="-36"
-# Background: #22212c (34, 33, 44)
-BG='\033[48;2;34;33;44m'
-# Current Line: #44475a (68, 71, 90)
-CURRENT_LINE='\033[48;2;68;71;90m'
 # Foreground: #f8f8f2 (248, 248, 242)
 FG='\033[38;2;248;248;242m'
-# Comment: #7970a9 (121, 112, 169)
-COMMENT='\033[38;2;121;112;169m'
-# Cyan: #80ffea (128, 255, 234)
-CYAN='\033[38;2;128;255;234m'
-# Green: #8aff80 (138, 255, 128)
-GREEN='\033[38;2;138;255;128m'
-# Orange: #ffca80 (255, 202, 128)
-ORANGE='\033[38;2;255;202;128m'
-# Pink: #ff80bf (255, 128, 191)
-PINK='\033[38;2;255;128;191m'
-# Purple: #9580ff (149, 128, 255)
-PURPLE='\033[38;2;149;128;255m'
-# Red: #ff9580 (255, 149, 128)
-RED='\033[38;2;255;149;128m'
-# Yellow: #ffff80 (255, 255, 128)
-YELLOW='\033[38;2;255;255;128m'
+# Comment: #6272a4 (98, 114, 164)
+COMMENT='\033[38;2;98;114;164m'
+# Cyan: #8be9fd (139, 233, 253)
+CYAN='\033[38;2;139;233;253m'
+# Green: #50fa7b (80, 250, 123)
+GREEN='\033[38;2;80;250;123m'
+# Orange: #ffb86c (255, 184, 108)
+ORANGE='\033[38;2;255;184;108m'
+# Pink: #ff79c6 (255, 121, 198)
+PINK='\033[38;2;255;121;198m'
+# Purple: #bd93f9 (189, 147, 249)
+PURPLE='\033[38;2;189;147;249m'
+# Red: #ff5555 (255, 85, 85)
+RED='\033[38;2;255;85;85m'
+# Yellow: #f1fa8c (241, 250, 140)
+YELLOW='\033[38;2;241;250;140m'
+# Bold
+BOLD='\033[1m'
 # Reset
 RESET='\033[0m'
-
-GIT_BRANCH=""
-GIT_STATUS=""
-if git -C "$CURRENT_DIR" rev-parse --git-dir > /dev/null 2>&1; then
-    GIT_BRANCH=$(git -C "$CURRENT_DIR" -c core.useBuiltinFSMonitor=false branch --show-current 2>/dev/null)
-    if [ -n "$GIT_BRANCH" ]; then
-        # Check for uncommitted changes
-        if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-            GIT_STATUS="*"
-        fi
-    fi
-fi
 
 # Dad joke caching with 5-minute TTL
 get_dad_joke() {
@@ -101,22 +60,90 @@ get_dad_joke() {
     echo "$joke"
 }
 
-# Context window indicator (if available)
-CONTEXT_INFO=""
-if [ -n "$CONTEXT_REMAINING" ]; then
-    CONTEXT_INFO=$(printf "📉 ${ORANGE}${CONTEXT_REMAINING}%% ")
-fi
+# Read JSON input from stdin
+input=$(cat)
 
-$GIT_INFO=""
-if [ -n "$GIT_BRANCH" ]; then
-    GIT_INFO=$(printf "${PINK}󰳏 $GIT_BRANCH $GIT_STATUS ")
-fi
-
-COST_ROUNDED=$(awk "BEGIN {printf \"%.2f\", $COST_USD}")
-DURATION_MIN=$(awk "BEGIN {printf \"%.1f\", $DURATION/60}")
+# Extract values using jq
+CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir')
+MODEL_NAME=$(echo "$input" | jq -r '.model.display_name')
+CONTEXT_REMAINING=$(echo "$input" | jq -r '.context_window.remaining_percentage // empty')
+TOTAL_INPUT_TOKENS=$(echo "$input" | jq -r '.context_window.total_input_tokens // 0')
+TOTAL_OUTPUT_TOKENS=$(echo "$input" | jq -r '.context_window.total_output_tokens // 0')
+TOTAL_DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 DAD_JOKE=$(get_dad_joke)
 
-# Build status line: username on hostname in directory [git] [time] [context]
-printf "🕐 ${FG}${CURRENT_TIME} ${CONTEXT_INFO}${RESET}"
-echo -e "🤖 ${PURPLE}[$MODEL_NAME] 📁 ${GREEN}$DIR_NAME ${CONTEXT_INFO}💰 ${YELLOW}\$${COST_ROUNDED} 📝 ${ORANGE}\$${COST_LINES}L ${CYAN}🕐 ${DURATION_MIN}m ${GIT_INFO}${RESET}"
-printf "\n\n${COMMENT}🔥 ${DAD_JOKE}${RESET}"
+# Format duration from milliseconds to human readable
+format_duration() {
+    local ms=$1
+    local total_seconds=$((ms / 1000))
+    local hours=$((total_seconds / 3600))
+    local minutes=$(((total_seconds % 3600) / 60))
+
+    if [ "$hours" -gt 0 ]; then
+        echo "${hours}h ${minutes}m"
+    elif [ "$minutes" -gt 0 ]; then
+        echo "${minutes}m"
+    else
+        echo "<1m"
+    fi
+}
+
+SESSION_DURATION=$(format_duration "$TOTAL_DURATION_MS")
+
+# Get current directory basename (matching Starship \W)
+DIR_NAME=$(basename "$CURRENT_DIR")
+
+# Get current time in 12-hour format with short date
+CURRENT_TIME=$(date +"%b %d %I:%M%p")
+
+# Git information with Starship symbol
+GIT_BRANCH=""
+GIT_STATUS=""
+if git -C "$CURRENT_DIR" rev-parse --git-dir > /dev/null 2>&1; then
+    GIT_BRANCH=$(git -C "$CURRENT_DIR" -c core.useBuiltinFSMonitor=false branch --show-current 2>/dev/null)
+    if [ -n "$GIT_BRANCH" ]; then
+        # Check for various git states (matching Starship git_status)
+        GIT_STATUS_OUTPUT=$(git -C "$CURRENT_DIR" status --porcelain 2>/dev/null)
+        if [ -n "$GIT_STATUS_OUTPUT" ]; then
+            GIT_STATUS="*"
+        fi
+    fi
+fi
+
+# Build the status line with time at the beginning
+
+# Start with time
+LINE="${FG}${CURRENT_TIME}${RESET} ${COMMENT}|${RESET} "
+
+# Add directory
+LINE="${LINE}${BOLD}${GREEN}${DIR_NAME}${RESET}"
+
+# Add git branch if available
+if [ -n "$GIT_BRANCH" ]; then
+    LINE="${LINE} ${PURPLE}󰳏 ${BOLD}${PURPLE}${GIT_BRANCH}${RESET}"
+    if [ -n "$GIT_STATUS" ]; then
+        LINE="${LINE}${BOLD}${RED}${GIT_STATUS}${RESET}"
+    fi
+fi
+
+# Add separator and model info
+LINE="${LINE} ${COMMENT}|${RESET} ${CYAN}${MODEL_NAME}${RESET}"
+
+# Add token usage (cumulative for session)
+TOTAL_TOKENS=$((TOTAL_INPUT_TOKENS + TOTAL_OUTPUT_TOKENS))
+if [ "$TOTAL_TOKENS" -gt 0 ]; then
+    FORMATTED_TOKENS=$(printf "%'d" "$TOTAL_TOKENS" 2>/dev/null || echo "$TOTAL_TOKENS")
+    LINE="${LINE} ${PINK}•${RESET} ${YELLOW}Tokens: ${FORMATTED_TOKENS}${RESET}"
+fi
+
+# Add context remaining if available
+if [ -n "$CONTEXT_REMAINING" ]; then
+    CONTEXT_INT=$(printf "%.0f" "$CONTEXT_REMAINING")
+    LINE="${LINE} ${PINK}•${RESET} ${GREEN}Context: ${CONTEXT_INT}% remaining${RESET}"
+fi
+
+# Add session duration
+LINE1="${LINE} ${PINK}•${RESET} ${PURPLE}${SESSION_DURATION}${RESET}"
+LINE2="${COMMENT}${DAD_JOKE}${RESET}"
+echo -e "${LINE1}"
+echo -e "${LINE2}"
