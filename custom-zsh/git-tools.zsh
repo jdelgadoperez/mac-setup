@@ -97,8 +97,13 @@ function showgitbranch() {
     echo ""
     gotopathsafely $DIR_NAME/$dir
     if git rev-parse --is-inside-work-tree &>/dev/null; then
-      echo "${BLUE}Repo: ${CYAN}${dir}${NC}"
-      echo "${BOLD_MAGENTA}Branch: ${BOLD_GREEN}$(gbc)${NC}"
+      local repo_name="${dir%/}"
+      local branch_name=$(gbc)
+      if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        echo "${BLUE}${repo_name} ${WHITE}|${MAGENTA} ${branch_name} ${BOLD_YELLOW}*${NC}"
+      else
+        echo "${BLUE}${repo_name} ${WHITE}|${MAGENTA} ${branch_name} ${BOLD_GREEN}✓${NC}"
+      fi
     fi
   done
 
