@@ -94,7 +94,6 @@ function showgitbranch() {
   done
 
   for dir in "${dirs[@]}"; do
-    echo ""
     gotopathsafely $DIR_NAME/$dir
     if git rev-parse --is-inside-work-tree &>/dev/null; then
       local repo_name="${dir%/}"
