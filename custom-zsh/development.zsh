@@ -165,6 +165,7 @@ function updategitdirectory() {
   local success_count=0
   local skip_count=0
   local fail_count=0
+  local failed_repos=()
 
   for dir in "${dirs[@]}"; do
     ((current++))
@@ -201,6 +202,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  Package clean failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           fi
         else
@@ -211,6 +213,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  Yarn install failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           elif [[ "$PKG_TYPE" == "pnpm" ]]; then
             echo "${BLUE}⏳ Installing with pnpm...${NC}"
@@ -219,6 +222,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  pnpm install failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           elif [[ "$PKG_TYPE" == "npm" ]]; then
             echo "${BLUE}⏳ Installing with npm...${NC}"
@@ -227,6 +231,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  npm install failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           elif [[ "$PKG_TYPE" == "poetry" ]]; then
             echo "${BLUE}⏳ Installing with poetry...${NC}"
@@ -235,6 +240,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  Poetry install failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           elif [[ "$PKG_TYPE" == "uv" ]]; then
             echo "${BLUE}⏳ Installing with uv...${NC}"
@@ -243,6 +249,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  uv sync failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           elif [[ "$PKG_TYPE" == "pipenv" ]]; then
             echo "${BLUE}⏳ Installing with pipenv...${NC}"
@@ -251,6 +258,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  Pipenv install failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           elif [[ "$PKG_TYPE" == "pip" ]]; then
             echo "${BLUE}⏳ Installing with pip...${NC}"
@@ -259,6 +267,7 @@ function updategitdirectory() {
             else
               echo "${YELLOW}⚠️  pip install failed, continuing...${NC}"
               ((fail_count++))
+              failed_repos+=("${dir%/}")
             fi
           else
             echo "${GREEN}No package file found. Skipping install.${NC}"
@@ -273,6 +282,7 @@ function updategitdirectory() {
           echo "${YELLOW}⚠️  Git pull failed - skipping ${dir}${NC}"
         fi
         ((fail_count++))
+        failed_repos+=("${dir%/}")
       fi
     else
       echo "${CYAN}Not a git repository - skipping${NC}"
@@ -290,14 +300,21 @@ function updategitdirectory() {
   fi
   if [[ $fail_count -gt 0 ]]; then
     echo "  ${YELLOW}⚠️  Failed: $fail_count${NC}"
+    for repo in "${failed_repos[@]}"; do
+      echo "     ${YELLOW}- ${repo}${NC}"
+    done
   fi
   echo "${BLUE}==============================================================================${NC}"
   echo ""
+
+  # Append to global array for callers to aggregate
+  UPDATE_FAILED_REPOS+=("${failed_repos[@]}")
 }
 
 function updatelibs() {
   CLEAN_LIBS="$1"
   local start_time=$(date +%s)
+  UPDATE_FAILED_REPOS=()
 
   # Detect timeout command (prefer gtimeout from coreutils)
   local TIMEOUT_CMD="timeout"
@@ -413,9 +430,20 @@ function updatelibs() {
   local seconds=$((duration % 60))
 
   echo ""
-  echo "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
-  echo "${BOLD}${GREEN}✅ Update Complete!${NC}"
-  echo "${GREEN}   Total time: ${CYAN}${minutes}m ${seconds}s${NC}"
-  echo "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  if [[ ${#UPDATE_FAILED_REPOS[@]} -gt 0 ]]; then
+    echo "${BOLD}${YELLOW}═══════════════════════════════════════════════════════════════════════════════${NC}"
+    echo "${BOLD}${YELLOW}⚠️  Update Complete (with ${#UPDATE_FAILED_REPOS[@]} failed repo(s))${NC}"
+    echo "${YELLOW}   Failed repos:${NC}"
+    for repo in "${UPDATE_FAILED_REPOS[@]}"; do
+      echo "${YELLOW}     - ${repo}${NC}"
+    done
+    echo "${GREEN}   Total time: ${CYAN}${minutes}m ${seconds}s${NC}"
+    echo "${BOLD}${YELLOW}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  else
+    echo "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+    echo "${BOLD}${GREEN}✅ Update Complete!${NC}"
+    echo "${GREEN}   Total time: ${CYAN}${minutes}m ${seconds}s${NC}"
+    echo "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  fi
   echo ""
 }
