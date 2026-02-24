@@ -4,6 +4,7 @@
 ### https://www.daveyshafik.com/archives/70863-finding-terminal-utopia.html
 ### https://gist.github.com/dshafik/67fe3e0ba5096a00c91cccb0792a884b#file-zshrc
 ######################################################################################
+# alias cat=bat
 alias lsz="eza --icons=always --color=always --git"
 alias kubectl=kubecolor
 
@@ -23,6 +24,9 @@ setopt complete_aliases
 # Enable comments
 setopt interactive_comments
 
+# Disable zoxide doctor messages
+_ZO_DOCTOR=0
+
 # Tool Exports
 export BAT_THEME="Monokai Extended Bright"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
@@ -32,6 +36,9 @@ export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always {}'"
 export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
 export FZF_DEFAULT_OPTS='--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 --color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6 --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4'
+export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
+export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig"
 
 function batdiff() {
   local diff_filter=${1:-d} # Default to "d" if no parameter is provided
