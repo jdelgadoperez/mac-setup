@@ -68,72 +68,68 @@ function cleanpkgs() {
     fi
   fi
 
-  # Node.js package managers
-  if [ "$pkgman" = 'yarn' ]; then
-    echo -e "${GREEN}Clearing node modules...${NC}"
-    clearnodemodules
-    echo -e "${GREEN}Node modules cleared${NC}"
-    echo ""
-    ycc
-    yin
-  fi
-
-  if [ "$pkgman" = 'npm' ]; then
-    echo -e "${GREEN}Clearing node modules...${NC}"
-    clearnodemodules
-    echo -e "${GREEN}Node modules cleared${NC}"
-    echo ""
-    npm install
-    buildCmd="run build"
-  fi
-
-  if [ "$pkgman" = 'pnpm' ]; then
-    echo -e "${GREEN}Clearing node modules...${NC}"
-    clearnodemodules
-    echo -e "${GREEN}Node modules cleared${NC}"
-    rm pnpm-lock.yaml
-    buildCmd="build:all"
-    echo ""
-    pnpm install
-  fi
-
-  # Python package managers
-  if [ "$pkgman" = 'poetry' ]; then
-    echo -e "${GREEN}Clearing Python venv...${NC}"
-    rm -rf .venv
-    echo -e "${GREEN}Python venv cleared${NC}"
-    echo ""
-    poetry install --no-interaction
-    return
-  fi
-
-  if [ "$pkgman" = 'uv' ]; then
-    echo -e "${GREEN}Clearing Python venv...${NC}"
-    rm -rf .venv
-    echo -e "${GREEN}Python venv cleared${NC}"
-    echo ""
-    uv sync
-    return
-  fi
-
-  if [ "$pkgman" = 'pipenv' ]; then
-    echo -e "${GREEN}Clearing Pipenv environment...${NC}"
-    pipenv --rm 2>/dev/null || true
-    echo -e "${GREEN}Pipenv environment cleared${NC}"
-    echo ""
-    pipenv install
-    return
-  fi
-
-  if [ "$pkgman" = 'pip' ]; then
-    echo -e "${GREEN}Clearing Python venv...${NC}"
-    rm -rf .venv venv
-    echo -e "${GREEN}Python venv cleared${NC}"
-    echo ""
-    python3 -m venv .venv
-    .venv/bin/pip install -r requirements.txt
-    return
-  fi
+  case "$pkgman" in
+    # Node.js package managers
+    yarn)
+      echo -e "${GREEN}Clearing node modules...${NC}"
+      clearnodemodules
+      echo -e "${GREEN}Node modules cleared${NC}"
+      echo ""
+      ycc
+      yin
+      ;;
+    npm)
+      echo -e "${GREEN}Clearing node modules...${NC}"
+      clearnodemodules
+      echo -e "${GREEN}Node modules cleared${NC}"
+      echo ""
+      npm install
+      buildCmd="run build"
+      ;;
+    pnpm)
+      echo -e "${GREEN}Clearing node modules...${NC}"
+      clearnodemodules
+      echo -e "${GREEN}Node modules cleared${NC}"
+      rm pnpm-lock.yaml
+      buildCmd="build:all"
+      echo ""
+      pnpm install
+      ;;
+    # Python package managers
+    poetry)
+      echo -e "${GREEN}Clearing Python venv...${NC}"
+      rm -rf .venv
+      echo -e "${GREEN}Python venv cleared${NC}"
+      echo ""
+      poetry install --no-interaction
+      return
+      ;;
+    uv)
+      echo -e "${GREEN}Clearing Python venv...${NC}"
+      rm -rf .venv
+      echo -e "${GREEN}Python venv cleared${NC}"
+      echo ""
+      uv sync
+      return
+      ;;
+    pipenv)
+      echo -e "${GREEN}Clearing Pipenv environment...${NC}"
+      pipenv --rm 2>/dev/null || true
+      echo -e "${GREEN}Pipenv environment cleared${NC}"
+      echo ""
+      pipenv install
+      return
+      ;;
+    pip)
+      echo -e "${GREEN}Clearing Python venv...${NC}"
+      rm -rf .venv venv
+      echo -e "${GREEN}Python venv cleared${NC}"
+      echo ""
+      python3 -m venv .venv
+      .venv/bin/pip install -r requirements.txt
+      return
+      ;;
+  esac
 
   # Node.js build step (only for Node projects)
   if pkgscripts | jq -e --arg script "$buildCmd" 'has($script)' >/dev/null; then
