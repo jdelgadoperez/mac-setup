@@ -97,6 +97,7 @@ For each previous review comment, verify whether it was addressed.
 
 ## 2. REGRESSIONS
 Did the new changes break anything or undo prior work? Only flag actual problems.
+Do NOT re-raise issues that are already called out in the previous review comments above.
 
 ## 3. FINAL QA
 Look for last-mile issues ONLY in the changed code:
@@ -105,6 +106,8 @@ Look for last-mile issues ONLY in the changed code:
 - Naming inconsistencies within the PR
 - Typos in user-facing strings or log messages
 - Missing or incorrect types
+
+**Skip any issue already raised in the previous review comments** — even if it hasn't been resolved yet. Those belong in the Prior Feedback Check section, not here.
 
 For any issues tied to a SPECIFIC LINE, provide:
 - **File**: exact path from the diff
@@ -122,9 +125,11 @@ DO NOT:
 
 Combine all agent feedback into two lists:
 
-**Inline Comments**: Group by file, merge duplicates on the same line.
+**Inline Comments**: Group by file, merge duplicates on the same line. **Drop any comment that overlaps with an existing inline comment** on the same file/line or that raises the same concern already present in the prior review comments.
 
-**General Feedback**: Organize into the three focus areas (prior feedback, regressions, final QA).
+**General Feedback**: Organize into the three focus areas (prior feedback, regressions, final QA). **Drop any regression or QA finding that substantially overlaps with an existing review comment** — if a previous reviewer already flagged it (even in different words), omit it from those sections. It should only appear under Prior Feedback Check if it wasn't addressed.
+
+**If all findings overlap with existing comments** (and all prior feedback was addressed), skip posting and inform the user that previous reviewers have already covered the relevant feedback.
 
 ### Step 4: Format Review Output
 

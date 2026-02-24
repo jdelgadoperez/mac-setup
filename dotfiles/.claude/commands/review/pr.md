@@ -36,12 +36,24 @@ If no agents are specified:
 
 ### Step 1: Fetch PR Context
 
-Use the `Bash` tool to run these `gh` commands:
+Use the `Bash` tool to run these `gh` commands in parallel:
 
 ```bash
 gh pr view <PR_NUMBER> --repo <OWNER>/<REPO> --json title,body,files,additions,deletions,changedFiles,headRefOid
 gh pr diff <PR_NUMBER> --repo <OWNER>/<REPO>
 ```
+
+**Also fetch existing review comments** to avoid repeating what other reviewers have already flagged:
+
+```bash
+# Inline/line-level comments from previous reviewers
+gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments --jq '.[] | {path, line, body, user: .user.login}'
+
+# Review-level comments (summary comments from previous reviews)
+gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/reviews --jq '.[] | {body, user: .user.login, state}'
+```
+
+Store these as `existing_inline_comments` and `existing_review_comments` for use in Steps 2 and 3.
 
 **Important**: Store `headRefOid` - this is the commit SHA required for posting inline comments.
 
@@ -66,6 +78,20 @@ Description: <pr_body>
 Changes (diff):
 <diff>
 
+## EXISTING REVIEWER COMMENTS (DO NOT REPEAT THESE)
+
+The following comments have already been left by other reviewers on this PR. Do NOT raise the same issues or make substantially similar suggestions. Focus only on NEW findings not already covered.
+
+**Existing inline comments:**
+<existing_inline_comments>
+
+**Existing review comments:**
+<existing_review_comments>
+
+If you have nothing new to add beyond what's already been flagged, return an empty list for that category. Quality over quantity — only flag genuinely new issues.
+
+---
+
 Provide feedback in TWO categories:
 
 ## INLINE COMMENTS
@@ -86,7 +112,8 @@ For overall patterns, architecture, or issues NOT tied to a specific line:
 - **Suggestion**: 1 sentence (collaborative tone)
 
 Guidelines:
-- Use collaborative tone ("Consider...", "One option...", "You might...")
+- Use collaborative tone ("Consider...", "One option...", "You might...", "Should...?", "Would it make sense to...?")
+- For structural suggestions (ordering, missing steps, architecture), prefer questions over directives
 - Be succinct (1-2 sentences max per item)
 - Focus on genuine improvements, not nitpicks
 - For inline comments, use the ACTUAL line number visible in the diff
@@ -100,12 +127,16 @@ Combine all agent feedback into two distinct lists:
 **Inline Comments** (for posting on specific lines):
 - Group by file
 - Keep unique file:line combinations (if multiple agents flag same line, merge into one comment)
+- **Drop any comment that overlaps with an existing inline comment** on the same file/line or that raises the same concern as an existing comment on a nearby line
 - Format: `{file: string, line: number, body: string}`
 
 **General Feedback** (for the summary comment):
-- De-duplicate overlapping concerns
+- De-duplicate overlapping concerns across agents
+- **Drop any feedback that substantially overlaps with existing review comments** — if a previous reviewer already raised the same issue or suggestion (even in different words), omit it
 - Sort by priority: high > medium > low
 - Format: `{priority: string, issue: string, suggestion: string}`
+
+**If all findings overlap with existing comments**, skip posting entirely and inform the user that previous reviewers have already covered the relevant feedback.
 
 ### Step 4: Format Review Output
 
@@ -206,6 +237,11 @@ After posting, output:
 
 - **Do**: "I'm curious about the reasoning here—would X work for this case?"
 - **Don't**: "This is wrong" or "You forgot to handle Y"
+
+- **Do**: "Should the existence check come before the create step to fail fast?"
+- **Don't**: "The existence check should come before the create step"
+
+**Prefer questions over directives for structural suggestions.** When flagging ordering, missing steps, or architectural choices, frame the feedback as a question (e.g., "Should X happen before Y?", "Would it make sense to...?"). This acknowledges the author may have context you don't and invites discussion rather than prescribing a fix.
 
 ## Troubleshooting
 
