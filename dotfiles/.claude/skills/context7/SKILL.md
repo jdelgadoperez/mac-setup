@@ -5,7 +5,7 @@ description: "Look up library documentation using Context7 MCP. Use when the use
 
 # Context7 Documentation Lookup
 
-Fetch up-to-date documentation and code examples for any library using the Context7 MCP tools.
+Fetch up-to-date documentation and code examples for any library using the context7-docs agent.
 
 ## Input Format
 
@@ -19,36 +19,14 @@ Examples:
 - `/context7 temporal workflow versioning`
 - `/context7 date-fns format`
 
-If only a library name is provided, use the surrounding conversation context to infer a relevant query.
-
 ## Workflow
 
-### Step 1: Parse the input
+Dispatch to the `context7-docs` agent via the Task tool. Pass the user's full input as the prompt.
 
-The first word or recognizable library/framework name is the `libraryName`. Everything after it is the `query`. If the boundary is ambiguous, use the full input as both.
+Example:
 
-### Step 2: Resolve the library ID
+```
+Task(subagent_type="context7-docs", prompt="Look up documentation for <library>: <query>")
+```
 
-Call `mcp__context7__resolve-library-id` with:
-- `libraryName`: The parsed library name
-- `query`: The user's full input
-
-If no results are returned, tell the user the library was not found and suggest checking spelling or trying an alternative name (e.g., "nextjs" vs "next.js").
-
-Use the top match. Briefly note the selected library so the user can verify.
-
-### Step 3: Query the documentation
-
-Call `mcp__context7__query-docs` with:
-- `libraryId`: The resolved ID from Step 2
-- `query`: The query portion of the input
-
-### Step 4: Present the results
-
-Share the documentation and code examples directly. Do not over-summarize — the user wants the actual docs and code.
-
-## Rules
-
-- Always run both steps in sequence. Do not skip the resolve step.
-- Do not ask for clarification unless the resolve step returns zero results. Pick the best match and proceed.
-- Keep it fast — this should feel like a single command, not a multi-turn conversation.
+Do not call the Context7 MCP tools directly — the agent handles the full resolve → query workflow.
