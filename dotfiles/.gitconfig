@@ -1,23 +1,8 @@
-[user]
-    name = Jess Delgado Perez
-    email =
-    signingkey =
+[include]
+    path = ~/.gitconfig.local
 [gpg]
     format = ssh
 	program = gpg
-[gpg "ssh"]
-    program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
-    allowedSignersFile = "$/Users/me/.ssh/allowed_signers"
-[commit]
-    gpgsign = true
-    verbose = true
-[core]
-    pager = delta
-    excludesfile = ~/.gitignore[user]
-        name = Jess Delgado Perez
-        email = 
-        username = jdelgadoperez
-        signingkey = 
 [commit]
     gpgsign = true
     verbose = true
