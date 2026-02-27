@@ -41,6 +41,7 @@ ${YELLOW}COMMANDS:${NC}
   ${GREEN}update${NC}       Update all managed tools and dependencies
   ${GREEN}list${NC}         List available components and their status
   ${GREEN}sync${NC}         Sync dotfiles (create symlinks)
+  ${GREEN}local${NC}        Manage machine-specific .local override files
   ${GREEN}doctor${NC}       Check system health and diagnose issues
   ${GREEN}help${NC}         Show this help message
   ${GREEN}version${NC}      Show version information
@@ -58,6 +59,8 @@ ${YELLOW}EXAMPLES:${NC}
   dorothy install dracula --force    # Force reinstall Dracula theme
   dorothy update                     # Update everything
   dorothy list                       # Show available components
+  dorothy local list                  # Show status of .local override files
+  dorothy local init                  # Create .local stub files
   dorothy doctor                     # Check system health
 
 ${YELLOW}COMPONENTS:${NC}
@@ -333,11 +336,33 @@ sync_dotfiles() {
     return 1
   fi
 
+  # Files to skip syncing (machine-specific or auto-managed)
+  local SKIP_FILES=(".claude.json")
+
   # Find all files in dotfiles directory (excluding .git and .DS_Store)
   find "$dotfiles_dir" -type f ! -path "*/.git/*" ! -name ".DS_Store" | while read -r file; do
     local rel_path="${file#$dotfiles_dir/}"
     local target="$HOME/$rel_path"
     local target_dir=$(dirname "$target")
+    local filename=$(basename "$file")
+
+    # Check if file should be skipped
+    local skip=false
+    for skip_file in "${SKIP_FILES[@]}"; do
+      if [ "$filename" = "$skip_file" ]; then
+        skip=true
+        break
+      fi
+    done
+
+    if $skip; then
+      if $dry_run; then
+        printf "${YELLOW}[DRY RUN]${NC} Skipping: %s (machine-specific, auto-managed)\n" "$rel_path"
+      else
+        printf "${YELLOW}⊘${NC} Skipped: %s (machine-specific, auto-managed)\n" "$rel_path"
+      fi
+      continue
+    fi
 
     if $dry_run; then
       printf "${YELLOW}[DRY RUN]${NC} Would link: %s -> %s\n" "$rel_path" "$target"
@@ -556,6 +581,171 @@ cmd_sync() {
   fi
 }
 
+show_local_help() {
+  cat << EOF
+${BLUE}dorothy local${NC} - Manage machine-specific .local override files
+
+${YELLOW}USAGE:${NC}
+  dorothy local <subcommand>
+
+${YELLOW}SUBCOMMANDS:${NC}
+  ${GREEN}init${NC}         Create .local stub files (never overwrites existing files)
+  ${GREEN}list${NC}         Show status of all .local override files
+  ${GREEN}edit${NC} <type>  Open a .local file in \$EDITOR (git, zsh, bash)
+
+${YELLOW}EXAMPLES:${NC}
+  dorothy local init             # Create stub files
+  dorothy local list             # Show which .local files exist
+  dorothy local edit git         # Edit ~/.gitconfig.local
+  dorothy local edit zsh         # Edit ~/.zshrc.local
+
+${YELLOW}ABOUT:${NC}
+  Local override files let you add machine-specific configuration without
+  dirtying the mac-setup repository. The shared dotfiles include these
+  local files automatically via native include/source mechanisms.
+EOF
+}
+
+cmd_local() {
+  local subcommand="${1:-}"
+
+  if [ -z "$subcommand" ]; then
+    show_local_help
+    return 0
+  fi
+
+  case "$subcommand" in
+    init)
+      cmd_local_init
+      ;;
+    list)
+      cmd_local_list
+      ;;
+    edit)
+      cmd_local_edit "${2:-}"
+      ;;
+    -h|--help)
+      show_local_help
+      ;;
+    *)
+      logerror "Unknown local subcommand: $subcommand"
+      printf "Run 'dorothy local --help' for usage information.\n"
+      return 1
+      ;;
+  esac
+}
+
+cmd_local_init() {
+  echo -e "${BLUE}Initializing .local override files${NC}"
+  echo ""
+
+  # ~/.gitconfig.local
+  if [ -f "$HOME/.gitconfig.local" ]; then
+    printf "${GREEN}✓${NC} ~/.gitconfig.local already exists\n"
+  else
+    cat > "$HOME/.gitconfig.local" << 'GITLOCAL'
+# Machine-specific git configuration
+# This file is included by ~/.gitconfig via [include]
+# It is NOT tracked in version control
+
+[user]
+    name =
+    email =
+    # signingkey =
+
+# Uncomment and adjust if using 1Password SSH signing
+# [gpg "ssh"]
+#     program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+#     allowedSignersFile = "~/.ssh/allowed_signers"
+GITLOCAL
+    printf "${GREEN}✓${NC} Created ~/.gitconfig.local (fill in your [user] details)\n"
+  fi
+
+  # ~/.zshrc.local
+  if [ -f "$HOME/.zshrc.local" ]; then
+    printf "${GREEN}✓${NC} ~/.zshrc.local already exists\n"
+  else
+    cat > "$HOME/.zshrc.local" << 'ZSHLOCAL'
+# Machine-specific zsh configuration
+# Sourced at the end of ~/.zshrc
+# This file is NOT tracked in version control
+ZSHLOCAL
+    printf "${GREEN}✓${NC} Created ~/.zshrc.local\n"
+  fi
+
+  # ~/.bashrc.local
+  if [ -f "$HOME/.bashrc.local" ]; then
+    printf "${GREEN}✓${NC} ~/.bashrc.local already exists\n"
+  else
+    cat > "$HOME/.bashrc.local" << 'BASHLOCAL'
+# Machine-specific bash configuration
+# Sourced at the end of ~/.bashrc
+# This file is NOT tracked in version control
+BASHLOCAL
+    printf "${GREEN}✓${NC} Created ~/.bashrc.local\n"
+  fi
+
+  echo ""
+  logsuccess "Local override files initialized"
+}
+
+cmd_local_list() {
+  echo -e "${BLUE}Local Override Files${NC}"
+  echo ""
+
+  local files=(
+    "$HOME/.gitconfig.local:git config"
+    "$HOME/.zshrc.local:zsh config"
+    "$HOME/.bashrc.local:bash config"
+  )
+
+  for entry in "${files[@]}"; do
+    local file_path="${entry%%:*}"
+    local description="${entry#*:}"
+    local display_path="${file_path/#$HOME/~}"
+
+    if [ -f "$file_path" ]; then
+      printf "  ${GREEN}✓${NC} %-30s %s\n" "$display_path" "$description"
+    else
+      printf "  ${YELLOW}✗${NC} %-30s %s (not created)\n" "$display_path" "$description"
+    fi
+  done
+
+  echo ""
+  printf "Run ${GREEN}dorothy local init${NC} to create missing files.\n"
+}
+
+cmd_local_edit() {
+  local type="$1"
+
+  if [ -z "$type" ]; then
+    logerror "Specify which file to edit: git, zsh, or bash"
+    printf "  Example: dorothy local edit git\n"
+    return 1
+  fi
+
+  local target=""
+  case "$type" in
+    git)    target="$HOME/.gitconfig.local" ;;
+    zsh)    target="$HOME/.zshrc.local" ;;
+    bash)   target="$HOME/.bashrc.local" ;;
+    *)
+      logerror "Unknown type: $type (use git, zsh, or bash)"
+      return 1
+      ;;
+  esac
+
+  if [ ! -f "$target" ]; then
+    logerror "$target does not exist"
+    printf "Run ${GREEN}dorothy local init${NC} to create it first.\n"
+    return 1
+  fi
+
+  local editor="${EDITOR:-vim}"
+  loginfo "Opening $target with $editor"
+  $editor "$target"
+}
+
 cmd_doctor() {
   echo -e "${BLUE}Dorothy System Check${NC}"
   echo ""
@@ -634,6 +824,29 @@ cmd_doctor() {
     echo -e "  Run: brew install starship"
   fi
 
+  # Check local override files
+  echo ""
+  echo -e "${BLUE}Local Override Files:${NC}"
+
+  if [ -f "$HOME/.gitconfig.local" ]; then
+    local git_name
+    git_name=$(git config --file "$HOME/.gitconfig.local" user.name 2>/dev/null || echo "")
+    if [ -n "$git_name" ]; then
+      printf "${GREEN}✓${NC} ~/.gitconfig.local configured (user: %s)\n" "$git_name"
+    else
+      echo -e "${YELLOW}!${NC} ~/.gitconfig.local exists but [user] name is empty"
+      echo -e "  Run: dorothy local edit git"
+    fi
+  else
+    echo -e "${YELLOW}!${NC} ~/.gitconfig.local not found (git user.name/email not set)"
+    echo -e "  Run: dorothy local init"
+  fi
+
+  if [ -L "$HOME/.claude.json" ] && [ ! -e "$HOME/.claude.json" ]; then
+    echo -e "${YELLOW}!${NC} ~/.claude.json is a dangling symlink (safe to remove)"
+    echo -e "  Run: rm ~/.claude.json (Claude CLI will recreate it)"
+  fi
+
   echo ""
   if [ $issues -eq 0 ]; then
     logsuccess "All checks passed!"
@@ -674,7 +887,7 @@ main() {
         show_version
         exit 0
         ;;
-      install|update|list|sync|doctor|help|version)
+      install|update|list|sync|local|doctor|help|version)
         command=$1
         shift
         ;;
@@ -704,6 +917,9 @@ main() {
       ;;
     sync)
       cmd_sync
+      ;;
+    local)
+      cmd_local "${args[@]}"
       ;;
     doctor)
       cmd_doctor
