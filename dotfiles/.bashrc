@@ -74,3 +74,8 @@ if command -v op &> /dev/null; then
   source <(op completion bash)
   export OP_BIOMETRIC_UNLOCK_ENABLED=true
 fi
+
+# Source machine-specific overrides
+if [ -f "$HOME/.bashrc.local" ]; then
+  source "$HOME/.bashrc.local"
+fi
