@@ -132,6 +132,11 @@ export _ZO_DOCTOR=0
 eval "$(zoxide init zsh --cmd cd)"
 
 
+# Source machine-specific overrides
+if [ -f "$HOME/.zshrc.local" ]; then
+  source "$HOME/.zshrc.local"
+fi
+
 if [[ "$ZPROF" = true ]]; then
   zprof
 fi
