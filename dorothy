@@ -536,15 +536,8 @@ cmd_update() {
     fi
   fi
 
-  # Update custom zsh files
-  if [ -d "$ZSH_CUSTOM" ]; then
-    if $DRY_RUN; then
-      echo -e "${YELLOW}[DRY RUN]${NC} Would update custom Zsh files"
-    else
-      loginfo "Updating custom Zsh files"
-      cp -r "$SCRIPT_DIR/custom-zsh/"* "$ZSH_CUSTOM/"
-    fi
-  fi
+  # Sync dotfiles and custom zsh files
+  cmd_sync
 
   # Run updatelibs if available
   if command -v updatelibs &> /dev/null; then
@@ -578,6 +571,25 @@ cmd_sync() {
   if ! $DRY_RUN; then
     echo ""
     logsuccess "Dotfiles synced!"
+  fi
+
+  # Sync custom Zsh files
+  if [ -d "$SCRIPT_DIR/custom-zsh" ] && [ -d "$ZSH_CUSTOM" ]; then
+    echo ""
+    if $DRY_RUN; then
+      echo -e "${YELLOW}[DRY RUN]${NC} Would sync custom Zsh files to $ZSH_CUSTOM"
+    else
+      echo -e "${BLUE}Syncing custom Zsh files${NC}"
+      for file in "$SCRIPT_DIR/custom-zsh/"*; do
+        local dest="$ZSH_CUSTOM/$(basename "$file")"
+        if [ -L "$dest" ]; then
+          rm "$dest"
+        fi
+        cp -r "$file" "$dest"
+      done
+      echo ""
+      logsuccess "Custom Zsh files synced!"
+    fi
   fi
 }
 

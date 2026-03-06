@@ -3,34 +3,54 @@
 # Package management, environment setup, and development tools
 ######################################################################################
 
-function ensurerancher() {
-  local cmd=("$@")
-  if pgrep -f "Rancher Desktop" > /dev/null; then
-    echo "🟢 Rancher is already running."
+# Generic function to ensure a service is running
+# Usage: ensure_service "Service Name" "check_command" "app_name" [sleep_interval] [prerequisite_function]
+function ensure_service() {
+  local service_name="$1"
+  local check_cmd="$2"
+  local app_name="$3"
+  local sleep_interval="${4:-1}"
+  local prerequisite_fn="$5"
+
+  if eval "$check_cmd" > /dev/null 2>&1; then
+    echo "🟢 ${service_name} is already running."
   else
-    echo "🟡 Rancher is not running. Launching now..."
-    open -a "Rancher Desktop"
-    echo "⏳ Waiting for Rancher to launch..."
-    while ! pgrep -f "Rancher Desktop" > /dev/null; do
-      sleep 1
+    echo "🟡 ${service_name} is not running."
+
+    if [[ -n "$prerequisite_fn" ]]; then
+      eval "$prerequisite_fn"
+    fi
+
+    if [[ -n "$app_name" ]]; then
+      echo "🟡 Launching ${service_name}..."
+      open -a "$app_name"
+    fi
+
+    echo "⏳ Waiting for ${service_name} to be ready..."
+    while ! eval "$check_cmd" > /dev/null 2>&1; do
+      sleep "$sleep_interval"
     done
-    echo "✅ Rancher launched."
+    echo "✅ ${service_name} is ready."
   fi
 }
 
+function ensureorbstack() {
+  ensure_service "OrbStack" "pgrep -f 'OrbStack'" "OrbStack" 1
+}
+
+function ensurerancher() {
+  ensure_service "Rancher" "pgrep -f 'Rancher Desktop'" "Rancher Desktop" 1
+}
+
 function ensuredocker() {
-  local cmd=("$@")
-  if docker info > /dev/null 2>&1; then
-    echo "🟢 Docker daemon is already running."
-  else
-    echo "🟡 Docker daemon is not available."
-    ensurerancher
-    echo "⏳ Waiting for Docker daemon to be ready..."
-    while ! docker info > /dev/null 2>&1; do
-      sleep 2
-    done
-    echo "✅ Docker daemon is ready."
+  local runtime_fn=""
+  if [ -d "/Applications/OrbStack.app" ]; then
+    runtime_fn="ensureorbstack"
+  elif [ -d "/Applications/Rancher Desktop.app" ]; then
+    runtime_fn="ensurerancher"
   fi
+
+  ensure_service "Docker daemon" "docker info" "" 2 "$runtime_fn"
 }
 
 function getpkgtype() {
