@@ -1,4 +1,5 @@
 {
+  "model": "opus",
   "hooks": {
     "SessionEnd": [
       {
@@ -26,6 +27,26 @@
     "type": "command",
     "command": "bash ~/.claude/statusline-command.sh"
   },
-  "alwaysThinkingEnabled": true,
-  "model": "opus"
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "voltagent-core-dev@voltagent-subagents": true,
+    "voltagent-dev-exp@voltagent-subagents": true,
+    "voltagent-infra@voltagent-subagents": true,
+    "voltagent-lang@voltagent-subagents": true,
+    "voltagent-meta@voltagent-subagents": true,
+    "voltagent-qa-sec@voltagent-subagents": true,
+    "voltagent-research@voltagent-subagents": true,
+    "voltagent-biz@voltagent-subagents": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "voltagent-subagents": {
+      "source": {
+        "source": "github",
+        "repo": "VoltAgent/awesome-claude-code-subagents"
+      },
+      "autoUpdate": true
+    }
+  },
+  "alwaysThinkingEnabled": true
 }
