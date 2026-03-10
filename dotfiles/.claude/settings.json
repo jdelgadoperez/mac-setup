@@ -37,7 +37,13 @@
     "voltagent-qa-sec@voltagent-subagents": true,
     "voltagent-research@voltagent-subagents": true,
     "voltagent-biz@voltagent-subagents": true,
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "Notion@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "voltagent-subagents": {
