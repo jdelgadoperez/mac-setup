@@ -116,34 +116,38 @@ fi
 LINE="${FG}${CURRENT_TIME}${RESET} ${COMMENT}|${RESET} "
 
 # Add directory
-LINE="${LINE}${BOLD}${GREEN}${DIR_NAME}${RESET}"
+# LINE="${LINE}${BOLD}${GREEN}${DIR_NAME}${RESET}"
 
 # Add git branch if available
 if [ -n "$GIT_BRANCH" ]; then
     LINE="${LINE} ${PURPLE}󰳏 ${BOLD}${PURPLE}${GIT_BRANCH}${RESET}"
     if [ -n "$GIT_STATUS" ]; then
-        LINE="${LINE}${BOLD}${RED}${GIT_STATUS}${RESET}"
+        LINE="${LINE}${BOLD}${RED}${GIT_STATUS}${RESET} ${PINK}•${RESET}"
     fi
 fi
 
 # Add separator and model info
-LINE="${LINE} ${COMMENT}|${RESET} ${CYAN}${MODEL_NAME}${RESET}"
+# LINE="${LINE} ${COMMENT}|${RESET} ${CYAN}${MODEL_NAME}${RESET}"
 
 # Add token usage (cumulative for session)
 TOTAL_TOKENS=$((TOTAL_INPUT_TOKENS + TOTAL_OUTPUT_TOKENS))
 if [ "$TOTAL_TOKENS" -gt 0 ]; then
     FORMATTED_TOKENS=$(printf "%'d" "$TOTAL_TOKENS" 2>/dev/null || echo "$TOTAL_TOKENS")
-    LINE="${LINE} ${PINK}•${RESET} ${YELLOW}Tokens: ${FORMATTED_TOKENS}${RESET}"
+    LINE="${LINE}${YELLOW}Tokens: ${FORMATTED_TOKENS} ${PINK}•${RESET}"
 fi
 
 # Add context remaining if available
 if [ -n "$CONTEXT_REMAINING" ]; then
     CONTEXT_INT=$(printf "%.0f" "$CONTEXT_REMAINING")
-    LINE="${LINE} ${PINK}•${RESET} ${GREEN}Context: ${CONTEXT_INT}% remaining${RESET}"
+    LINE="${LINE} ${GREEN}Context: ${CONTEXT_INT}% remaining${RESET}"
 fi
 
+# Set GSD line
+GSDLINE=$(echo "$input" | node "$HOME/.claude/hooks/gsd-statusline.js")
 # Add session duration
-LINE1="${LINE} ${PINK}•${RESET} ${PURPLE}${SESSION_DURATION}${RESET}"
-LINE2="${COMMENT}${DAD_JOKE}${RESET}"
+LINE1="${GSDLINE}${RESET}"
+LINE2="${LINE} ${PURPLE}${SESSION_DURATION}${RESET}"
+LINE3="${COMMENT}${DAD_JOKE}${RESET}"
 echo -e "${LINE1}"
 echo -e "${LINE2}"
+echo -e "${LINE3}"
