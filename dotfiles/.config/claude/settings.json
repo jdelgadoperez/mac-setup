@@ -1,0 +1,93 @@
+{
+  "model": "opus",
+  "alwaysThinkingEnabled": true,
+  "cleanupPeriodDays": 7,
+  "env": {
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
+  },
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "allowManagedHooksOnly": true,
+    "allowManagedPermissionRulesOnly": false,
+    "defaultMode": "default",
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/credentials)",
+      "Read(**/.aws/credentials)",
+      "Read(**/.ssh/*)",
+      "Bash(sudo:*)",
+      "Bash(su:*)",
+      "Bash(curl *attacker*)",
+      "Bash(wget -O - *)",
+      "Bash(nc *)",
+      "Bash(python* -c *socket*)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(chmod 777 *)",
+      "Bash(chown -R *)",
+      "WebFetch(*)",
+      "Bash(ssh *)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git push --force*)",
+      "Bash(npm publish*)",
+      "Bash(pip install*)",
+      "Bash(npm install*)",
+      "Bash(yarn install*)",
+      "Bash(pnpm install*)",
+      "Bash(npx *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(rm -rf *)",
+      "Bash(docker *)"
+    ]
+  },
+  "strictKnownMarketplaces": [
+    { "source": "github", "repo": "anthropics/claude-plugins-official" }
+  ],
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"~/.claude/hooks/gsd-check-update.js\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Purr.aiff"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"~/.claude/hooks/gsd-context-monitor.js\""
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/hooks/statusline-command.sh"
+  }
+}
