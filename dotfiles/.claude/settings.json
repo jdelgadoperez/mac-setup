@@ -21,38 +21,41 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"~/.claude/hooks/gsd-check-update.js\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"~/.claude/hooks/gsd-context-monitor.js\""
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
+    "command": "node \"~/.claude/hooks/gsd-statusline.js\""
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
-    "voltagent-core-dev@voltagent-subagents": true,
-    "voltagent-dev-exp@voltagent-subagents": true,
-    "voltagent-infra@voltagent-subagents": true,
-    "voltagent-lang@voltagent-subagents": true,
-    "voltagent-meta@voltagent-subagents": true,
-    "voltagent-qa-sec@voltagent-subagents": true,
-    "voltagent-research@voltagent-subagents": true,
-    "voltagent-biz@voltagent-subagents": true,
     "superpowers@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "context7@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "Notion@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true
   },
-  "extraKnownMarketplaces": {
-    "voltagent-subagents": {
-      "source": {
-        "source": "github",
-        "repo": "VoltAgent/awesome-claude-code-subagents"
-      },
-      "autoUpdate": true
-    }
-  },
+  "extraKnownMarketplaces": {},
   "alwaysThinkingEnabled": true
 }
