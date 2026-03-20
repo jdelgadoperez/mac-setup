@@ -68,9 +68,6 @@ function ensurememorybank() {
   fi
   echo "${GREEN}✅ memory-bank CLI available${NC}"
 
-  # Ensure Docker is running
-  ensuredocker
-
   # Ingest latest Claude Code history
   echo ""
   echo "${BLUE}⏳ Ingesting Claude Code history...${NC}"
@@ -83,11 +80,11 @@ function ensurememorybank() {
   # Start UI in background if not already running
   echo ""
   echo "${BLUE}⏳ Checking UI server...${NC}"
-  if memory-bank ui status 2>&1 | grep -q "Running"; then
+  if memory-bank ui status 2>&1 | grep -qi "running"; then
     echo "${GREEN}🟢 UI server already running${NC}"
   else
     echo "${BLUE}⏳ Starting UI server in background...${NC}"
-    if memory-bank ui start --no-browser 2>&1; then
+    if memory-bank ui -B start 2>&1; then
       echo "${GREEN}✅ UI server started${NC}"
     else
       echo "${YELLOW}⚠️  Failed to start UI server${NC}"
