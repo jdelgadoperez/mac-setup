@@ -124,7 +124,7 @@ function cleanpkgs() {
     PKG_TYPE=$(getpkgtype)
     if [ "$PKG_TYPE" = 'none' ]; then
       pkgman="yarn"
-    else;
+    else
       pkgman="$PKG_TYPE"
     fi
   fi
