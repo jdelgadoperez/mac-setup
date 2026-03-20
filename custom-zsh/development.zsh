@@ -53,6 +53,50 @@ function ensuredocker() {
   ensure_service "Docker daemon" "docker info" "" 2 "$runtime_fn"
 }
 
+function ensurememorybank() {
+  echo ""
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo "${BOLD}${BLUE}🧠 Memory Bank${NC}"
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo ""
+
+  # Check CLI is available
+  if ! command -v memory-bank &>/dev/null; then
+    echo "${RED}❌ memory-bank CLI not found on PATH${NC}"
+    echo "${YELLOW}   Install with: uv pip install -e ~/projects/memory-bank${NC}"
+    return 1
+  fi
+  echo "${GREEN}✅ memory-bank CLI available${NC}"
+
+  # Ensure Docker is running
+  ensuredocker
+
+  # Ingest latest Claude Code history
+  echo ""
+  echo "${BLUE}⏳ Ingesting Claude Code history...${NC}"
+  if memory-bank ingest claude-code 2>&1; then
+    echo "${GREEN}✅ Ingest complete${NC}"
+  else
+    echo "${YELLOW}⚠️  Ingest failed (check ~/.memory-bank/ingest.log)${NC}"
+  fi
+
+  # Start UI in background if not already running
+  echo ""
+  echo "${BLUE}⏳ Checking UI server...${NC}"
+  if memory-bank ui status 2>&1 | grep -q "Running"; then
+    echo "${GREEN}🟢 UI server already running${NC}"
+  else
+    echo "${BLUE}⏳ Starting UI server in background...${NC}"
+    if memory-bank ui start 2>&1; then
+      echo "${GREEN}✅ UI server started${NC}"
+    else
+      echo "${YELLOW}⚠️  Failed to start UI server${NC}"
+    fi
+  fi
+
+  echo ""
+}
+
 function getpkgtype() {
   # Node.js
   if [ -f "yarn.lock" ]; then
@@ -350,7 +394,7 @@ function updatelibs() {
 
   # Node.js
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[1/6] Install latest ${CYAN}node${NC}"
+  echo "${BLUE}[1/7] Install latest ${CYAN}node${NC}"
   echo "${BLUE}==============================================================================${NC}"
   if fnm use lts-latest --corepack-enabled --install-if-missing 2>&1; then
     echo "${GREEN}✅ Now on Node $(fnm current)${NC}"
@@ -361,7 +405,7 @@ function updatelibs() {
 
   # npm
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[2/6] Update ${CYAN}npm${NC}"
+  echo "${BLUE}[2/7] Update ${CYAN}npm${NC}"
   echo "${BLUE}==============================================================================${NC}"
   if npm update -g 2>&1; then
     echo "${GREEN}✅ npm updated${NC}"
@@ -372,19 +416,19 @@ function updatelibs() {
 
   # Oh My Zsh plugins
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[3/6] Update ${CYAN}Oh My Zsh plugins${NC}"
+  echo "${BLUE}[3/7] Update ${CYAN}Oh My Zsh plugins${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $ZSH_CUSTOM/plugins "plugin" "$CLEAN_LIBS"
 
   # Project repositories
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[4/6] Update ${CYAN}project repositories${NC}"
+  echo "${BLUE}[4/7] Update ${CYAN}project repositories${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects "lib" "$CLEAN_LIBS"
 
   # Dracula themes
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[5/6] Update ${CYAN}Dracula themes${NC}"
+  echo "${BLUE}[5/7] Update ${CYAN}Dracula themes${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects/dracula "theme" "$CLEAN_LIBS"
 
@@ -392,7 +436,7 @@ function updatelibs() {
 
   # Homebrew
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[6/6] Update & upgrade ${CYAN}Homebrew${NC}"
+  echo "${BLUE}[6/7] Update & upgrade ${CYAN}Homebrew${NC}"
   echo "${BLUE}==============================================================================${NC}"
 
   if [[ -n "$TIMEOUT_CMD" ]]; then
@@ -438,6 +482,12 @@ function updatelibs() {
     fi
   fi
   echo ""
+
+  # Memory Bank
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[7/7] Ensure ${CYAN}Memory Bank${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  ensurememorybank
 
   # Overall summary
   local end_time=$(date +%s)
