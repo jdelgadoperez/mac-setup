@@ -87,7 +87,7 @@ function ensurememorybank() {
     echo "${GREEN}🟢 UI server already running${NC}"
   else
     echo "${BLUE}⏳ Starting UI server in background...${NC}"
-    if memory-bank ui start 2>&1; then
+    if memory-bank ui start --no-browser 2>&1; then
       echo "${GREEN}✅ UI server started${NC}"
     else
       echo "${YELLOW}⚠️  Failed to start UI server${NC}"
