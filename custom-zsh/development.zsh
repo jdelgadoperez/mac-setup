@@ -63,12 +63,13 @@ function ensurememorybank() {
   # Check CLI is available
   if ! command -v memory-bank &>/dev/null; then
     echo "${RED}❌ memory-bank CLI not found on PATH${NC}"
-    echo "${YELLOW}   Install with: uv pip install -e ~/projects/memory-bank${NC}"
+    echo "${YELLOW}   Install with: uv tool install -e ~/projects/memory-bank${NC}"
     return 1
   fi
   echo "${GREEN}✅ memory-bank CLI available${NC}"
 
   # Ingest latest Claude Code history
+  # Routes through UI server API if running, otherwise uses direct DB access
   echo ""
   echo "${BLUE}⏳ Ingesting Claude Code history...${NC}"
   if memory-bank ingest claude-code 2>&1; then
