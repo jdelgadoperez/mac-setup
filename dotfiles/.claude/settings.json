@@ -1,16 +1,7 @@
 {
   "model": "opus",
   "hooks": {
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/session-end.js"
-          }
-        ]
-      }
-    ],
+    "SessionEnd": [],
     "Stop": [
       {
         "matcher": "*",
@@ -20,24 +11,24 @@
             "command": "afplay /System/Library/Sounds/Purr.aiff"
           }
         ]
-      }
-    ],
-    "SessionStart": [
+      },
       {
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"~/.claude/hooks/gsd-check-update.js\""
+            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "SessionStart": [
       {
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"~/.claude/hooks/gsd-context-monitor.js\""
+            "command": "memory-bank hooks context-summary >> ~/.memory-bank/ingest.log 2>&1 &"
           }
         ]
       }
@@ -46,6 +37,26 @@
   "statusLine": {
     "type": "command",
     "command": "bash \"~/.claude/hooks/statusline-command.sh\""
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "voltagent-research@voltagent-subagents": true,
+    "voltagent-biz@voltagent-subagents": true
+  },
+  "extraKnownMarketplaces": {
+    "voltagent-subagents": {
+      "source": {
+        "source": "github",
+        "repo": "VoltAgent/awesome-claude-code-subagents"
+      },
+      "autoUpdate": true
+    }
   },
   "spinnerVerbs": {
     "mode": "append",
@@ -98,15 +109,5 @@
       "Fucking around and finding out"
     ]
   },
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true
-  },
-  "extraKnownMarketplaces": {},
   "alwaysThinkingEnabled": true
 }

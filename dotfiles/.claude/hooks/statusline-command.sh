@@ -111,29 +111,31 @@ if git -C "$CURRENT_DIR" rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 # Build the status line with time at the beginning
+LINE_SEPARATOR="${COMMENT}|${RESET}"
+DOT_SEPARATOR="${PINK}•${RESET}"
 
 # Start with time
-LINE="${FG}${CURRENT_TIME}${RESET} ${COMMENT}|${RESET} "
+LINE="${FG}${CURRENT_TIME}${RESET} ${LINE_SEPARATOR}"
 
 # Add directory
-# LINE="${LINE}${BOLD}${GREEN}${DIR_NAME}${RESET}"
+LINE="${LINE} ${BOLD}${GREEN}${DIR_NAME}${RESET}"
 
 # Add git branch if available
 if [ -n "$GIT_BRANCH" ]; then
-    LINE="${LINE} ${PURPLE}󰳏 ${BOLD}${PURPLE}${GIT_BRANCH}${RESET}"
+    LINE="${LINE} ${LINE_SEPARATOR} ${PURPLE}󰳏 ${BOLD}${PURPLE}${GIT_BRANCH}${RESET}"
     if [ -n "$GIT_STATUS" ]; then
-        LINE="${LINE}${BOLD}${RED}${GIT_STATUS}${RESET} ${PINK}•${RESET}"
+        LINE="${LINE} ${BOLD}${RED}${GIT_STATUS}${RESET} ${DOT_SEPARATOR}"
     fi
 fi
 
 # Add separator and model info
-# LINE="${LINE} ${COMMENT}|${RESET} ${CYAN}${MODEL_NAME}${RESET}"
+LINE="${LINE} ${LINE_SEPARATOR} ${CYAN}${MODEL_NAME}${RESET}"
 
 # Add token usage (cumulative for session)
 TOTAL_TOKENS=$((TOTAL_INPUT_TOKENS + TOTAL_OUTPUT_TOKENS))
 if [ "$TOTAL_TOKENS" -gt 0 ]; then
     FORMATTED_TOKENS=$(printf "%'d" "$TOTAL_TOKENS" 2>/dev/null || echo "$TOTAL_TOKENS")
-    LINE="${LINE}${YELLOW}Tokens: ${FORMATTED_TOKENS} ${PINK}•${RESET}"
+    LINE="${LINE} ${YELLOW}Tokens: ${FORMATTED_TOKENS} ${DOT_SEPARATOR}"
 fi
 
 # Add context remaining if available
@@ -142,12 +144,8 @@ if [ -n "$CONTEXT_REMAINING" ]; then
     LINE="${LINE} ${GREEN}Context: ${CONTEXT_INT}% remaining${RESET}"
 fi
 
-# Set GSD line
-GSDLINE=$(echo "$input" | node "$HOME/.claude/hooks/gsd-statusline.js")
 # Add session duration
-LINE1="${GSDLINE}${RESET}"
-LINE2="${LINE} ${PURPLE}${SESSION_DURATION}${RESET}"
-LINE3="${COMMENT}${DAD_JOKE}${RESET}"
+LINE1="${LINE} ${PURPLE}${SESSION_DURATION}${RESET}"
+LINE2="${COMMENT}${DAD_JOKE}${RESET}"
 echo -e "${LINE1}"
 echo -e "${LINE2}"
-echo -e "${LINE3}"
