@@ -63,6 +63,7 @@ Alternatively, `run.sh` orchestrates the setup in this order:
   - `.config/` - Application configs (starship, ripgrep, 1Password agent)
   - `.gitconfig` - Git configuration
   - `iterm2/` - iTerm2 preferences
+  - `.claude/commands/job/` - Claude Code slash commands for job tracking (`/job:apply`, `/job:list`, `/job:status`, `/job:note`, `/job:stats`, `/job:search`, `/job:prep`)
 
 - **`custom-zsh/`**: Modular Zsh functionality files sourced by Oh My Zsh
   - `aliases.zsh` - System, navigation, git, and development aliases
@@ -74,6 +75,7 @@ Alternatively, `run.sh` orchestrates the setup in this order:
   - `history.zsh` - History configuration
   - `nerdtopia.zsh` - Nerd font and display utilities
   - `zsh-syntax-highlighting.zsh` - Syntax highlighting customization
+  - `job-tracker.zsh` - Job application tracker CLI (`jobtrack` / `jt` alias)
 
 - **`ai/`**: AI tool configurations (MCP plugins for Claude Desktop)
 
