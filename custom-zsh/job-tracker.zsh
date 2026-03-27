@@ -158,7 +158,35 @@ function jobtrack() {
     entry+="\n- **Notes:**"
     entry+="\n  - [${today}] Applied"
 
-    printf '%b\n' "$entry" >> "$JOBTRACK_FILE"
+    # Find insertion point: line number of first section with an older date
+    local insert_before
+    insert_before=$(awk -v today="$today" '
+      /^## / { h = NR }
+      /^\- \*\*Date Applied:\*\*/ {
+        date = $0
+        sub(/.*\*\* /, "", date)
+        gsub(/[[:space:]]/, "", date)
+        if (date < today) { print h; exit }
+      }
+    ' "$JOBTRACK_FILE")
+
+    if [[ -n "$insert_before" && "$insert_before" -gt 0 ]]; then
+      local entry_file tmp
+      entry_file=$(mktemp)
+      tmp=$(mktemp)
+      printf '%b\n' "$entry" > "$entry_file"
+      awk -v line="$insert_before" -v entry_file="$entry_file" '
+        NR == line {
+          while ((getline eline < entry_file) > 0) print eline
+          print ""
+        }
+        { print }
+      ' "$JOBTRACK_FILE" > "$tmp"
+      mv "$tmp" "$JOBTRACK_FILE"
+      rm -f "$entry_file"
+    else
+      printf '%b\n' "$entry" >> "$JOBTRACK_FILE"
+    fi
 
     echo -e "\n${BOLD}${GREEN}Added:${NC} ${company} | ${role}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
@@ -236,14 +264,23 @@ function jobtrack() {
     printf "  ${BOLD}%-25s %-30s %-15s %s${NC}\n" "Company" "Role" "Status" "Date"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-    local count=0
+    # Sort entries by date descending (YYYY-MM-DD sorts lexicographically)
+    local -a sort_keys
+    local i
     for i in {1..${#companies[@]}}; do
-      local entry_status="${(L)statuses[$i]}"
+      sort_keys+=("${dates[$i]}_${i}")
+    done
+    sort_keys=(${(Oa)sort_keys})
+
+    local count=0
+    for key in "${sort_keys[@]}"; do
+      local idx="${key##*_}"
+      local entry_status="${(L)statuses[$idx]}"
       if [[ -n "$filter" && "$entry_status" != "$filter" ]]; then
         continue
       fi
-      local colored_status=$(_jobtrack_color_status "${statuses[$i]}")
-      printf "  %-25s %-30s %-24b %s\n" "${companies[$i]:0:24}" "${roles[$i]:0:29}" "$colored_status" "${dates[$i]}"
+      local colored_status=$(_jobtrack_color_status "${statuses[$idx]}")
+      printf "  %-25s %-30s %-24b %s\n" "${companies[$idx]:0:24}" "${roles[$idx]:0:29}" "$colored_status" "${dates[$idx]}"
       count=$((count + 1))
       has_entries=true
     done
