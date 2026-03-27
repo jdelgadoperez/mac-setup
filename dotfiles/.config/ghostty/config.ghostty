@@ -21,4 +21,4 @@ cursor-text = #7970A9
 selection-background = #454158
 selection-foreground = #F8F8F2
 font-family = "FiraCode Nerd Font"
-font-size = "13px"
+font-size = 13
