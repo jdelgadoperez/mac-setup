@@ -66,11 +66,13 @@ input=$(cat)
 # Extract values using jq
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir')
 MODEL_NAME=$(echo "$input" | jq -r '.model.display_name')
-CONTEXT_REMAINING=$(echo "$input" | jq -r '.context_window.remaining_percentage // empty')
 TOTAL_INPUT_TOKENS=$(echo "$input" | jq -r '.context_window.total_input_tokens // 0')
 TOTAL_OUTPUT_TOKENS=$(echo "$input" | jq -r '.context_window.total_output_tokens // 0')
 TOTAL_DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 DAD_JOKE=$(get_dad_joke)
+
+# Context progress bar (rendered by context-bar.js)
+CONTEXT_BAR=$(echo "$input" | node "$HOME/.claude/hooks/context-bar.js" 2>/dev/null)
 
 # Format duration from milliseconds to human readable
 format_duration() {
@@ -138,10 +140,9 @@ if [ "$TOTAL_TOKENS" -gt 0 ]; then
     LINE="${LINE} ${YELLOW}Tokens: ${FORMATTED_TOKENS} ${DOT_SEPARATOR}"
 fi
 
-# Add context remaining if available
-if [ -n "$CONTEXT_REMAINING" ]; then
-    CONTEXT_INT=$(printf "%.0f" "$CONTEXT_REMAINING")
-    LINE="${LINE} ${GREEN}Context: ${CONTEXT_INT}% remaining${RESET}"
+# Add context progress bar if available
+if [ -n "$CONTEXT_BAR" ]; then
+    LINE="${LINE} ${CONTEXT_BAR}"
 fi
 
 # Add session duration
