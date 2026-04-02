@@ -1,5 +1,4 @@
 {
-  "model": "opus",
   "hooks": {
     "SessionEnd": [],
     "Stop": [
@@ -109,5 +108,6 @@
       "Fucking around and finding out"
     ]
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": true,
+  "model": "opus"
 }

@@ -17,6 +17,7 @@ fi
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
+. "$HOME/.cargo/env"
 
 # Source .bashrc for interactive shell configuration
 if [ -f "$HOME/.bashrc" ]; then
