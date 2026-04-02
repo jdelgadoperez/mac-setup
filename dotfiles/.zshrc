@@ -132,6 +132,9 @@ export _ZO_DOCTOR=0
 eval "$(zoxide init zsh --cmd cd)"
 
 
+# Job tracker CLI
+[[ -f "$HOME/projects/job-hunt/jobtrack.zsh" ]] && source "$HOME/projects/job-hunt/jobtrack.zsh"
+
 # Source machine-specific overrides
 if [ -f "$HOME/.zshrc.local" ]; then
   source "$HOME/.zshrc.local"

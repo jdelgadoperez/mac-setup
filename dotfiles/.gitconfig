@@ -1,11 +1,14 @@
 [include]
     path = ~/.gitconfig.local
 [gpg]
-    format = ssh
 	program = gpg
 [commit]
-    gpgsign = true
+	gpgsign = true
     verbose = true
+[credential]
+	helper =
+[url "git@github.com:"]
+	insteadOf = https://github.com/
 [core]
     pager = delta
     excludesfile = ~/.gitignore
@@ -17,6 +20,7 @@
     sort = -committerdate
 [tag]
     sort = version:refname
+	gpgSign = true
 [init]
     defaultBranch = main
 [diff]
@@ -74,7 +78,3 @@
     line-numbers-right-style = cyan
     line-numbers-minus-style = 124
     line-numbers-plus-style = 28
-[credential]
-	helper =
-[url "git@github.com:"]
-	insteadOf = https://github.com/

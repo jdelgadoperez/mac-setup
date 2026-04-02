@@ -1,6 +1,3 @@
-# 1Password SSH Agent
-export SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
-
 # Homebrew - auto-detect architecture (Apple Silicon vs Intel)
 if [[ -x "/opt/homebrew/bin/brew" ]]; then
   # Apple Silicon

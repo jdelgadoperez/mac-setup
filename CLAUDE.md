@@ -75,7 +75,6 @@ Alternatively, `run.sh` orchestrates the setup in this order:
   - `history.zsh` - History configuration
   - `nerdtopia.zsh` - Nerd font and display utilities
   - `zsh-syntax-highlighting.zsh` - Syntax highlighting customization
-  - `job-tracker.zsh` - Job application tracker CLI (`jobtrack` / `jt` alias)
 
 - **`ai/`**: AI tool configurations (MCP plugins for Claude Desktop)
 
