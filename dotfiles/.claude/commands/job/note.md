@@ -1,13 +1,13 @@
 ---
 name: note
 description: "Add a timestamped note to a job application."
-allowed-tools: Read(*), Edit(*)
+allowed-tools: Bash(jt *)
 argument-hint: <company> <note text>
 ---
 
 # Add Application Note
 
-Add a timestamped note to an existing application in `~/projects/job-hunt/applications.md`.
+Add a timestamped note to an existing application using the `jt` CLI.
 
 ## Usage
 
@@ -21,9 +21,6 @@ Add a timestamped note to an existing application in `~/projects/job-hunt/applic
 
 ## Process
 
-1. Read `~/projects/job-hunt/applications.md`
-2. Find the `## ` heading that matches the company name
-3. If multiple matches, show them and ask the user to pick one
-4. Find the `- **Notes:**` section within that entry
-5. Append a new note line after the last existing note: `  - [YYYY-MM-DD] <note text>`
-6. Confirm the note was added
+1. If arguments are missing, ask the user for company and/or note text
+2. Run `jt note <company> <note text>`
+3. Display the output to the user

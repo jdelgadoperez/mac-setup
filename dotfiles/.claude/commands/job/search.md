@@ -1,13 +1,13 @@
 ---
 name: search
 description: "Search job applications by keyword across all fields."
-allowed-tools: Read(*)
+allowed-tools: Bash(jt *)
 argument-hint: <search term>
 ---
 
 # Search Applications
 
-Search all job application entries in `~/projects/job-hunt/applications.md` by keyword.
+Search all job application entries using the `jt` CLI.
 
 ## Usage
 
@@ -20,8 +20,6 @@ Search all job application entries in `~/projects/job-hunt/applications.md` by k
 
 ## Process
 
-1. Read `~/projects/job-hunt/applications.md`
-2. Search all content (case-insensitive) for the term
-3. For each matching entry, display the full `## ` section
-4. Show the count of matching entries
-5. If no results, say so
+1. Run `jt search <term>`
+2. Display the output to the user
+3. If no results, say so

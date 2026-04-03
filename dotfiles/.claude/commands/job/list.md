@@ -1,13 +1,13 @@
 ---
 name: list
 description: "List all job applications, optionally filtered by status."
-allowed-tools: Read(*)
+allowed-tools: Bash(jt *)
 argument-hint: "[status]"
 ---
 
 # List Job Applications
 
-Display job applications from `~/projects/job-hunt/applications.md`.
+Display job applications using the `jt` CLI.
 
 ## Usage
 
@@ -20,16 +20,7 @@ Display job applications from `~/projects/job-hunt/applications.md`.
 
 ## Process
 
-1. Read `~/projects/job-hunt/applications.md`
-2. Parse all `## ` entries extracting: company, role, status, date applied
-3. If a status filter is provided, only include matching entries
-4. Display as a formatted markdown table:
-
-```
-| Company | Role | Status | Date Applied |
-|---------|------|--------|--------------|
-| Acme Corp | Senior Engineer | Applied | 2026-03-25 |
-```
-
-5. Show total count at the bottom
-6. If no entries found, suggest using `/job:apply`
+1. If a status filter is provided, run `jt list <status>`
+2. Otherwise, run `jt list`
+3. Display the output to the user
+4. If no entries found, suggest using `/job:apply`

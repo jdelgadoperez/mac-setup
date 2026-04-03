@@ -1,13 +1,13 @@
 ---
 name: status
 description: "Update the status of a job application."
-allowed-tools: Read(*), Edit(*)
+allowed-tools: Bash(jt *)
 argument-hint: <company> <new-status>
 ---
 
 # Update Application Status
 
-Update the status of an existing application in `~/projects/job-hunt/applications.md`.
+Update the status of an existing application using the `jt` CLI.
 
 ## Usage
 
@@ -21,11 +21,6 @@ Update the status of an existing application in `~/projects/job-hunt/application
 
 ## Process
 
-1. Read `~/projects/job-hunt/applications.md`
-2. Find the `## ` heading that matches the company name (case-insensitive partial match)
-3. If multiple matches, show them and ask the user to pick one
-4. If no matches, tell the user and suggest `/job:list`
-5. Validate the new status against the allowed values
-6. Update the `- **Status:**` line to the new status (capitalize first letter)
-7. Add a timestamped note: `  - [YYYY-MM-DD] Status changed from <old> to <new>`
-8. Show the user what changed
+1. If arguments are missing, ask the user for company and/or status
+2. Run `jt status <company> <new-status>`
+3. Display the output to the user
