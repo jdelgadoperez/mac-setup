@@ -85,6 +85,8 @@ function profzsh() {
 ######################################################################################
 
 function chpwd() {
+  # Skip directory listing in Claude Code (eza --git is expensive in large repos)
+  [[ -n "$CLAUDECODE" ]] && return
   lsz -a
   echo ""
 }

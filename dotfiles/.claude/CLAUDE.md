@@ -30,7 +30,6 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 - Always create feature branches for work
 - If no ticket exists, use `feat/` prefix instead of making up a ticket number
-- Use `git -C <path>` instead of `cd`-ing into directories to avoid shell hook issues
 
 ## Git Worktree Workflow
 
@@ -72,9 +71,28 @@ Worktrees are sibling directories to the repository:
 - Avoid chaining commands with `&&` - it causes hangs and failures
 - Use normal `git` commands instead of absolute paths like `/usr/bin/git`
 
+## Documentation Lookups
+
+- [Important] **Always use Context7 (`ctx7`) for library/framework documentation** — even for well-known libraries. Training data may be outdated. Prefer ctx7 over web search for docs.
+- See `~/.claude/rules/context7.md` for the full ctx7 workflow (resolve library → fetch docs → answer).
+
+## Debugging
+
+- [Important] When debugging deployment/runtime issues, enumerate the top 3-5 most likely root causes ranked by probability BEFORE making any changes. Verify the simplest causes first (missing imports, typos, wrong env vars) before assuming library-level incompatibilities or making widespread config changes.
+
+## Content Generation
+
+- When editing HTML/PDF presentations, never regenerate from scratch — always preserve existing slides/content and only modify what was requested. Confirm orientation (landscape vs portrait) before generating.
+
+## Output Formats
+
+- [Important] Before generating output files (JSON, text, markdown) for consumption by scripts or skills, read the consuming script/skill first to understand the expected file format. Don't assume structure.
+
 ## Node Version Management
 
 - I do not use `nvm`. All repos use `fnm` instead: https://github.com/Schniz/fnm
 - Run `fnm use` to switch to project-specific Node version
 
-@RTK.md
+## Best Practices
+
+- [Important] Parallelize work where applicable or reasonable

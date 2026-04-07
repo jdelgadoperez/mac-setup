@@ -20,7 +20,7 @@ fi
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
 plugins=()
-plugins=(1password git dotenv pyenv terraform yarn you-should-use z zsh-lazyload)
+plugins=(git dotenv pyenv you-should-use z zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
@@ -59,7 +59,12 @@ export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
 ####################
 
 # fnm - interactive shell initialization
-eval "$(fnm env --use-on-cd)"
+# Skip --use-on-cd in Claude Code to prevent hang when cd-ing into dirs with .nvmrc
+if [[ -n "$CLAUDECODE" ]]; then
+  eval "$(fnm env)"
+else
+  eval "$(fnm env --use-on-cd)"
+fi
 
 # OrbStack - command-line tools and integration (if installed)
 if [ -f "$HOME/.orbstack/shell/init.zsh" ]; then
