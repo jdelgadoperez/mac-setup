@@ -131,11 +131,12 @@ fi
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/bin:$PATH"
 
+export GPG_TTY=$(tty)
+
 # Enable zoxide, override `cd`
 # Disable zoxide doctor warning (Rancher Desktop auto-adds lines after this)
 export _ZO_DOCTOR=0
 eval "$(zoxide init zsh --cmd cd)"
-
 
 # Source machine-specific overrides
 if [ -f "$HOME/.zshrc.local" ]; then

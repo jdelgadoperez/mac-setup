@@ -1,7 +1,5 @@
 [include]
     path = ~/.gitconfig.local
-[gpg]
-	program = gpg
 [commit]
 	gpgsign = true
     verbose = true

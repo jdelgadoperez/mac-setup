@@ -28,42 +28,55 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 ## Git Safety Rules
 
-- Always create feature branches for work
+- For collaborative or work repos, always create feature branches — never push directly to main
+- For solo personal projects, push directly to `main` — no PR or feature branch needed
 - If no ticket exists, use `feat/` prefix instead of making up a ticket number
+<<<<<<< Updated upstream
+||||||| Stash base
+- Use `git -C <path>` instead of `cd`-ing into directories to avoid shell hook issues
+=======
+- Use `git -C <path>` instead of `cd`-ing into directories to avoid shell hook issues
+- If `gh pr create` fails for any reason, immediately fall back to providing the manual GitHub URL
+  for PR creation — do not retry. Fail fast and let the user complete it manually.
+>>>>>>> Stashed changes
 
 ## Git Worktree Workflow
 
 When working on multiple things in a single repo, use git worktrees instead of switching branches.
+
+Preferred worktree location: `~/.config/superpowers/worktrees/<project>/<branch>/`
 
 ```bash
 # List existing worktrees
 git worktree list
 
 # Create worktree for NEW branch
-git worktree add -b <branch-name> ../<repo>-<branch-name>
+git worktree add -b <branch-name> ~/.config/superpowers/worktrees/<project>/<branch-name>
 
 # Create worktree for EXISTING branch
-git worktree add ../<repo>-<branch-name> <branch-name>
+git worktree add ~/.config/superpowers/worktrees/<project>/<branch-name> <branch-name>
 
 # Remove worktree when done
-git worktree remove ../<repo>-<branch-name>
+git worktree remove ~/.config/superpowers/worktrees/<project>/<branch-name>
 
 # Clean up stale references
 git worktree prune
 ```
 
-Worktrees are sibling directories to the repository:
+## Shell & Environment Cleanup
 
-```
-/projects/
-├── my-repo/                    # Main repo (stays on default branch)
-├── my-repo-feature-branch/     # Worktree for feature work
-```
+When removing or replacing shell tools, CLIs, or aliases, always verify and clean up:
+- Symlinks in `~/.oh-my-zsh/custom/`, `~/bin/`, `~/.local/bin/`
+- Shell aliases in `.zshrc`, `.bashrc`, or oh-my-zsh custom plugin files
+- Wrapper scripts or cached references pointing to the old tool name
 
-## PR Preferences
+Do not consider a removal or migration task complete until these are verified clean.
 
-- All PR descriptions should ease the review experience - focus on clarity, context, and making it easy for
-  reviewers to understand what changed and why
+## Merging & PRs
+
+- For solo personal projects, push directly to `main` — no PR needed
+- For collaborative repos, all PR descriptions should ease the review experience — focus on clarity,
+  context, and making it easy for reviewers to understand what changed and why
 
 ## Bash Command Preferences
 
@@ -93,6 +106,23 @@ Worktrees are sibling directories to the repository:
 - I do not use `nvm`. All repos use `fnm` instead: https://github.com/Schniz/fnm
 - Run `fnm use` to switch to project-specific Node version
 
+<<<<<<< Updated upstream
 ## Best Practices
 
 - [Important] Parallelize work where applicable or reasonable
+||||||| Stash base
+@RTK.md
+=======
+## Context Efficiency
+
+- Do not re-read files already read in the current session — reference the earlier read instead
+- Use `offset`/`limit` when reading large files rather than loading the whole thing
+
+## Python
+
+- Always use `uv` instead of `pip` for package management
+- When running `ruff check --fix`, always follow up immediately with `ruff check` (no `--fix`) to
+  verify no imports were broken by auto-fixes. Do not commit until the second check is clean.
+
+@RTK.md
+>>>>>>> Stashed changes
