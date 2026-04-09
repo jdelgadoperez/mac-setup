@@ -26,6 +26,10 @@ export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
 # Python tools
 export LANG=en_US.UTF-8
 
+if [ -f "$HOME/.cargo/env" ]; then
+. "$HOME/.cargo/env"
+fi
+
 # Ruby
 export GEM_HOME="$HOME/.gem/ruby/2.6.0"
 export PATH="$GEM_HOME/bin:$PATH"
@@ -79,4 +83,3 @@ fi
 if [ -f "$HOME/.bashrc.local" ]; then
   source "$HOME/.bashrc.local"
 fi
-. "$HOME/.cargo/env"

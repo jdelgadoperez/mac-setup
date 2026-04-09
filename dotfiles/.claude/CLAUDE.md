@@ -31,14 +31,9 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 - For collaborative or work repos, always create feature branches — never push directly to main
 - For solo personal projects, push directly to `main` — no PR or feature branch needed
 - If no ticket exists, use `feat/` prefix instead of making up a ticket number
-<<<<<<< Updated upstream
-||||||| Stash base
-- Use `git -C <path>` instead of `cd`-ing into directories to avoid shell hook issues
-=======
 - Use `git -C <path>` instead of `cd`-ing into directories to avoid shell hook issues
 - If `gh pr create` fails for any reason, immediately fall back to providing the manual GitHub URL
   for PR creation — do not retry. Fail fast and let the user complete it manually.
->>>>>>> Stashed changes
 
 ## Git Worktree Workflow
 
@@ -106,13 +101,10 @@ Do not consider a removal or migration task complete until these are verified cl
 - I do not use `nvm`. All repos use `fnm` instead: https://github.com/Schniz/fnm
 - Run `fnm use` to switch to project-specific Node version
 
-<<<<<<< Updated upstream
 ## Best Practices
 
 - [Important] Parallelize work where applicable or reasonable
-||||||| Stash base
-@RTK.md
-=======
+
 ## Context Efficiency
 
 - Do not re-read files already read in the current session — reference the earlier read instead
@@ -125,4 +117,3 @@ Do not consider a removal or migration task complete until these are verified cl
   verify no imports were broken by auto-fixes. Do not commit until the second check is clean.
 
 @RTK.md
->>>>>>> Stashed changes

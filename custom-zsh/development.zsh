@@ -485,6 +485,7 @@ function updatelibs() {
   echo "${BLUE}==============================================================================${NC}"
   echo "${BLUE}[7/7] Ensure ${CYAN}Memory Bank${NC}"
   echo "${BLUE}==============================================================================${NC}"
+  ensuredocker
   ensurememorybank
 
   # Overall summary

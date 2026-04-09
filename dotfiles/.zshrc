@@ -44,8 +44,16 @@ else
   echo "fzf-tab is not installed, install it from https://github.com/Aloxaf/fzf-tab and set FZF_TAB_PLUGIN"
 fi
 
+# fnm - interactive shell initialization
+# Skip --use-on-cd in Claude Code to prevent hang when cd-ing into dirs with .nvmrc
+if [[ -n "$CLAUDECODE" ]]; then
+  eval "$(fnm env)"
+else
+  eval "$(fnm env --use-on-cd)"
+fi
+
 # 1Password
-source $HOME/.config/op/plugins.sh
+# source $HOME/.config/op/plugins.sh
 eval "$(op completion zsh)"
 compdef _op op
 export OP_BIOMETRIC_UNLOCK_ENABLED=true
@@ -57,19 +65,6 @@ export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
 ####################
 ## Development Tools
 ####################
-
-# fnm - interactive shell initialization
-# Skip --use-on-cd in Claude Code to prevent hang when cd-ing into dirs with .nvmrc
-if [[ -n "$CLAUDECODE" ]]; then
-  eval "$(fnm env)"
-else
-  eval "$(fnm env --use-on-cd)"
-fi
-
-# OrbStack - command-line tools and integration (if installed)
-if [ -f "$HOME/.orbstack/shell/init.zsh" ]; then
-  source ~/.orbstack/shell/init.zsh 2>/dev/null || :
-fi
 
 # Java - lazy loaded
 function loadJava() {
@@ -134,7 +129,6 @@ export PATH="$HOME/bin:$PATH"
 export GPG_TTY=$(tty)
 
 # Enable zoxide, override `cd`
-# Disable zoxide doctor warning (Rancher Desktop auto-adds lines after this)
 export _ZO_DOCTOR=0
 eval "$(zoxide init zsh --cmd cd)"
 

@@ -1,12 +1,12 @@
 [include]
     path = ~/.gitconfig.local
 [commit]
-	gpgsign = true
+    gpgsign = true
     verbose = true
 [credential]
-	helper =
+    helper =
 [url "git@github.com:"]
-	insteadOf = https://github.com/
+    insteadOf = https://github.com/
 [core]
     pager = delta
     excludesfile = ~/.gitignore
@@ -18,7 +18,7 @@
     sort = -committerdate
 [tag]
     sort = version:refname
-	gpgSign = true
+    gpgSign = true
 [init]
     defaultBranch = main
 [diff]

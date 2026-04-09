@@ -35,6 +35,13 @@ process.stdin.on('end', () => {
   try {
     const data = JSON.parse(input);
     const sessionId = data.session_id;
+    const toolName = data.tool_name;
+
+    // Skip read-only tools — they don't change state and fire most frequently
+    const readOnlyTools = new Set(['Read', 'Glob', 'Grep', 'Skill', 'WebSearch']);
+    if (readOnlyTools.has(toolName)) {
+      process.exit(0);
+    }
 
     if (!sessionId) {
       process.exit(0);

@@ -150,7 +150,10 @@
       "Bash(yarn why:*)",
       "Glob",
       "Grep",
-      "Read"
+      "Read",
+      "Bash(gh search prs:*)",
+      "Bash(gh api repos/:*)",
+      "Bash(gh pr review:*)"
     ],
     "deny": [
       "Bash(age --decrypt:*)",
@@ -194,8 +197,7 @@
       "Read(**/.env.*)",
       "Read(**/.ssh/*)",
       "Read(**/credentials)",
-      "Read(**/secrets.*)",
-      "WebFetch(*)"
+      "Read(**/secrets.*)"
     ],
     "ask": [
       "Bash(git push*)",
@@ -209,7 +211,8 @@
       "Bash(curl *)",
       "Bash(wget *)",
       "Bash(rm -rf *)",
-      "Bash(docker *)"
+      "Bash(docker *)",
+      "WebFetch(*)"
     ],
     "defaultMode": "default",
     "disableBypassPermissionsMode": "disable",
@@ -229,6 +232,16 @@
       }
     ],
     "SessionEnd": [],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/context-monitor.js"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "*",
@@ -248,51 +261,41 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "memory-bank hooks recall 2>> ~/.memory-bank/ingest.log"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "bash \"~/.claude/hooks/statusline-command.sh\""
+    "command": "bash ~/.claude/hooks/statusline-command.sh"
   },
   "enabledPlugins": {
-<<<<<<< Updated upstream
     "claude-md-management@claude-plugins-official": false,
+    "code-review@claude-plugins-official": false,
     "code-simplifier@claude-plugins-official": false,
     "context7@claude-plugins-official": false,
     "frontend-design@claude-plugins-official": false,
     "playwright@claude-plugins-official": false,
-||||||| Stash base
-    "frontend-design@claude-plugins-official": true,
-=======
-    "frontend-design@claude-plugins-official": false,
->>>>>>> Stashed changes
     "superpowers@claude-plugins-official": true,
-<<<<<<< Updated upstream
     "voltagent-biz@voltagent-subagents": false,
-    "voltagent-research@voltagent-subagents": false
-||||||| Stash base
-    "code-simplifier@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": true,
-    "voltagent-research@voltagent-subagents": true,
-    "voltagent-biz@voltagent-subagents": true
-=======
-    "code-simplifier@claude-plugins-official": false,
-    "playwright@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": false,
-    "voltagent-research@voltagent-subagents": true,
-    "voltagent-biz@voltagent-subagents": false,
-    "voltagent-core-dev@voltagent-subagents": true,
-    "voltagent-data-ai@voltagent-subagents": true,
+    "voltagent-core-dev@voltagent-subagents": false,
+    "voltagent-data-ai@voltagent-subagents": false,
+    "voltagent-dev-exp@voltagent-subagents": false,
     "voltagent-domains@voltagent-subagents": false,
-    "voltagent-infra@voltagent-subagents": true,
-    "voltagent-dev-exp@voltagent-subagents": true,
-    "voltagent-qa-sec@voltagent-subagents": true,
-    "voltagent-lang@voltagent-subagents": true,
-    "voltagent-meta@voltagent-subagents": true
->>>>>>> Stashed changes
+    "voltagent-infra@voltagent-subagents": false,
+    "voltagent-lang@voltagent-subagents": false,
+    "voltagent-meta@voltagent-subagents": false,
+    "voltagent-qa-sec@voltagent-subagents": false,
+    "voltagent-research@voltagent-subagents": false,
   },
   "extraKnownMarketplaces": {
     "piercelamb-plugins": {
@@ -301,7 +304,7 @@
         "repo": "piercelamb/deep-project"
       }
     },
-     "voltagent-subagents": {
+    "voltagent-subagents": {
       "source": {
         "source": "github",
         "repo": "VoltAgent/awesome-claude-code-subagents"

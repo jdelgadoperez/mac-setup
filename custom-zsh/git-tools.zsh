@@ -235,7 +235,7 @@ function gitclean() {
 
   if [[ $total -eq 0 ]]; then
     printf "${GREEN}No defunct branches found.${NC}\n"
-    _gitcleanworktrees "$force" "$interactive"
+    _git_cleanup_worktrees "$force" "$interactive"
     return 0
   fi
 
@@ -255,9 +255,11 @@ function gitclean() {
 
   printf "\n${WHITE}Total: ${BOLD_WHITE}${total}${NC} branch(es) to remove\n"
 
+  # Build the list of branches to delete based on mode
   local branches_to_delete=()
 
   if [[ "$interactive" == true ]]; then
+    # Build fzf input: "label\tbranch" with tab delimiter
     local fzf_input=""
     for branch in "${gone_branches[@]}"; do
       fzf_input+="gone\t${branch}\n"
@@ -287,6 +289,7 @@ function gitclean() {
         done <<< "$selected"
       fi
     else
+      # Fallback: y/n prompt per branch when fzf is not available
       printf "\n${BOLD_CYAN}Select branches to delete:${NC}\n"
       for branch in "${gone_branches[@]}"; do
         printf "  ${RED}[gone]${NC}   ${WHITE}${branch}${NC} — delete? [y/N] "
@@ -312,7 +315,7 @@ function gitclean() {
   else
     printf "\n${BOLD_YELLOW}Dry run — no branches deleted.${NC}\n"
     printf "Run ${CYAN}git-cleanup --force${NC} to delete all, or ${CYAN}git-cleanup --interactive${NC} to pick.\n"
-    _gitcleanworktrees "$force" "$interactive"
+    _git_cleanup_worktrees "$force" "$interactive"
     return 0
   fi
 
@@ -338,15 +341,17 @@ function gitclean() {
     printf "\n"
   fi
 
-  _gitcleanworktrees "$force" "$interactive"
+  # ── Phase 2: Worktree cleanup ──
+  _git_cleanup_worktrees "$force" "$interactive"
 }
 
-function _gitcleanworktrees() {
+function _git_cleanup_worktrees() {
   local force="$1"
   local interactive="$2"
 
   printf "\n${BOLD_BLUE}── Worktree cleanup ──${NC}\n"
 
+  # Prune stale worktree references (directory already deleted)
   local prune_output
   prune_output=$(git worktree prune --dry-run 2>&1)
   if [[ -n "$prune_output" ]]; then
@@ -355,9 +360,11 @@ function _gitcleanworktrees() {
     printf "${GREEN}Pruned stale references.${NC}\n"
   fi
 
+  # Get the main worktree path (first line is always the main checkout)
   local main_worktree
   main_worktree=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 
+  # Collect non-main worktrees
   local worktree_paths=()
   local worktree_branches=()
   local worktree_labels=()
@@ -372,10 +379,12 @@ function _gitcleanworktrees() {
     elif [[ "$line" == "detached" ]]; then
       current_branch="(detached HEAD)"
     elif [[ -z "$line" && -n "$current_path" ]]; then
+      # End of a worktree block — skip the main worktree
       if [[ "$current_path" != "$main_worktree" ]]; then
         worktree_paths+=("$current_path")
         worktree_branches+=("$current_branch")
 
+        # Determine label: is the directory missing or is the branch gone?
         if [[ ! -d "$current_path" ]]; then
           worktree_labels+=("missing dir")
         elif ! git show-ref --verify --quiet "refs/heads/${current_branch}" 2>/dev/null; then
@@ -394,6 +403,7 @@ function _gitcleanworktrees() {
     return 0
   fi
 
+  # Display worktrees
   printf "\n${BOLD_WHITE}Worktrees:${NC}\n"
   for idx in {1..${#worktree_paths[@]}}; do
     local label="${worktree_labels[$idx]}"
@@ -406,9 +416,11 @@ function _gitcleanworktrees() {
     printf "  ${color}[${label}]${NC} ${WHITE}${worktree_paths[$idx]}${NC} ${MAGENTA}(${worktree_branches[$idx]})${NC}\n"
   done
 
+  # Collect worktrees to remove
   local worktrees_to_remove=()
 
   if [[ "$interactive" == true ]]; then
+    # Build fzf input
     local fzf_input=""
     for idx in {1..${#worktree_paths[@]}}; do
       fzf_input+="${worktree_labels[$idx]}\t${worktree_paths[$idx]}\t${worktree_branches[$idx]}\n"
@@ -432,11 +444,13 @@ function _gitcleanworktrees() {
       fi
 
       while IFS= read -r line; do
+        # Extract the path (second tab-delimited field)
         local wt_path
         wt_path=$(printf '%s' "$line" | cut -d$'\t' -f2)
         worktrees_to_remove+=("$wt_path")
       done <<< "$selected"
     else
+      # Fallback: y/n per worktree
       printf "\n${BOLD_CYAN}Select worktrees to remove:${NC}\n"
       for idx in {1..${#worktree_paths[@]}}; do
         printf "  ${WHITE}${worktree_paths[$idx]}${NC} (${worktree_branches[$idx]}) — remove? [y/N] "
@@ -447,6 +461,7 @@ function _gitcleanworktrees() {
       done
     fi
   elif [[ "$force" == true ]]; then
+    # In force mode, only auto-remove worktrees with missing dirs or gone branches
     for idx in {1..${#worktree_paths[@]}}; do
       if [[ "${worktree_labels[$idx]}" != "active" ]]; then
         worktrees_to_remove+=("${worktree_paths[$idx]}")
@@ -458,6 +473,7 @@ function _gitcleanworktrees() {
       return 0
     fi
   else
+    # Dry run
     local stale_count=0
     for label in "${worktree_labels[@]}"; do
       if [[ "$label" != "active" ]]; then
@@ -486,6 +502,7 @@ function _gitcleanworktrees() {
       printf "  ${GREEN}Removed${NC} ${WHITE}${wt_path}${NC}\n"
       ((wt_deleted++))
     else
+      # Directory might already be gone, try prune as fallback
       if [[ ! -d "$wt_path" ]]; then
         git worktree prune 2>/dev/null
         printf "  ${GREEN}Pruned${NC}  ${WHITE}${wt_path}${NC}\n"
