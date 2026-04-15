@@ -70,9 +70,11 @@ function ensurememorybank() {
 
   # Ingest latest Claude Code history
   # Routes through UI server API if running, otherwise uses direct DB access
+  # Output is redirected to the log file to prevent rich's spinner from doing
+  # terminal I/O while updatelibs runs as a background job (which causes SIGTSTP spam)
   echo ""
   echo "${BLUE}⏳ Ingesting Claude Code history...${NC}"
-  if memory-bank ingest claude-code 2>&1; then
+  if memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1; then
     echo "${GREEN}✅ Ingest complete${NC}"
   else
     echo "${YELLOW}⚠️  Ingest failed (check ~/.memory-bank/ingest.log)${NC}"
