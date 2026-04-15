@@ -20,7 +20,7 @@ fi
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
 plugins=()
-plugins=(git dotenv pyenv you-should-use z zsh-lazyload)
+plugins=(git dotenv you-should-use z zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
@@ -52,11 +52,14 @@ else
   eval "$(fnm env --use-on-cd)"
 fi
 
-# 1Password
-# source $HOME/.config/op/plugins.sh
-eval "$(op completion zsh)"
-compdef _op op
-export OP_BIOMETRIC_UNLOCK_ENABLED=true
+# 1Password - lazy loaded
+function loadOp() {
+  # source $HOME/.config/op/plugins.sh
+  eval "$(op completion zsh)"
+  compdef _op op
+  export OP_BIOMETRIC_UNLOCK_ENABLED=true
+}
+lazyload op -- 'loadOp'
 
 # Dracula theme for BSD grep
 export GREP_COLOR="1;38;2;255;85;85"
@@ -105,6 +108,8 @@ fi
 
 # Python tools
 export LANG=en_US.UTF-8
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/shims:$PATH"
 
 # Ruby
 export GEM_HOME="$HOME/.gem/ruby/2.6.0"
