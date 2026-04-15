@@ -1,6 +1,6 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-command_timeout = 10000
+command_timeout = 2000
 
 # Use the color palette
 palette = "dracula"
@@ -29,6 +29,7 @@ style = "bold pink"
 
 [git_status]
 style = "bold red"
+ignore_submodules = true
 
 [hostname]
 style = "bold purple"
@@ -47,6 +48,7 @@ symbol = "󱃾 "
 disabled = true
 
 [gcloud]
+disabled = true
 format = '[$symbol($project)]($style) '
 
 [buf]
@@ -178,6 +180,7 @@ symbol = " "
 symbol = " "
 
 [python]
+disabled = true
 symbol = " "
 
 [rlang]

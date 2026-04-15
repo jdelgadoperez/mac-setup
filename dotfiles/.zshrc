@@ -20,7 +20,7 @@ fi
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
 plugins=()
-plugins=(git dotenv you-should-use z zsh-lazyload)
+plugins=(git you-should-use z zsh-lazyload)
 plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 source $ZSH/oh-my-zsh.sh
@@ -122,10 +122,8 @@ export PATH="$HOME/.terraform.versions:$PATH"
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 export no_proxy="*"
 
-# MySQL - architecture-aware
-if command -v brew &>/dev/null; then
-  export PATH="$(brew --prefix mysql@8.4)/bin:$PATH"
-fi
+# MySQL
+export PATH="/opt/homebrew/opt/mysql@8.4/bin:$PATH"
 
 # Personal bin
 export PATH="$HOME/.local/bin:$PATH"
