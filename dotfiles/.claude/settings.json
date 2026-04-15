@@ -272,6 +272,17 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -295,7 +306,7 @@
     "voltagent-lang@voltagent-subagents": false,
     "voltagent-meta@voltagent-subagents": false,
     "voltagent-qa-sec@voltagent-subagents": false,
-    "voltagent-research@voltagent-subagents": false,
+    "voltagent-research@voltagent-subagents": false
   },
   "extraKnownMarketplaces": {
     "piercelamb-plugins": {
@@ -363,5 +374,13 @@
       "Fucking around and finding out"
     ]
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": true,
+  "mcpServers": {
+    "memory-bank": {
+      "command": "memory-bank",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
 }
