@@ -229,6 +229,14 @@
             "command": "memory-bank hooks context-summary >> ~/.memory-bank/ingest.log 2>&1 &"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/icm hook start"
+          }
+        ]
       }
     ],
     "SessionEnd": [],
@@ -238,6 +246,23 @@
           {
             "type": "command",
             "command": "node ~/.claude/hooks/context-monitor.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/icm hook post"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read -r f; [[ \"$f\" == *.py ]] && uvx ruff check \"$f\"; } 2>/dev/null || true"
           }
         ]
       }
@@ -260,6 +285,15 @@
             "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "memory-bank distill --since 3h >> ~/.memory-bank/ingest.log 2>&1 &"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -271,6 +305,14 @@
             "command": "memory-bank hooks recall 2>> ~/.memory-bank/ingest.log"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/icm hook prompt"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -280,6 +322,43 @@
           {
             "type": "command",
             "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/icm hook compact"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "memory-bank ingest claude-code  # precompact >> ~/.memory-bank/ingest.log 2>&1 &"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/icm hook pre"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
           }
         ]
       }
@@ -296,17 +375,7 @@
     "context7@claude-plugins-official": false,
     "frontend-design@claude-plugins-official": false,
     "playwright@claude-plugins-official": false,
-    "superpowers@claude-plugins-official": true,
-    "voltagent-biz@voltagent-subagents": false,
-    "voltagent-core-dev@voltagent-subagents": false,
-    "voltagent-data-ai@voltagent-subagents": false,
-    "voltagent-dev-exp@voltagent-subagents": false,
-    "voltagent-domains@voltagent-subagents": false,
-    "voltagent-infra@voltagent-subagents": false,
-    "voltagent-lang@voltagent-subagents": false,
-    "voltagent-meta@voltagent-subagents": false,
-    "voltagent-qa-sec@voltagent-subagents": false,
-    "voltagent-research@voltagent-subagents": false
+    "superpowers@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "piercelamb-plugins": {
@@ -314,13 +383,6 @@
         "source": "github",
         "repo": "piercelamb/deep-project"
       }
-    },
-    "voltagent-subagents": {
-      "source": {
-        "source": "github",
-        "repo": "VoltAgent/awesome-claude-code-subagents"
-      },
-      "autoUpdate": true
     }
   },
   "spinnerVerbs": {
