@@ -69,6 +69,7 @@ ${YELLOW}COMPONENTS:${NC}
   ${GREEN}git${NC}          - Git configuration
   ${GREEN}zsh${NC}          - Zsh and Oh My Zsh
   ${GREEN}dracula${NC}      - Dracula theme for iTerm2
+  ${GREEN}claude${NC}       - Claude Code configuration
   ${GREEN}dotfiles${NC}     - Symlink dotfiles to home directory
 
 For more information, visit: https://github.com/yourusername/mac-setup
@@ -96,6 +97,7 @@ ${YELLOW}COMPONENTS:${NC}
   ${GREEN}git${NC}          - Git configuration
   ${GREEN}zsh${NC}          - Zsh and Oh My Zsh
   ${GREEN}dracula${NC}      - Dracula theme
+  ${GREEN}claude${NC}       - Claude Code configuration
   ${GREEN}dotfiles${NC}     - Symlink dotfiles
 
 ${YELLOW}EXAMPLES:${NC}
@@ -149,6 +151,9 @@ is_installed() {
       # Check if either free or pro theme is installed
       [ -f "$ZSH_CUSTOM/themes/dracula.zsh-theme" ] || [ -f "$ZSH_CUSTOM/themes/dracula-pro.zsh-theme" ]
       ;;
+    claude)
+      [ -L "$HOME/.claude/CLAUDE.md" ]
+      ;;
     dotfiles)
       [ -L "$HOME/.zshrc" ]
       ;;
@@ -163,13 +168,14 @@ list_components() {
   echo -e "${BLUE}Available Components:${NC}"
   echo ""
 
-  local components=("xcode" "brew" "git" "zsh" "dracula" "dotfiles")
+  local components=("xcode" "brew" "git" "zsh" "dracula" "claude" "dotfiles")
   local descriptions=(
     "XCode Command Line Tools"
     "Homebrew package manager and packages"
     "Git configuration"
     "Zsh shell and Oh My Zsh framework"
     "Dracula color theme for iTerm2"
+    "Claude Code configuration"
     "Dotfiles symlinked to home directory"
   )
 
@@ -192,13 +198,14 @@ select_components_interactive() {
   echo -e "${BLUE}Select components to install:${NC}"
   echo ""
 
-  local components=("xcode" "brew" "git" "zsh" "dracula" "dotfiles")
+  local components=("xcode" "brew" "git" "zsh" "dracula" "claude" "dotfiles")
   local descriptions=(
     "XCode Command Line Tools"
     "Homebrew and packages"
     "Git configuration"
     "Zsh and Oh My Zsh"
     "Dracula theme"
+    "Claude Code configuration"
     "Symlink dotfiles"
   )
   local selected=()
@@ -304,6 +311,12 @@ install_component() {
         loginfo "Installing Dracula theme"
       fi
       sh "$SCRIPT_DIR/install-dracula.sh"
+      ;;
+    claude)
+      if ! $dry_run; then
+        loginfo "Setting up Claude Code configuration"
+      fi
+      sh "$SCRIPT_DIR/install-claude.sh"
       ;;
     dotfiles)
       if ! $dry_run; then
@@ -441,7 +454,7 @@ cmd_install() {
 
   # Default to all if no components specified
   if [ ${#components[@]} -eq 0 ] || [[ " ${components[@]} " =~ " all " ]]; then
-    components=("xcode" "brew" "git" "zsh" "dracula" "dotfiles")
+    components=("xcode" "brew" "git" "zsh" "dracula" "claude" "dotfiles")
   fi
 
   # Show installation plan
@@ -826,6 +839,21 @@ cmd_doctor() {
   else
     echo -e "${YELLOW}!${NC} Dotfiles not symlinked"
     echo -e "  Run: dorothy sync"
+  fi
+
+  # Check Claude Code
+  if command -v claude &> /dev/null; then
+    printf "${GREEN}✓${NC} Claude Code installed (%s)\n" "$(claude --version 2>/dev/null | head -n1)"
+  else
+    echo -e "${YELLOW}!${NC} Claude Code not installed"
+    echo -e "  Run: brew install claude"
+  fi
+
+  if [ -L "$HOME/.claude/CLAUDE.md" ]; then
+    echo -e "${GREEN}✓${NC} Claude Code configuration symlinked"
+  else
+    echo -e "${YELLOW}!${NC} Claude Code configuration not set up"
+    echo -e "  Run: dorothy install claude"
   fi
 
   # Check Starship

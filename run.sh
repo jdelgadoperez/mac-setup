@@ -16,6 +16,7 @@ INSTALL_BREW=true
 INSTALL_GIT=true
 INSTALL_ZSH=true
 INSTALL_DRACULA=true
+INSTALL_CLAUDE=true
 INSTALL_APPS="${INSTALL_APPS:-false}"  # Use env var or default to false
 
 show_help() {
@@ -32,6 +33,7 @@ ${YELLOW}COMPONENTS:${NC}
   ${GREEN}git${NC}          - Git configuration
   ${GREEN}zsh${NC}          - Zsh and Oh My Zsh
   ${GREEN}dracula${NC}      - Dracula theme
+  ${GREEN}claude${NC}       - Claude Code configuration
 
 ${YELLOW}OPTIONS:${NC}
   ${GREEN}--apps${NC}       - Install GUI applications via Homebrew
@@ -60,6 +62,7 @@ if [ $# -gt 0 ]; then
   INSTALL_GIT=false
   INSTALL_ZSH=false
   INSTALL_DRACULA=false
+  INSTALL_CLAUDE=false
 
   # Parse each argument
   for arg in "$@"; do
@@ -77,6 +80,7 @@ if [ $# -gt 0 ]; then
         INSTALL_GIT=true
         INSTALL_ZSH=true
         INSTALL_DRACULA=true
+        INSTALL_CLAUDE=true
         ;;
       xcode)
         INSTALL_XCODE=true
@@ -92,6 +96,9 @@ if [ $# -gt 0 ]; then
         ;;
       dracula)
         INSTALL_DRACULA=true
+        ;;
+      claude)
+        INSTALL_CLAUDE=true
         ;;
       *)
         logerror "Unknown component: $arg"
@@ -111,6 +118,7 @@ printf "%s\n" "${BLUE}Installation Plan:${NC}"
 [ "$INSTALL_GIT" = "true" ] && printf "  %s Git configuration\n" "${GREEN}✓${NC}"
 [ "$INSTALL_ZSH" = "true" ] && printf "  %s Zsh and Oh My Zsh\n" "${GREEN}✓${NC}"
 [ "$INSTALL_DRACULA" = "true" ] && printf "  %s Dracula theme\n" "${GREEN}✓${NC}"
+[ "$INSTALL_CLAUDE" = "true" ] && printf "  %s Claude Code configuration\n" "${GREEN}✓${NC}"
 echo ""
 
 # Confirm installation
@@ -126,6 +134,7 @@ echo ""
 [ "$INSTALL_XCODE" = "true" ] && sh "$SCRIPT_DIR/install-xcode.sh"
 [ "$INSTALL_BREW" = "true" ] && sh "$SCRIPT_DIR/install-brew.sh" "$INSTALL_APPS"
 [ "$INSTALL_GIT" = "true" ] && sh "$SCRIPT_DIR/config-git.sh"
+[ "$INSTALL_CLAUDE" = "true" ] && sh "$SCRIPT_DIR/install-claude.sh"
 
 # Install Zsh and switch to it
 if [ "$INSTALL_ZSH" = "true" ]; then
