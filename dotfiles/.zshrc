@@ -137,6 +137,26 @@ export GPG_TTY=$(tty)
 export _ZO_DOCTOR=0
 eval "$(zoxide init zsh --cmd cd)"
 
+# Shell functions
+gcheck() {
+  local n=${1:-5}
+  git status
+  echo "\n--- diff ---"
+  git diff --stat
+  echo "\n--- recent commits ---"
+  git log --oneline -n "$n"
+}
+
+pycheck() {
+  local target=${1:-.}
+  echo "==> ruff fix"
+  uvx ruff check --fix "$target"
+  echo "==> ruff verify"
+  uvx ruff check "$target" || return 1
+  echo "==> pytest"
+  uv run pytest "${@:2}" -q
+}
+
 # Source machine-specific overrides
 if [ -f "$HOME/.zshrc.local" ]; then
   source "$HOME/.zshrc.local"
