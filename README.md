@@ -2,6 +2,14 @@
 
 Automated macOS development environment configuration and dotfiles management. Transforms a fresh Mac into a fully-configured development workstation with one command.
 
+## Prerequisites
+
+- macOS (Intel or Apple Silicon)
+- Admin access (some steps require `sudo`)
+- Internet connection
+
+No other tools need to be installed beforehand — the setup scripts bootstrap everything from a clean Mac.
+
 ## Quick Start
 
 ### Using Dorothy CLI (Recommended)
@@ -27,6 +35,7 @@ dorothy list                     # Show available components
 - `dorothy install` - Install components (full setup or selective)
 - `dorothy update` - Update all managed tools and dependencies
 - `dorothy sync` - Sync dotfiles (create symlinks)
+- `dorothy local` - Manage machine-specific override files not tracked in git
 - `dorothy list` - List available components and installation status
 - `dorothy doctor` - System health check and diagnostics
 - `dorothy help` - Show detailed help
@@ -54,6 +63,22 @@ sh ./install-zsh.sh         # Zsh + Oh My Zsh + plugins
 sh ./install-dracula.sh     # Dracula theme for multiple apps
 ```
 
+### After Installation
+
+1. **Restart your shell** (or open a new terminal window) to load the new configuration:
+   ```bash
+   exec zsh
+   ```
+2. **Set up machine-specific config** (git identity, local overrides):
+   ```bash
+   dorothy local init    # Creates ~/.gitconfig.local, ~/.zshrc.local, etc.
+   dorothy local edit git  # Add your name, email, and signing key
+   ```
+3. **Verify everything is healthy:**
+   ```bash
+   dorothy doctor
+   ```
+
 ## What Gets Installed
 
 ### Development Tools & Languages
@@ -78,10 +103,13 @@ sh ./install-dracula.sh     # Dracula theme for multiple apps
 - Kubernetes tools (`kubectl`, `k9s`, `kustomize`)
 - AWS CLI
 
+**Claude Code:**
+- Claude Code CLI and personal configuration (settings, hooks, slash commands)
+
 **Optional GUI Apps** (when `INSTALL_APPS=true`):
 - 1Password, Alfred, Arc Browser
 - Discord, Slack, Spotify
-- VS Code, iTerm2, and more
+- VS Code, iTerm2, Ghostty, and more
 
 ### Shell Environment
 
@@ -92,10 +120,11 @@ sh ./install-dracula.sh     # Dracula theme for multiple apps
 - Custom helper functions for development workflows
 
 **Dotfiles** symlinked to `$HOME`:
-- `.zshrc` - Main shell configuration
+- `.zshrc` / `.bashrc` / `.zprofile` - Shell configuration
 - `.gitconfig` - Git with GPG signing via 1Password
 - `.config/starship.toml` - Prompt theme
 - `.config/.ripgreprc` - Search tool config
+- `.config/ghostty/` - Ghostty terminal config
 - iTerm2 preferences
 
 ### Custom Zsh Functions
@@ -223,6 +252,14 @@ dorothy doctor                  # Check for issues
 dorothy install --dry-run       # Preview changes
 dorothy install brew --apps     # Install Homebrew with GUI apps
 dorothy update                  # Update everything
+```
+
+**Machine-specific config (not tracked in git):**
+```bash
+dorothy local init              # Create ~/.gitconfig.local, ~/.zshrc.local, etc.
+dorothy local list              # Show which .local files exist
+dorothy local edit git          # Edit ~/.gitconfig.local
+dorothy local edit zsh          # Edit ~/.zshrc.local
 ```
 
 **List all custom commands:**

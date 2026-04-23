@@ -1,0 +1,94 @@
+#!/bin/bash
+#
+# Pre-push hook: blocks commits that introduce sensitive personal or work data.
+#
+# Checks applied to every new commit's diff:
+#   1. Hardcoded home directory paths  (/Users/$USER/, /home/$USER/)
+#   2. Patterns listed in .githooks/forbidden-patterns
+#
+# To activate for this repo:
+#   git config core.hooksPath .githooks
+#
+# To bypass in an emergency (use sparingly):
+#   git push --no-verify
+
+set -eo pipefail
+
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PATTERNS_FILE="$HOOK_DIR/forbidden-patterns"
+BLOCKED=false
+
+# ── Build pattern list ─────────────────────────────────────────────────────────
+
+patterns=()
+
+# Hardcoded home paths for the current user — should always be ~ or $HOME
+CURRENT_USER="${USER:-$(id -un 2>/dev/null || whoami 2>/dev/null || echo "")}"
+if [ -n "$CURRENT_USER" ]; then
+  patterns+=("/Users/$CURRENT_USER/")
+  patterns+=("/home/$CURRENT_USER/")
+fi
+
+# Load patterns from forbidden-patterns file
+if [ -f "$PATTERNS_FILE" ]; then
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+    patterns+=("$line")
+  done < "$PATTERNS_FILE"
+fi
+
+# ── Scan incoming commits ──────────────────────────────────────────────────────
+
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  # Skip branch deletions
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+
+  # Determine commit range (new branch vs update)
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    range="$local_sha"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+
+  while IFS= read -r commit; do
+    [ -z "$commit" ] && continue
+
+    # Only scan added/modified lines, skipping .githooks/ (contains patterns as strings)
+    # `|| true` prevents set -e from firing when grep finds no matches (exit 1)
+    added_lines=$(git show "$commit" --unified=0 2>/dev/null \
+      | awk '
+          /^diff --git a\/\.githooks\// { skip=1; next }
+          /^diff --git /               { skip=0 }
+          !skip
+        ' \
+      | grep "^+" \
+      | grep -v "^+++" || true)
+
+    for pattern in "${patterns[@]}"; do
+      if echo "$added_lines" | grep -qF "$pattern"; then
+        echo "  [pre-push] BLOCKED  ${commit:0:8}  pattern: \"$pattern\""
+        BLOCKED=true
+      fi
+    done
+
+    # Check commit author email against forbidden patterns
+    author_email=$(git log -1 --format="%ae" "$commit")
+    for pattern in "${patterns[@]}"; do
+      if echo "$author_email" | grep -qF "$pattern"; then
+        echo "  [pre-push] BLOCKED  ${commit:0:8}  author email matches \"$pattern\" (${author_email})"
+        BLOCKED=true
+      fi
+    done
+
+  done < <(git log --format="%H" "$range" 2>/dev/null)
+done
+
+if [ "$BLOCKED" = true ]; then
+  echo ""
+  echo "  [pre-push] Push rejected. Amend or rebase the commits listed above."
+  echo "  [pre-push] Patterns file: .githooks/forbidden-patterns"
+  echo "  [pre-push] Override (emergency only): git push --no-verify"
+  exit 1
+fi
+
+exit 0
