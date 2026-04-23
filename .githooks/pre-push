@@ -54,6 +54,7 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     [ -z "$commit" ] && continue
 
     # Only scan added/modified lines, skipping .githooks/ (contains patterns as strings)
+    # `|| true` prevents set -e from firing when grep finds no matches (exit 1)
     added_lines=$(git show "$commit" --unified=0 2>/dev/null \
       | awk '
           /^diff --git a\/\.githooks\// { skip=1; next }
@@ -61,7 +62,7 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
           !skip
         ' \
       | grep "^+" \
-      | grep -v "^+++")
+      | grep -v "^+++" || true)
 
     for pattern in "${patterns[@]}"; do
       if echo "$added_lines" | grep -qF "$pattern"; then
