@@ -1,0 +1,14 @@
+# Forbidden patterns for the pre-push hook.
+# One pattern per line. Lines starting with # are comments.
+# Matched against the added lines of every new commit's diff.
+# Also matched against commit author email.
+#
+# Note: hardcoded /Users/$USER/ and /home/$USER/ paths are always
+# checked dynamically by the hook itself — no need to list them here.
+
+# ── Work email domain ──────────────────────────────────────────────────────────
+@drata.com
+
+# ── Internal Jira project keys ─────────────────────────────────────────────────
+# Format: PROJECT_KEY- (e.g. PLAT-12345)
+PLAT-
