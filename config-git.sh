@@ -22,6 +22,10 @@ fi
 
 loginfo "Configuring Git"
 
+# Activate repo-level git hooks
+git -C "$SCRIPT_DIR" config core.hooksPath .githooks
+logsuccess "Activated .githooks (pre-push sensitive-data check)"
+
 GITCONFIG_SOURCE="$SCRIPT_DIR/dotfiles/.gitconfig"
 GITCONFIG_TARGET="$HOME/.gitconfig"
 GITCONFIG_LOCAL="$HOME/.gitconfig.local"

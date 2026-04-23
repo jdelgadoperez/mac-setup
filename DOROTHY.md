@@ -32,6 +32,7 @@ dorothy install --help             # Show install help
 - `git` - Git configuration
 - `zsh` - Zsh and Oh My Zsh
 - `dracula` - Dracula theme for iTerm2
+- `claude` - Claude Code configuration (dotfiles and settings)
 - `dotfiles` - Symlink dotfiles to $HOME
 
 **Options:**
@@ -84,6 +85,32 @@ Sync dotfiles by creating symlinks from `dotfiles/` to `$HOME`:
 ```bash
 dorothy sync                       # Sync dotfiles
 dorothy sync --dry-run             # Preview what would be synced
+```
+
+### `dorothy local`
+
+Manage machine-specific override files that live outside version control:
+
+```bash
+dorothy local init             # Create stub .local files (never overwrites)
+dorothy local list             # Show status of all .local files
+dorothy local edit git         # Open ~/.gitconfig.local in $EDITOR
+dorothy local edit zsh         # Open ~/.zshrc.local in $EDITOR
+dorothy local edit bash        # Open ~/.bashrc.local in $EDITOR
+```
+
+**Override files created by `init`:**
+- `~/.gitconfig.local` - Machine-specific git identity (name, email, signing key)
+- `~/.zshrc.local` - Machine-specific Zsh config (sourced at end of `~/.zshrc`)
+- `~/.bashrc.local` - Machine-specific Bash config (sourced at end of `~/.bashrc`)
+
+These files are included automatically by the shared dotfiles but are never committed to the repository. Use them for credentials, work-specific aliases, or anything that differs between machines.
+
+**Typical first-time workflow:**
+```bash
+dorothy local init             # Create the stub files
+dorothy local edit git         # Fill in your name, email, and signing key
+dorothy local edit zsh         # Add any machine-specific exports or aliases
 ```
 
 ### `dorothy doctor`
@@ -309,11 +336,11 @@ The Dorothy CLI is a single Bash script located at `./dorothy`.
 
 Key sections:
 - Lines 9-16: Symlink resolution (critical for global installation)
-- Lines 24-128: Help documentation
-- Lines 130-169: Component management (detection, listing, selection)
-- Lines 171-239: Installation functions
-- Lines 241-599: Command handlers (install, update, list, sync, doctor)
-- Lines 601-650: Main entry point and argument parsing
+- Lines 24-128: Utility functions and help documentation
+- Lines 130-239: Component management (detection, listing, interactive selection)
+- Lines 242-398: Installation and sync functions
+- Lines 400-896: Command handlers (install, update, list, sync, local, doctor)
+- Lines 898-979: Main entry point and argument parsing
 
 **Important Technical Details:**
 

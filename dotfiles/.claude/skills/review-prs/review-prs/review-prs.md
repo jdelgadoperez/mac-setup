@@ -68,16 +68,16 @@ Sort PRs by `createdAt` ascending (oldest first). **Print the table directly as 
 ```
 ━━━ PRs Requesting Your Review ━━━
 
- #   Repo           PR       Author          Age    Title
- ─   ────           ──       ──────          ───    ─────
- 1   api            #31497   EmilyParr       9d     fix(cli): require -r flag [PLAT-14352]
-     https://github.com/<org>/api/pull/31497
+ #   Repo           PR       Author    Age    Title
+ ─   ────           ──       ──────    ───    ─────
+ 1   backend        #1234    alice     9d     fix(cli): require -r flag [PROJ-1234]
+     https://github.com/<org>/backend/pull/1234
 
- 2   ai-tools       #59      jdelgadoperez   8d     fix(agents): add ADF workflow docs
-     https://github.com/<org>/ai-tools/pull/59
+ 2   ml-tools       #42      you       8d     fix(agents): add workflow docs
+     https://github.com/<org>/ml-tools/pull/42
 
- 3   api            #30934   JonWolfeDrata   54d    feat(build): migrate to pnpm  [2+ approvals]
-     https://github.com/<org>/api/pull/30934
+ 3   backend        #891     bob       54d    feat(build): migrate to pnpm  [2+ approvals]
+     https://github.com/<org>/backend/pull/891
 ```
 
 - **Age** is days since `createdAt` (e.g. `9d`, `2h` for same-day PRs).
@@ -168,16 +168,16 @@ Print the summary using `AskUserQuestion`:
 ```
 Reviews complete:
 
- Repo        PR       Verdict
- ai-tools    #59      REJECT     ~/.claude/reviews/2026-03-12-ai-tools--59.md
+ Repo        PR      Verdict
+ ml-tools    #42     REJECT     ~/.claude/reviews/2026-03-12-ml-tools--42.md
    Blocking:
-     1. JSON injection risk                  (agents/claude/janet-jira-cli-expert.md:47)
-     2. Overly broad skill glob              (agents/claude/janet-jira-cli-expert.md:12)
+     1. JSON injection risk                  (agents/claude/example-agent.md:47)
+     2. Overly broad skill glob              (agents/claude/example-agent.md:12)
    Non-blocking:
-     A. Augment path mismatch                (agents/augment/janet-jira-cli-expert.md:12)
+     A. Path mismatch                        (agents/example-agent.md:12)
      B. Keychain check coverage              (install-agents.sh:45)
 
- api         #31497   APPROVE    ~/.claude/reviews/2026-03-12-api--31497.md
+ backend     #1234   APPROVE    ~/.claude/reviews/2026-03-12-backend--1234.md
    Non-blocking:
      A. Hard-coded region lists              (scripts/deploy.sh:142)
      B. No test coverage                     (general)
@@ -274,12 +274,12 @@ Display using `AskUserQuestion`:
 ```
 About to post:
 
-  <org>/ai-tools #59 (commit 87486ea):
+  <org>/ml-tools #42 (commit 87486ea):
     Review type: REQUEST_CHANGES
     Inline comments: 3  (blocking-1, blocking-2, non-blocking-D)
     Body comments: 0
 
-  <org>/api #31497 (commit e3be9d5):
+  <org>/backend #1234 (commit e3be9d5):
     Review type: APPROVE
     Inline comments: 1  (non-blocking-A)
     Body comments: 0
@@ -305,8 +305,8 @@ Print results:
 
 ```
 Posted:
-  <org>/ai-tools #59  — REQUEST_CHANGES, 3 inline comments  <pr url>
-  <org>/api #31497     — APPROVE, 1 inline comment           <pr url>
+  <org>/ml-tools #42    — REQUEST_CHANGES, 3 inline comments  <pr url>
+  <org>/backend #1234  — APPROVE, 1 inline comment           <pr url>
 ```
 
 Clean up temp files:
