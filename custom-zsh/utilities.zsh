@@ -288,3 +288,24 @@ function caff() {
       ;;
   esac
 }
+
+### Git quick-check: status + diff + recent commits
+function gcheck() {
+  local n=${1:-5}
+  git status
+  echo "\n--- diff ---"
+  git diff --stat
+  echo "\n--- recent commits ---"
+  git log --oneline -n "$n"
+}
+
+### Python quick-check: ruff fix + verify + pytest
+function pycheck() {
+  local target=${1:-.}
+  echo "==> ruff fix"
+  uvx ruff check --fix "$target"
+  echo "==> ruff verify"
+  uvx ruff check "$target" || return 1
+  echo "==> pytest"
+  uv run pytest "${@:2}" -q
+}

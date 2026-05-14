@@ -116,13 +116,13 @@ function getcommitcount() {
   # Check if inside a Git repository
   if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     echo "Not inside a Git repository."
-    exit 1
+    return 1
   fi
 
   # Get the author from arguments
   if [ -z "$1" ]; then
     echo "You must provide an author email or name."
-    exit 1
+    return 1
   fi
   AUTHOR="$1"
 
@@ -136,13 +136,13 @@ function getcommits() {
   # Check if inside a Git repository
   if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     echo "Not inside a Git repository."
-    exit 1
+    return 1
   fi
 
   # Get the author from arguments
   if [ -z "$1" ]; then
     echo "You must provide an author email or name."
-    exit 1
+    return 1
   fi
   AUTHOR="$1"
 

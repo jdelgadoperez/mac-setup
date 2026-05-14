@@ -112,41 +112,54 @@ if git -C "$CURRENT_DIR" rev-parse --git-dir > /dev/null 2>&1; then
     fi
 fi
 
+# rtk efficiency (cached 60s, async refresh)
+RTK_CACHE="/tmp/.rtk-gain-cache"
+if [ -z "$(find "$RTK_CACHE" -mmin -1 2>/dev/null)" ]; then
+    (rtk gain --format json 2>/dev/null | jq -r '.summary.avg_savings_pct // 0' > "$RTK_CACHE" 2>/dev/null) &
+fi
+RTK_PCT=$(cat "$RTK_CACHE" 2>/dev/null)
+RTK_PCT_INT=${RTK_PCT%.*}; RTK_PCT_INT=${RTK_PCT_INT:-0}
+RTK_INFO="${PINK}rtk: ${RTK_PCT_INT}%${RESET}"
+
 # Build the status line with time at the beginning
 LINE_SEPARATOR="${COMMENT}|${RESET}"
 DOT_SEPARATOR="${PINK}•${RESET}"
 
 # Start with time
-LINE="${FG}${CURRENT_TIME}${RESET} ${LINE_SEPARATOR}"
+TOP_LINE="${FG}${CURRENT_TIME}${RESET}"
 
 # Add directory
-LINE="${LINE} ${BOLD}${GREEN}${DIR_NAME}${RESET}"
+TOP_LINE="${TOP_LINE} ${LINE_SEPARATOR} ${BOLD}${GREEN}${DIR_NAME}${RESET}"
 
 # Add git branch if available
 if [ -n "$GIT_BRANCH" ]; then
-    LINE="${LINE} ${LINE_SEPARATOR} ${PURPLE}󰳏 ${BOLD}${PURPLE}${GIT_BRANCH}${RESET}"
+    TOP_LINE="${TOP_LINE} ${LINE_SEPARATOR} ${PURPLE}󰳏 ${BOLD}${PURPLE}${GIT_BRANCH}${RESET}"
     if [ -n "$GIT_STATUS" ]; then
-        LINE="${LINE} ${BOLD}${RED}${GIT_STATUS}${RESET} ${DOT_SEPARATOR}"
+        TOP_LINE="${TOP_LINE} ${BOLD}${RED}${GIT_STATUS}${RESET}"
     fi
 fi
 
 # Add separator and model info
-LINE="${LINE} ${LINE_SEPARATOR} ${CYAN}${MODEL_NAME}${RESET}"
+LINE="${PURPLE}${SESSION_DURATION} ${LINE_SEPARATOR} ${CYAN}${MODEL_NAME}"
 
 # Add token usage (cumulative for session)
 TOTAL_TOKENS=$((TOTAL_INPUT_TOKENS + TOTAL_OUTPUT_TOKENS))
 if [ "$TOTAL_TOKENS" -gt 0 ]; then
     FORMATTED_TOKENS=$(printf "%'d" "$TOTAL_TOKENS" 2>/dev/null || echo "$TOTAL_TOKENS")
-    LINE="${LINE} ${YELLOW}Tokens: ${FORMATTED_TOKENS} ${DOT_SEPARATOR}"
+    LINE="${LINE} ${LINE_SEPARATOR} ${YELLOW}Tokens: ${FORMATTED_TOKENS}"
 fi
+
+LINE="${LINE} ${LINE_SEPARATOR} ${RTK_INFO}"
 
 # Add context progress bar if available
 if [ -n "$CONTEXT_BAR" ]; then
-    LINE="${LINE} ${CONTEXT_BAR}"
+    LINE="${LINE} ${LINE_SEPARATOR} ${CONTEXT_BAR}"
 fi
 
 # Add session duration
-LINE1="${LINE} ${PURPLE}${SESSION_DURATION}${RESET}"
-LINE2="${COMMENT}${DAD_JOKE}${RESET}"
+LINE1="${TOP_LINE}${RESET}"
+LINE2="${LINE}${RESET}"
+LINE3="${COMMENT}${DAD_JOKE}${RESET}"
 echo -e "${LINE1}"
 echo -e "${LINE2}"
+echo -e "${LINE3}"
