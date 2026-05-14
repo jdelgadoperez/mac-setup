@@ -386,9 +386,16 @@ function updatelibs() {
     TIMEOUT_CMD=""
   fi
 
+  local TIMESTAMP_FILE="${HOME}/.cache/shell-update-timestamps/updatelibs"
+
   echo ""
   echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
   echo "${BOLD}${BLUE}🔄 Update All Libraries & Tools${NC}"
+  if [[ -f "$TIMESTAMP_FILE" ]]; then
+    echo "${BLUE}   Last run: ${CYAN}$(cat "$TIMESTAMP_FILE")${NC}"
+  else
+    echo "${BLUE}   Last run: ${CYAN}Never${NC}"
+  fi
   echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
   echo ""
 
@@ -512,5 +519,32 @@ function updatelibs() {
     echo "${GREEN}   Total time: ${CYAN}${minutes}m ${seconds}s${NC}"
     echo "${BOLD}${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
   fi
+  echo ""
+  mkdir -p "$(dirname "$TIMESTAMP_FILE")"
+  date > "$TIMESTAMP_FILE"
+}
+
+function lastupdated() {
+  local updatelibs_file="${HOME}/.cache/shell-update-timestamps/updatelibs"
+  local updatedrat_file="${HOME}/.cache/shell-update-timestamps/updatedrat"
+
+  echo ""
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo "${BOLD}${BLUE}🕐 Last Update Timestamps${NC}"
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
+
+  if [[ -f "$updatelibs_file" ]]; then
+    echo "${BLUE}  updatelibs:  ${CYAN}$(cat "$updatelibs_file")${NC}"
+  else
+    echo "${BLUE}  updatelibs:  ${YELLOW}Never${NC}"
+  fi
+
+  if [[ -f "$updatedrat_file" ]]; then
+    echo "${BLUE}  updatedrat:  ${CYAN}$(cat "$updatedrat_file")${NC}"
+  else
+    echo "${BLUE}  updatedrat:  ${YELLOW}Never${NC}"
+  fi
+
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
   echo ""
 }

@@ -317,15 +317,6 @@
     ],
     "PreCompact": [
       {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
-          }
-        ]
-      },
-      {
         "hooks": [
           {
             "type": "command",
@@ -338,7 +329,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank ingest claude-code  # precompact >> ~/.memory-bank/ingest.log 2>&1 &"
+            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
           }
         ]
       }
