@@ -134,6 +134,15 @@ function cleanpkgs() {
 
   case "$pkgman" in
     # Node.js package managers
+    pnpm)
+      echo -e "${GREEN}Clearing node modules...${NC}"
+      clearnodemodules
+      echo -e "${GREEN}Node modules cleared${NC}"
+      rm pnpm-lock.yaml
+      buildCmd="build:all"
+      echo ""
+      pnpm install
+      ;;
     yarn)
       echo -e "${GREEN}Clearing node modules...${NC}"
       clearnodemodules
@@ -149,15 +158,6 @@ function cleanpkgs() {
       echo ""
       npm install
       buildCmd="run build"
-      ;;
-    pnpm)
-      echo -e "${GREEN}Clearing node modules...${NC}"
-      clearnodemodules
-      echo -e "${GREEN}Node modules cleared${NC}"
-      rm pnpm-lock.yaml
-      buildCmd="build:all"
-      echo ""
-      pnpm install
       ;;
     # Python package managers
     poetry)
@@ -266,21 +266,21 @@ function updategitdirectory() {
             fi
           fi
         else
-          if [[ "$PKG_TYPE" == "yarn" ]]; then
-            echo "${BLUE}⏳ Installing with yarn...${NC}"
-            if yii 2>&1; then
-              ((success_count++))
-            else
-              echo "${YELLOW}⚠️  Yarn install failed, continuing...${NC}"
-              ((fail_count++))
-              failed_repos+=("${dir%/}")
-            fi
-          elif [[ "$PKG_TYPE" == "pnpm" ]]; then
+          if [[ "$PKG_TYPE" == "pnpm" ]]; then
             echo "${BLUE}⏳ Installing with pnpm...${NC}"
             if pnpm install --frozen-lockfile 2>&1; then
               ((success_count++))
             else
               echo "${YELLOW}⚠️  pnpm install failed, continuing...${NC}"
+              ((fail_count++))
+              failed_repos+=("${dir%/}")
+            fi
+          elif [[ "$PKG_TYPE" == "yarn" ]]; then
+            echo "${BLUE}⏳ Installing with yarn...${NC}"
+            if yii 2>&1; then
+              ((success_count++))
+            else
+              echo "${YELLOW}⚠️  Yarn install failed, continuing...${NC}"
               ((fail_count++))
               failed_repos+=("${dir%/}")
             fi
@@ -401,7 +401,7 @@ function updatelibs() {
 
   # Node.js
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[1/7] Install latest ${CYAN}node${NC}"
+  echo "${BLUE}[1/8] Install latest ${CYAN}node${NC}"
   echo "${BLUE}==============================================================================${NC}"
   if fnm use lts-latest --corepack-enabled --install-if-missing 2>&1; then
     echo "${GREEN}✅ Now on Node $(fnm current)${NC}"
@@ -412,7 +412,7 @@ function updatelibs() {
 
   # npm
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[2/7] Update ${CYAN}npm${NC}"
+  echo "${BLUE}[2/8] Update ${CYAN}npm${NC}"
   echo "${BLUE}==============================================================================${NC}"
   if npm update -g 2>&1; then
     echo "${GREEN}✅ npm updated${NC}"
@@ -423,19 +423,19 @@ function updatelibs() {
 
   # Oh My Zsh plugins
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[3/7] Update ${CYAN}Oh My Zsh plugins${NC}"
+  echo "${BLUE}[3/8] Update ${CYAN}Oh My Zsh plugins${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $ZSH_CUSTOM/plugins "plugin" "$CLEAN_LIBS"
 
   # Project repositories
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[4/7] Update ${CYAN}project repositories${NC}"
+  echo "${BLUE}[4/8] Update ${CYAN}project repositories${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects "lib" "$CLEAN_LIBS"
 
   # Dracula themes
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[5/7] Update ${CYAN}Dracula themes${NC}"
+  echo "${BLUE}[5/8] Update ${CYAN}Dracula themes${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects/dracula "theme" "$CLEAN_LIBS"
 
@@ -443,7 +443,7 @@ function updatelibs() {
 
   # Homebrew
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[6/7] Update & upgrade ${CYAN}Homebrew${NC}"
+  echo "${BLUE}[6/8] Update & upgrade ${CYAN}Homebrew${NC}"
   echo "${BLUE}==============================================================================${NC}"
 
   if [[ -n "$TIMEOUT_CMD" ]]; then
@@ -490,9 +490,16 @@ function updatelibs() {
   fi
   echo ""
 
+  # Claude
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[7/8] Update ${CYAN}Claude${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  claude update
+  echo ""
+
   # Memory Bank
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[7/7] Ensure ${CYAN}Memory Bank${NC}"
+  echo "${BLUE}[8/8] Ensure ${CYAN}Memory Bank${NC}"
   echo "${BLUE}==============================================================================${NC}"
   ensuredocker
   ensurememorybank
