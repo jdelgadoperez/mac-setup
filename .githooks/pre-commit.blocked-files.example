@@ -1,0 +1,17 @@
+# pre-commit.blocked-files — list filenames that should never be committed
+#
+# Copy this file to .githooks/pre-commit.blocked-files and customise.
+# The file is intentionally excluded from mac-setup tracking (.gitignore)
+# because blocked filenames are machine-local preferences.
+#
+# Format:
+#   - One entry per line
+#   - Lines starting with # are comments
+#   - Blank lines are ignored
+#   - Entries are matched as fixed strings against staged file paths (grep -F)
+#     so "work-log.md" matches any path ending in work-log.md
+#
+# Example entries:
+work-log.md
+# .env.local
+# secrets.json
