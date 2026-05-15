@@ -1,0 +1,3 @@
+#!/bin/sh
+# Strip Claude Co-Authored-By footer from commit messages
+sed -i '' '/^Co-Authored-By: Claude/d' "$1"

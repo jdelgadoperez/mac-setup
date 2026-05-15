@@ -1,0 +1,54 @@
+#!/bin/sh
+# Block commits that include files listed in .githooks/pre-commit.blocked-files.
+#
+# To configure blocked files, create:
+#   .githooks/pre-commit.blocked-files
+#
+# Each non-empty, non-comment line is treated as a filename fragment matched
+# against the staged file list (grep -F, so no regex escaping needed).
+#
+# Example .blocked-files entry:
+#   work-log.md
+#
+# To bypass in an emergency:
+#   git commit --no-verify
+#   (strongly discouraged — the hook exists for a reason)
+
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+BLOCKED_FILES_CONFIG="$HOOK_DIR/pre-commit.blocked-files"
+
+# Load blocked filenames from config, skip blank lines and comments
+blocked=()
+if [ -f "$BLOCKED_FILES_CONFIG" ]; then
+  while IFS= read -r line; do
+    case "$line" in
+      ''|\#*) continue ;;
+    esac
+    blocked="${blocked} $line"
+  done < "$BLOCKED_FILES_CONFIG"
+fi
+
+if [ -z "$blocked" ]; then
+  exit 0
+fi
+
+staged=$(git diff --cached --name-only)
+offenders=""
+
+for pattern in $blocked; do
+  matched=$(echo "$staged" | grep -F "$pattern" || true)
+  if [ -n "$matched" ]; then
+    offenders="$offenders $matched"
+  fi
+done
+
+if [ -n "$offenders" ]; then
+  echo "ERROR: Commit blocked — staged files match the blocked list:"
+  for f in $offenders; do
+    echo "  - $f"
+  done
+  echo ""
+  echo "  Blocked-files config: $BLOCKED_FILES_CONFIG"
+  echo "  To bypass (strongly discouraged): git commit --no-verify"
+  exit 1
+fi
