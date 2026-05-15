@@ -56,11 +56,12 @@ sh ./run.sh
 Or run individual installers:
 
 ```bash
-sh ./install-xcode.sh       # XCode Command Line Tools
-sh ./install-brew.sh true   # Homebrew + packages (pass 'true' to install GUI apps)
-sh ./config-git.sh          # Git configuration
-sh ./install-zsh.sh         # Zsh + Oh My Zsh + plugins
-sh ./install-dracula.sh     # Dracula theme for multiple apps
+sh ./install-xcode.sh           # XCode Command Line Tools
+sh ./install-brew.sh true       # Homebrew + packages (pass 'true' to install GUI apps)
+sh ./config-git.sh              # Git configuration
+sh ./install-zsh.sh             # Zsh + Oh My Zsh + plugins
+sh ./install-dracula.sh         # Dracula theme for multiple apps
+sh ./install-claude-config.sh   # Symlink portable Claude Code config into ~/.claude/
 ```
 
 ### After Installation
@@ -105,6 +106,12 @@ sh ./install-dracula.sh     # Dracula theme for multiple apps
 
 **Claude Code:**
 - Claude Code CLI and personal configuration (settings, hooks, slash commands)
+- Portable `claude-config/` directory with agents, hooks, scripts, and rules — installed via `install-claude-config.sh`, which symlinks each file into `~/.claude/` so edits in either location propagate instantly
+
+**Git Hooks** (`.githooks/`):
+- `prepare-commit-msg` — strips `Co-Authored-By: Claude` lines from every commit message automatically
+- `pre-commit` — blocks staged files matching a machine-local blocklist at `~/.config/git/hooks/pre-commit.blocked-files` (reads the file if present; no-ops if absent)
+- `pre-commit.blocked-files.example` — template showing the blocklist format
 
 **Optional GUI Apps** (when `INSTALL_APPS=true`):
 - 1Password, Alfred, Arc Browser
@@ -162,11 +169,39 @@ See `custom-zsh/` directory for complete list of functions and aliases.
 mac-setup/
 ├── dorothy                   # Main CLI tool (install via install-dorothy.sh)
 ├── install-dorothy.sh        # Install Dorothy globally
+├── install-claude-config.sh  # Symlink installer for claude-config/ → ~/.claude/
 ├── run.sh                    # Legacy orchestrator script
 ├── install-*.sh              # Individual installation scripts
 ├── config-git.sh             # Git configuration
 ├── shared.sh                 # Common utilities and colors
 ├── env.sh                    # Environment variable loader
+│
+├── .githooks/                # Portable git hooks (activate via git config core.hooksPath)
+│   ├── prepare-commit-msg    # Strips Co-Authored-By: Claude from commit messages
+│   ├── pre-commit            # Blocks staged files matching ~/.config/git/hooks/pre-commit.blocked-files
+│   └── pre-commit.blocked-files.example  # Template for the machine-local blocklist
+│
+├── claude-config/            # Portable Claude Code config — symlinked into ~/.claude/
+│   ├── CLAUDE.md             # Generalized global Claude Code instructions
+│   ├── agents/
+│   │   └── research-analyst.md
+│   ├── hooks/                # 6 portable session hooks
+│   │   ├── inject-sonnet-default.sh
+│   │   ├── context-bar.js
+│   │   ├── context-monitor.js
+│   │   ├── opus-delegation-reminder.sh
+│   │   ├── bash-guard.sh
+│   │   └── cd-git-allow.sh
+│   ├── scripts/              # Helper scripts for managing agents/skills/commands
+│   │   ├── manage-status.sh
+│   │   ├── manage-toggle.sh
+│   │   └── list-ai-items.py
+│   └── rules/                # Behavioral rules loaded by Claude Code
+│       ├── context7.md
+│       ├── github-review-posting.md
+│       ├── check-mode-before-mutating.md
+│       ├── fnm-bash-hang.md
+│       └── orchestrated-commands.md
 │
 ├── dotfiles/                 # Dotfiles to symlink to $HOME
 │   ├── .zshrc
@@ -186,6 +221,9 @@ mac-setup/
 │   └── mcp-plugins.json      # Claude Desktop MCP servers config
 │
 └── scripts/                  # macOS system preference automation
+    ├── apply-mac-settings.sh
+    ├── export-mac-settings.sh
+    └── clean-stale-git-lock.sh  # Safely removes .git/index.lock only when verified stale via lsof
 ```
 
 ## Configuration
@@ -242,6 +280,34 @@ ZPROF=true zsh
 Edit files in `dotfiles/` directory, then:
 - Re-run the appropriate installer to update symlinks, or
 - Manually copy to `$HOME`
+
+### Claude Code Config (`claude-config/`)
+
+`install-claude-config.sh` creates symlinks from `claude-config/<path>` to `~/.claude/<path>`. Because they're symlinks, edits made in either location are immediately reflected in the other — no re-running the installer after changes.
+
+```bash
+sh ./install-claude-config.sh            # Symlink all files (prompts before each)
+sh ./install-claude-config.sh --dry-run  # Preview what would be linked without changes
+sh ./install-claude-config.sh --yes      # Symlink all without interactive prompts
+```
+
+To add a new rule, hook, or agent: drop the file into the appropriate `claude-config/` subdirectory and re-run the installer. The symlink will be created and Claude Code picks it up immediately.
+
+### Git Hooks (`.githooks/`)
+
+Activate the hooks by pointing git at the `.githooks/` directory. This is set per-repo:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+To make it apply to all repos globally:
+
+```bash
+git config --global core.hooksPath /path/to/mac-setup/.githooks
+```
+
+**Machine-local blocklist** for the `pre-commit` hook: copy `.githooks/pre-commit.blocked-files.example` to `~/.config/git/hooks/pre-commit.blocked-files` and add any filename patterns you want blocked from commits. That file is gitignored and never tracked.
 
 ## Tips
 
