@@ -1,5 +1,6 @@
 .env
 .DS_Store
 .claude/settings.local.json
+CLAUDE.local.md
 *.local
 .githooks/pre-commit.blocked-files
