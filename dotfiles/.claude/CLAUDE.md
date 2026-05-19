@@ -26,52 +26,24 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 - Prefer smaller, themed commits over large grouped commits
 - **[Important]** Do NOT add the Claude co-authored footer to commits or PR descriptions
 
-## Git Safety Rules
+## Git
 
-- For collaborative or work repos, always create feature branches — never push directly to main
-- For solo personal projects, push directly to `main` — no PR or feature branch needed
-- If no ticket exists, use `feat/` prefix instead of making up a ticket number
-- Use `git -C <path>` instead of `cd`-ing into directories to avoid shell hook issues
-- If `gh pr create` fails for any reason, immediately fall back to providing the manual GitHub URL
-  for PR creation — do not retry. Fail fast and let the user complete it manually.
+@rules/git.md
 
-## Git Worktree Workflow
+## PR Reviews
 
-When working on multiple things in a single repo, use git worktrees instead of switching branches.
+- [Important] When reviewing PRs, always use the multi-agent workflow with the agent selection step. Never skip agent selection — let the user confirm which agents to use before proceeding.
+- Post all review findings as **inline comments on specific lines** — never as a single summary block
+- **Distinguish initial vs re-review**: before dispatching agents, check prior review threads; if a prior review from you exists, scope agents to the diff-of-diff only (not the full PR)
+- **After pushing fixes** in response to review feedback, always re-request reviews from the original reviewers
+- Check **all four comment surfaces** before reviewing or declaring feedback addressed: inline comments, review submissions, conversation-level comments, and GraphQL `reviewThreads` (surfaces RESOLVED + OUTDATED threads)
+- **Tone**: fewer nitpicks on staff/principal engineer PRs; frame structural suggestions as questions; never post unverified factual claims
 
-Preferred worktree location: `~/.config/superpowers/worktrees/<project>/<branch>/`
+## Git & Repo Hygiene
 
-```bash
-# List existing worktrees
-git worktree list
-
-# Create worktree for NEW branch
-git worktree add -b <branch-name> ~/.config/superpowers/worktrees/<project>/<branch-name>
-
-# Create worktree for EXISTING branch
-git worktree add ~/.config/superpowers/worktrees/<project>/<branch-name> <branch-name>
-
-# Remove worktree when done
-git worktree remove ~/.config/superpowers/worktrees/<project>/<branch-name>
-
-# Clean up stale references
-git worktree prune
-```
-
-## Shell & Environment Cleanup
-
-When removing or replacing shell tools, CLIs, or aliases, always verify and clean up:
-- Symlinks in `~/.oh-my-zsh/custom/`, `~/bin/`, `~/.local/bin/`
-- Shell aliases in `.zshrc`, `.bashrc`, or oh-my-zsh custom plugin files
-- Wrapper scripts or cached references pointing to the old tool name
-
-Do not consider a removal or migration task complete until these are verified clean.
-
-## Merging & PRs
-
-- For solo personal projects, push directly to `main` — no PR needed
-- For collaborative repos, all PR descriptions should ease the review experience — focus on clarity,
-  context, and making it easy for reviewers to understand what changed and why
+- Before any `git push`, verify the git root matches the intended repo for the branch being pushed
+- Never stash an in-progress merge — complete it (`git commit`) or abort it (`git merge --abort`)
+- Persist shell/config fixes to this machine-setup repo, not to local files — local writes don't survive across machines or sessions
 
 ## Bash Command Preferences
 
@@ -82,13 +54,11 @@ Do not consider a removal or migration task complete until these are verified cl
 
 ## Documentation Lookups
 
-- [Important] **Always use Context7 (`ctx7`) for library/framework documentation** — even for well-known libraries. Training data may be outdated. Prefer ctx7 over web search for docs.
-- See `~/.claude/rules/context7.md` for the full ctx7 workflow (resolve library → fetch docs → answer).
+@rules/context7.md
 
 ## Debugging
 
-- [Important] When debugging deployment/runtime issues, enumerate the top 3-5 most likely root causes ranked by probability BEFORE making any changes. Verify the simplest causes first (missing imports, typos, wrong env vars) before assuming library-level incompatibilities or making widespread config changes.
-- [Important] Fix the root cause in source code — never apply workarounds to symptoms (e.g., manually editing a config file that a broken installer should have written). If a tool or installer failed, fix the tool.
+@rules/debugging.md
 
 ## Content Generation
 
@@ -107,6 +77,15 @@ Do not consider a removal or migration task complete until these are verified cl
 
 - [Important] Parallelize work where applicable or reasonable
 
+## Agent Model Routing
+
+- [Important] When invoking built-in agents (`Explore`, `Plan`, `general-purpose`, or `Agent` with no `subagent_type`), pass `model: "sonnet"` unless the task genuinely needs Opus-level reasoning (novel architecture, complex multi-file debugging, deep synthesis). Routine exploration, file search, and research should run on Sonnet.
+- Named subagents define their own model in frontmatter — do not override unless asked.
+
+## Orchestrated Commands
+
+When writing or modifying any multi-agent orchestrated command in `~/.claude/commands/`, consult `@rules/orchestrated-commands.md` first. Covers the 6-step flow, artifact conventions, approval gate rules, parallel dispatch, and shared anti-patterns.
+
 ## Context Efficiency
 
 - Do not re-read files already read in the current session — reference the earlier read instead
@@ -114,9 +93,7 @@ Do not consider a removal or migration task complete until these are verified cl
 
 ## Python
 
-- Always use `uv` instead of `pip` for package management
-- When running `ruff check --fix`, always follow up immediately with `ruff check` (no `--fix`) to
-  verify no imports were broken by auto-fixes. Do not commit until the second check is clean.
+@rules/python.md
 
 ## File Conventions
 
@@ -126,22 +103,28 @@ Do not consider a removal or migration task complete until these are verified cl
 
 - [Important] Do not introduce cross-project dependencies (e.g., making one tool depend on another tool's internals) without explicit approval. Propose and confirm the coupling first — these decisions are irreversible without a refactor.
 
+## Check Mode Before Mutating
+
+Before ANY externally-visible mutation (`gh pr review`, `gh api POST/PATCH`, Slack post, wiki write, issue tracker create/transition, `git push`, deploy, PR merge) — and before any file write/edit while in plan mode — STOP and verify:
+
+1. What mode am I in right now? (plan / auto / normal)
+2. Did the user explicitly approve THIS action in THIS turn?
+3. Have I shown the exact dry-run / payload / target?
+
+`ExitPlanMode` approval ≠ authorization to post. Auto mode ≠ blanket mutation rights. Authorization stands for the scope specified, never beyond. When in doubt, ask.
+
+@rules/check-mode-before-mutating.md
+
 ## AI Memory Tools
 
-Two complementary memory systems are available:
+@rules/memory-tools.md
 
-- **Memory Bank** (`memory-bank search`) — retrospective search over the full Claude Code conversation history. Use when you need to find something from a past session (prior decisions, earlier bug fixes, past approaches). Use the `memory-search` skill for semantic search or `memory-recall` for full session context retrieval.
-- **ICM** (MCP tools) — structured forward-looking memory with knowledge graphs and temporal decay. ICM manages its own recall/store lifecycle via its MCP instructions. Prefer ICM for storing decisions, preferences, and patterns going forward.
+## LLM Wiki Pattern
 
-**Division of labor:** "What did we discuss about X before?" → Memory Bank. "What do I know about X right now?" → ICM.
-
-### Memory Bank — when to search explicitly
-
-Auto-recall (UserPromptSubmit hook) handles passive context injection before each prompt. Reach for the `memory-search` or `memory-recall` skill explicitly when:
-
-- The user references past work ("remember when we...", "we fixed this before", "what was that approach")
-- Starting a significant task in a project with deep history — search for prior decisions and context before proposing anything
-- Debugging a recurring issue — search for prior resolution attempts before diagnosing from scratch
-- Auto-injected context seems incomplete or missing for the current task
+@rules/llm-wiki.md
 
 @RTK.md
+
+## gstack
+
+@rules/gstack.md
