@@ -19,11 +19,20 @@ fi
 ## Oh My ZSH
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
-plugins=()
 plugins=(git you-should-use z zsh-lazyload)
-plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
+plugins+=(zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
+
+# Skip insecure-directory audit on every startup (~40ms saved)
+ZSH_DISABLE_COMPFIX=true
+# Pin to a stable filename — prevents cache rebuild when hostname changes
+ZSH_COMPDUMP="$HOME/.zcompdump"
+
 source $ZSH/oh-my-zsh.sh
+
+# COMBINING_CHARS (set by /etc/zshrc) causes brew to receive SIGTSTP
+# when outputting Unicode progress characters. Override it here.
+unsetopt COMBINING_CHARS
 
 ####################
 # User configuration
@@ -55,8 +64,10 @@ fi
 # 1Password - lazy loaded
 function loadOp() {
   # source $HOME/.config/op/plugins.sh
-  eval "$(op completion zsh)"
-  compdef _op op
+  if command -v op &>/dev/null; then
+    eval "$(op completion zsh)"
+    compdef _op op
+  fi
   export OP_BIOMETRIC_UNLOCK_ENABLED=true
 }
 lazyload op -- 'loadOp'
@@ -96,6 +107,16 @@ function loadBasher() {
   eval "$(basher init - zsh)"           ##basher5ea843
 }
 lazyload basher -- 'loadBasher'
+
+  # bun
+function loadBun(){
+  # bun completions
+  [ -s "/Users/jessdelgadoperez/.bun/_bun" ] && source "/Users/jessdelgadoperez/.bun/_bun"
+
+  export BUN_INSTALL="$HOME/.bun"
+  export PATH="$BUN_INSTALL/bin:$PATH"
+}
+lazyload bun -- 'loadBun'
 
 # Editor configuration
 if command -v code &> /dev/null; then

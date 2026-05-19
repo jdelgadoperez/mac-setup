@@ -24,9 +24,6 @@ setopt complete_aliases
 # Enable comments
 setopt interactive_comments
 
-# Disable zoxide doctor messages
-_ZO_DOCTOR=0
-
 # Tool Exports
 export BAT_THEME="Monokai Extended Bright"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
