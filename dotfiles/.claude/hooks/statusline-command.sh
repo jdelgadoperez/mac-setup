@@ -69,6 +69,7 @@ MODEL_NAME=$(echo "$input" | jq -r '.model.display_name')
 TOTAL_INPUT_TOKENS=$(echo "$input" | jq -r '.context_window.total_input_tokens // 0')
 TOTAL_OUTPUT_TOKENS=$(echo "$input" | jq -r '.context_window.total_output_tokens // 0')
 TOTAL_DURATION_MS=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
+TOTAL_COST_USD=$(printf "%.2f" "$(echo "$input" | jq -r '.cost.total_cost_usd // 0')")
 DAD_JOKE=$(get_dad_joke)
 
 # Context progress bar (rendered by context-bar.js)
@@ -140,7 +141,7 @@ if [ -n "$GIT_BRANCH" ]; then
 fi
 
 # Add separator and model info
-LINE="${PURPLE}${SESSION_DURATION} ${LINE_SEPARATOR} ${CYAN}${MODEL_NAME}"
+LINE="${PURPLE}${SESSION_DURATION} ${LINE_SEPARATOR} ${CYAN}${MODEL_NAME} ${LINE_SEPARATOR} \$${TOTAL_COST_USD}"
 
 # Add token usage (cumulative for session)
 TOTAL_TOKENS=$((TOTAL_INPUT_TOKENS + TOTAL_OUTPUT_TOKENS))
