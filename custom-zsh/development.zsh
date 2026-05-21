@@ -371,6 +371,87 @@ function updategitdirectory() {
   UPDATE_FAILED_REPOS+=("${failed_repos[@]}")
 }
 
+function updateclaudeplugins() {
+  local TIMEOUT_CMD=""
+  if command -v gtimeout &>/dev/null; then
+    TIMEOUT_CMD="gtimeout"
+  elif command -v timeout &>/dev/null; then
+    TIMEOUT_CMD="timeout"
+  fi
+
+  local CLAUDE_BIN
+  CLAUDE_BIN=$(whence -p claude 2>/dev/null)
+  CLAUDE_BIN="${CLAUDE_BIN:-claude}"
+
+  echo "${BLUE}   ⏳ Fetching plugin list...${NC}"
+
+  local raw_output
+  if [[ -n "$TIMEOUT_CMD" ]]; then
+    raw_output=$($TIMEOUT_CMD 60 "$CLAUDE_BIN" plugin list < /dev/null 2>/dev/null)
+  else
+    raw_output=$("$CLAUDE_BIN" plugin list < /dev/null 2>/dev/null)
+  fi
+
+  if [[ $? -ne 0 || -z "$raw_output" ]]; then
+    echo "${YELLOW}   ⚠️  Could not fetch plugin list (timed out or unavailable)${NC}"
+    return
+  fi
+
+  local plugins=()
+  local current_plugin=""
+  local is_enabled=false
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*❯[[:space:]](.+)$ ]]; then
+      if [[ -n "$current_plugin" && "$is_enabled" == true ]]; then
+        plugins+=("$current_plugin")
+      fi
+      current_plugin="${match[1]}"
+      is_enabled=false
+    elif [[ "$line" =~ "Status".*"✔" ]]; then
+      is_enabled=true
+    fi
+  done <<< "$raw_output"
+
+  if [[ -n "$current_plugin" && "$is_enabled" == true ]]; then
+    plugins+=("$current_plugin")
+  fi
+
+  if [[ ${#plugins[@]} -eq 0 ]]; then
+    echo "${YELLOW}   ⚠️  No enabled plugins found${NC}"
+    return
+  fi
+
+  local total=${#plugins[@]}
+  local updated=0
+  local failed=0
+  local index=0
+
+  for plugin in "${plugins[@]}"; do
+    ((index++))
+    echo "${BLUE}   [${index}/${total}] ${CYAN}${plugin}${BLUE} — updating...${NC}"
+    if [[ -n "$TIMEOUT_CMD" ]]; then
+      $TIMEOUT_CMD 60 "$CLAUDE_BIN" plugin update "$plugin" < /dev/null > /dev/null 2>&1
+    else
+      "$CLAUDE_BIN" plugin update "$plugin" < /dev/null > /dev/null 2>&1
+    fi
+    if [[ $? -eq 0 ]]; then
+      echo "${GREEN}         ✔ updated${NC}"
+      ((updated++))
+    else
+      echo "${YELLOW}         ⚠️  failed${NC}"
+      ((failed++))
+    fi
+  done
+
+  echo ""
+  if [[ $failed -eq 0 ]]; then
+    echo "${GREEN}   ✅ ${updated}/${total} plugins updated — restart Claude Code to apply${NC}"
+  else
+    echo "${YELLOW}   ⚠️  ${updated}/${total} updated, ${failed} failed — restart Claude Code to apply${NC}"
+  fi
+}
+
 function updatelibs() {
   CLEAN_LIBS="$1"
   local start_time=$(date +%s)
@@ -495,6 +576,8 @@ function updatelibs() {
   echo "${BLUE}[7/8] Update ${CYAN}Claude${NC}"
   echo "${BLUE}==============================================================================${NC}"
   claude update
+  echo ""
+  updateclaudeplugins
   echo ""
 
   # Memory Bank
