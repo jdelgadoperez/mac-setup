@@ -466,6 +466,84 @@ function updateclaudeplugins() {
   fi
 }
 
+function startotel() {
+  local compose_file="/Users/jessdelgadoperez/projects/drata/claude-code-otel-dist/docker-compose.yml"
+
+  echo ""
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo "${BOLD}${BLUE}📡 Start OTEL Stack${NC}"
+  echo "${BLUE}   Compose file: ${CYAN}${compose_file}${NC}"
+  echo "${BOLD}${BLUE}═══════════════════════════════════════════════════════════════════════════════${NC}"
+  echo ""
+
+  local services
+  services=$(docker compose -f "$compose_file" config --services 2>/dev/null)
+  local total
+  total=$(echo "$services" | grep -c .)
+  local running
+  running=$(docker compose -f "$compose_file" ps --status running --format json 2>/dev/null | wc -l | tr -d ' ')
+
+  if [[ "$running" -ge "$total" && "$total" -gt 0 ]]; then
+    echo "${GREEN}✓ OTEL stack already running${NC} ${CYAN}(${running}/${total} services)${NC}"
+  else
+    echo "${BLUE}▸ Stack not fully up:${NC} ${CYAN}${running}/${total} services running${NC}"
+    echo ""
+
+    # Pre-clean orphan containers holding our fixed container_names but not tracked by this compose project.
+    # docker-compose.yml uses `container_name: <name>` literals, so a stale container from a prior
+    # project name (e.g. when the compose-file path changed) collides with `up -d`.
+    echo "${BLUE}▸ Checking for orphan containers with conflicting names...${NC}"
+    local project
+    project=$(docker compose -f "$compose_file" ps --format json 2>/dev/null | python3 -c 'import json,sys
+try:
+  data=sys.stdin.read().strip()
+  if not data: sys.exit(0)
+  for line in data.splitlines():
+    obj=json.loads(line)
+    print(obj.get("Project","")); break
+except Exception: pass' 2>/dev/null)
+
+    local removed_count=0
+    local svc
+    for svc in ${(f)services}; do
+      local owner
+      owner=$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' "$svc" 2>/dev/null)
+      if [[ -n "$owner" && -n "$project" && "$owner" != "$project" ]]; then
+        echo "${YELLOW}  ⚠ Removing orphan '${svc}'${NC} ${CYAN}(project='${owner}', expected='${project}')${NC}"
+        docker rm -f "$svc" >/dev/null 2>&1 && ((removed_count++))
+      elif [[ -n "$owner" && -z "$project" ]]; then
+        echo "${YELLOW}  ⚠ Removing stale '${svc}'${NC} ${CYAN}(project='${owner}')${NC}"
+        docker rm -f "$svc" >/dev/null 2>&1 && ((removed_count++))
+      fi
+    done
+
+    if [[ "$removed_count" -eq 0 ]]; then
+      echo "${GREEN}  ✓ No conflicting containers found${NC}"
+    else
+      echo "${GREEN}  ✓ Removed ${removed_count} conflicting container(s)${NC}"
+    fi
+    echo ""
+
+    echo "${BLUE}▸ Starting compose stack...${NC}"
+    if ! docker compose -f "$compose_file" up -d; then
+      echo ""
+      echo "${YELLOW}⚠ compose up failed — force-removing named containers and retrying...${NC}"
+      for svc in ${(f)services}; do
+        docker rm -f "$svc" >/dev/null 2>&1
+      done
+      echo ""
+      echo "${BLUE}▸ Retrying compose up...${NC}"
+      if docker compose -f "$compose_file" up -d; then
+        echo "${GREEN}✓ Stack started on retry${NC}"
+      else
+        echo "${RED}✗ Stack failed to start${NC}"
+      fi
+    else
+      echo "${GREEN}✓ Stack started${NC}"
+    fi
+  fi
+}
+
 function updatelibs() {
   CLEAN_LIBS="$1"
   local start_time=$(date +%s)
@@ -496,7 +574,7 @@ function updatelibs() {
 
   # Node.js
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[1/8] Install latest ${CYAN}node${NC}"
+  echo "${BLUE}[1/9] Install latest ${CYAN}node${NC}"
   echo "${BLUE}==============================================================================${NC}"
   if fnm use lts-latest --corepack-enabled --install-if-missing 2>&1; then
     echo "${GREEN}✅ Now on Node $(fnm current)${NC}"
@@ -507,7 +585,7 @@ function updatelibs() {
 
   # npm
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[2/8] Update ${CYAN}npm${NC}"
+  echo "${BLUE}[2/9] Update ${CYAN}npm${NC}"
   echo "${BLUE}==============================================================================${NC}"
   if npm update -g 2>&1; then
     echo "${GREEN}✅ npm updated${NC}"
@@ -518,19 +596,19 @@ function updatelibs() {
 
   # Oh My Zsh plugins
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[3/8] Update ${CYAN}Oh My Zsh plugins${NC}"
+  echo "${BLUE}[3/9] Update ${CYAN}Oh My Zsh plugins${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $ZSH_CUSTOM/plugins "plugin" "$CLEAN_LIBS"
 
   # Project repositories
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[4/8] Update ${CYAN}project repositories${NC}"
+  echo "${BLUE}[4/9] Update ${CYAN}project repositories${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects "lib" "$CLEAN_LIBS"
 
   # Dracula themes
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[5/8] Update ${CYAN}Dracula themes${NC}"
+  echo "${BLUE}[5/9] Update ${CYAN}Dracula themes${NC}"
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $HOME/projects/dracula "theme" "$CLEAN_LIBS"
 
@@ -538,7 +616,7 @@ function updatelibs() {
 
   # Homebrew
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[6/8] Update & upgrade ${CYAN}Homebrew${NC}"
+  echo "${BLUE}[6/9] Update & upgrade ${CYAN}Homebrew${NC}"
   echo "${BLUE}==============================================================================${NC}"
 
   if [[ -n "$TIMEOUT_CMD" ]]; then
@@ -587,7 +665,7 @@ function updatelibs() {
 
   # Claude
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[7/8] Update ${CYAN}Claude${NC}"
+  echo "${BLUE}[7/9] Update ${CYAN}Claude${NC}"
   echo "${BLUE}==============================================================================${NC}"
   claude update
   echo ""
@@ -596,10 +674,17 @@ function updatelibs() {
 
   # Memory Bank
   echo "${BLUE}==============================================================================${NC}"
-  echo "${BLUE}[8/8] Ensure ${CYAN}Memory Bank${NC}"
+  echo "${BLUE}[8/9] Ensure ${CYAN}Memory Bank${NC}"
   echo "${BLUE}==============================================================================${NC}"
   ensuredocker
   ensurememorybank
+  echo ""
+
+  # OTEL Stack
+  echo "${BLUE}==============================================================================${NC}"
+  echo "${BLUE}[9/9] Ensure ${CYAN}OTEL Stack${NC}"
+  echo "${BLUE}==============================================================================${NC}"
+  startotel
 
   # Overall summary
   local end_time=$(date +%s)
