@@ -33,10 +33,27 @@ function delete_writable_recursive() {
 }
 
 function cleandocker() {
-  echo -e "${GREEN}Pruning docker...${NC}"
+  echo -e "${GREEN}Pruning docker (anonymous volumes only — named volumes preserved)${NC}"
   docker image prune -f
   docker container prune -f
-  docker volume prune -f
+
+  # Prune ONLY anonymous volumes (64-char hex IDs). Never touch named volumes —
+  # they back persistent dev stacks (claude-code-otel-dist, memory-bank, etc).
+  # A blanket `docker volume prune -f` incinerated ~2 months of OTEL telemetry
+  # when the stack was stopped at cleanup time. To delete a named volume now,
+  # do it explicitly: docker volume rm <name>
+  local removed=0
+  local kept=0
+  for vol in $(docker volume ls -q); do
+    if [[ "$vol" =~ ^[0-9a-f]{64}$ ]]; then
+      if docker volume rm "$vol" >/dev/null 2>&1; then
+        ((removed++))
+      fi
+    else
+      ((kept++))
+    fi
+  done
+  echo -e "${GREEN}  ✓ Removed ${removed} anonymous volume(s); preserved ${kept} named volume(s)${NC}"
 }
 
 function cleansys() {
