@@ -239,6 +239,20 @@ function updategitdirectory() {
       echo "${BOLD_MAGENTA}Git branch: ${BOLD_GREEN}$(gbc)${NC}"
       echo ""
 
+      # Clear stale .git/index.lock if no git process owns this repo
+      local GIT_DIR_PATH="$(git rev-parse --git-dir 2>/dev/null)"
+      local LOCK_FILE="$GIT_DIR_PATH/index.lock"
+      if [ -f "$LOCK_FILE" ]; then
+        local REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+        if pgrep -f "git.*$REPO_ROOT" >/dev/null 2>&1; then
+          echo "${YELLOW}⚠️  Active git process detected for $REPO_ROOT — leaving index.lock in place${NC}"
+        else
+          local LOCK_AGE=$(( $(date +%s) - $(stat -f %m "$LOCK_FILE" 2>/dev/null || stat -c %Y "$LOCK_FILE" 2>/dev/null) ))
+          echo "${YELLOW}⚠️  Stale .git/index.lock found (age: ${LOCK_AGE}s, no active git process) — removing${NC}"
+          rm -f "$LOCK_FILE"
+        fi
+      fi
+
       # Git pull with timeout (30 seconds)
       # Use SIGINT for gentler interruption
       echo "${BLUE}⏳ Pulling latest changes...${NC}"
