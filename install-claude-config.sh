@@ -1,5 +1,5 @@
 #!/bin/bash
-# install-claude-config.sh — symlinks files from claude-config/ into ~/.claude/
+# install-claude-config.sh — symlinks files from dotfiles/.claude/ into ~/.claude/
 #
 # Idempotent: existing matching symlinks are left in place; conflicting
 # non-symlink files trigger an interactive prompt (skip / overwrite /
@@ -15,7 +15,7 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/shared.sh"
 
-SOURCE_DIR="$SCRIPT_DIR/claude-config"
+SOURCE_DIR="$SCRIPT_DIR/dotfiles/.claude"
 TARGET_DIR="$HOME/.claude"
 
 DRY_RUN=false
@@ -103,7 +103,7 @@ install_symlink() {
   (( count_installed++ )) || true
 }
 
-# ── Walk claude-config/ and install every file ────────────────────────────────
+# ── Walk dotfiles/.claude/ and install every file ─────────────────────────────
 
 loginstall "Claude Code config (symlink install)"
 
