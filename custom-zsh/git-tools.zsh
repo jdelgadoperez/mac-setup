@@ -176,8 +176,8 @@ function gitclean() {
         printf "  git-cleanup ${YELLOW}--merged${NC}        Also include branches merged into the default branch\n"
         printf "  git-cleanup ${YELLOW}-i -m${NC}           Interactively pick from gone + merged branches\n\n"
         printf "${BOLD_WHITE}Phases:${NC}\n"
-        printf "  1. Branch cleanup  — gone remote refs + optionally merged branches\n"
-        printf "  2. Worktree cleanup — stale/orphaned worktrees\n\n"
+        printf "  1. Worktree cleanup — stale/orphaned worktrees (frees their branches)\n"
+        printf "  2. Branch cleanup  — gone remote refs + optionally merged branches\n\n"
         printf "${BOLD_WHITE}Protected branches:${NC} main, master, develop, release, and current branch\n"
         return 0
         ;;
@@ -202,40 +202,44 @@ function gitclean() {
     default_branch="main"
   fi
 
+  # ── Phase 1: Worktree cleanup ──
+  # Run first so any branch checked out in a worktree is released before we try
+  # to delete it (git refuses `branch -D` on a branch held by a worktree).
+  _git_cleanup_worktrees "$force" "$interactive"
+
+  # ── Phase 2: Branch cleanup ──
+  # Use for-each-ref / --format so the branch name never includes the worktree
+  # ("+") or current ("*") marker column that `git branch -vv` prefixes.
   local gone_branches=()
   local merged_branches=()
 
-  while IFS= read -r branch; do
-    local trimmed="${branch## }"
-    if [[ -n "$trimmed" && ! "$trimmed" =~ $protected_pattern ]]; then
-      gone_branches+=("$trimmed")
+  while IFS='|' read -r branch track; do
+    if [[ "$track" == "[gone]" && -n "$branch" && ! "$branch" =~ $protected_pattern ]]; then
+      gone_branches+=("$branch")
     fi
-  done < <(git branch -vv | grep ': gone\]' | awk '{print $1}')
+  done < <(git for-each-ref --format='%(refname:short)|%(upstream:track)' refs/heads/)
 
   if [[ "$include_merged" == true ]]; then
     while IFS= read -r branch; do
-      local trimmed="${branch## }"
-      trimmed="${trimmed%% }"
-      if [[ -n "$trimmed" && ! "$trimmed" =~ $protected_pattern ]]; then
+      if [[ -n "$branch" && ! "$branch" =~ $protected_pattern ]]; then
         local already_listed=false
         for gone in "${gone_branches[@]}"; do
-          if [[ "$gone" == "$trimmed" ]]; then
+          if [[ "$gone" == "$branch" ]]; then
             already_listed=true
             break
           fi
         done
         if [[ "$already_listed" == false ]]; then
-          merged_branches+=("$trimmed")
+          merged_branches+=("$branch")
         fi
       fi
-    done < <(git branch --merged "$default_branch" | grep -v '^\*')
+    done < <(git branch --merged "$default_branch" --format='%(refname:short)')
   fi
 
   local total=$(( ${#gone_branches[@]} + ${#merged_branches[@]} ))
 
   if [[ $total -eq 0 ]]; then
     printf "${GREEN}No defunct branches found.${NC}\n"
-    _git_cleanup_worktrees "$force" "$interactive"
     return 0
   fi
 
@@ -315,7 +319,6 @@ function gitclean() {
   else
     printf "\n${BOLD_YELLOW}Dry run — no branches deleted.${NC}\n"
     printf "Run ${CYAN}git-cleanup --force${NC} to delete all, or ${CYAN}git-cleanup --interactive${NC} to pick.\n"
-    _git_cleanup_worktrees "$force" "$interactive"
     return 0
   fi
 
@@ -340,9 +343,6 @@ function gitclean() {
     fi
     printf "\n"
   fi
-
-  # ── Phase 2: Worktree cleanup ──
-  _git_cleanup_worktrees "$force" "$interactive"
 }
 
 function _git_cleanup_worktrees() {
