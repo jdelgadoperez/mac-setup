@@ -19,9 +19,9 @@ fi
 ## Oh My ZSH
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
-plugins=(git you-should-use z zsh-lazyload)
-plugins+=(zsh-autosuggestions zsh-history-substring-search)
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
+plugins=(git you-should-use z zsh-lazyload)
+plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
 
 # Skip insecure-directory audit on every startup (~40ms saved)
 ZSH_DISABLE_COMPFIX=true
