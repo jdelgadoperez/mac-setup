@@ -2,6 +2,10 @@ if [[ "$ZPROF" = true ]]; then
   zmodload zsh/zprof
 fi
 
+# Suppress zoxide's init-order doctor check. Our zoxide init is genuinely last,
+# but Claude Code's spawned shell triggers a false-positive warning.
+export _ZO_DOCTOR=0
+
 # Path to your oh-my-zsh installation.
 # Unset first to prevent conflicts with inherited ZSH variable during `exec zsh`
 unset ZSH
@@ -20,19 +24,15 @@ fi
 ####################
 ZSH_THEME="dracula-pro" # backup: awesomepanda
 fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
-plugins=(git you-should-use z zsh-lazyload)
-plugins+=(zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search)
+plugins=(git you-should-use zsh-lazyload)
+plugins+=(zsh-syntax-highlighting zsh-history-substring-search zsh-autosuggestions)
 
 # Skip insecure-directory audit on every startup (~40ms saved)
-ZSH_DISABLE_COMPFIX=true
+# ZSH_DISABLE_COMPFIX=true
 # Pin to a stable filename — prevents cache rebuild when hostname changes
 ZSH_COMPDUMP="$HOME/.zcompdump"
 
 source $ZSH/oh-my-zsh.sh
-
-# COMBINING_CHARS (set by /etc/zshrc) causes brew to receive SIGTSTP
-# when outputting Unicode progress characters. Override it here.
-unsetopt COMBINING_CHARS
 
 ####################
 # User configuration
@@ -80,34 +80,6 @@ export RIPGREP_CONFIG_PATH="$HOME/.config/.ripgreprc"
 ## Development Tools
 ####################
 
-# Java - lazy loaded
-function loadJava() {
-  export JAVA_HOME=$(/usr/libexec/java_home)
-  if command -v brew &>/dev/null; then
-    export PATH="$(brew --prefix openjdk)/bin:$PATH"
-  fi
-  export PATH="$HOME/.jenv/bin:$PATH"
-  eval "$(jenv init -)"
-}
-lazyload java -- 'loadJava'
-
-# Kubernetes - lazy loaded
-function loadK8s() {
-  # ref: https://kubecolor.github.io/setup/shells/zsh/
-  # This needs to be added before "compdef kubecolor=kubectl"
-  source <(kubectl completion zsh)
-  # Make "kubecolor" borrow the same completion logic as "kubectl"
-  compdef kubecolor=kubectl
-}
-lazyload kubectl -- 'loadK8s'
-
-# Basher - lazy loaded
-function loadBasher() {
-  export PATH="$HOME/.basher/bin:$PATH" ##basher5ea843
-  eval "$(basher init - zsh)"           ##basher5ea843
-}
-lazyload basher -- 'loadBasher'
-
   # bun
 function loadBun(){
   # bun completions
@@ -143,18 +115,11 @@ export PATH="$HOME/.terraform.versions:$PATH"
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 export no_proxy="*"
 
-# MySQL
-export PATH="/opt/homebrew/opt/mysql@8.4/bin:$PATH"
-
 # Personal bin
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/bin:$PATH"
 
 export GPG_TTY=$(tty)
-
-# Enable zoxide, override `cd`
-export _ZO_DOCTOR=0
-eval "$(zoxide init zsh --cmd cd)"
 
 # Source machine-specific overrides
 if [ -f "$HOME/.zshrc.local" ]; then
@@ -164,3 +129,6 @@ fi
 if [[ "$ZPROF" = true ]]; then
   zprof
 fi
+
+# Enable zoxide, override `cd` — must be the LAST init line in this file
+eval "$(zoxide init zsh --cmd cd)"
