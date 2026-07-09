@@ -40,6 +40,19 @@ install_symlink() {
   local target_dir
   target_dir="$(dirname "$target")"
 
+  # If an ancestor directory of the target is already a symlink into the source
+  # tree, the target path resolves to the source file itself. Linking here would
+  # overwrite the real source file with a self-referential symlink. Skip it.
+  if [ -e "$target" ] && [ "$(realpath "$target" 2>/dev/null)" = "$(realpath "$source" 2>/dev/null)" ]; then
+    if [ "$DRY_RUN" = "true" ]; then
+      printf "${YELLOW}[DRY-RUN]${NC} Already reachable via linked parent: %s\n" "$(basename "$target")"
+    else
+      loginfo "Already reachable via linked parent: $(basename "$target")"
+      (( count_skipped++ )) || true
+    fi
+    return
+  fi
+
   if [ "$DRY_RUN" = "true" ]; then
     if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
       printf "${YELLOW}[DRY-RUN]${NC} Already linked: %s\n" "$(basename "$target")"
