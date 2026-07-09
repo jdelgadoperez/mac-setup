@@ -106,6 +106,12 @@ CUSTOM_ZSH_FILES=(
 for source in "${!DOTFILE_LINKS[@]}"; do
   target="${DOTFILE_LINKS[$source]}"
 
+  # Nothing to install — skip rather than create a dangling symlink.
+  if [ ! -e "$source" ]; then
+    printf "${YELLOW}Skip:${NC} source missing, nothing to install: %s\n" "$source"
+    continue
+  fi
+
   if [ "${DRY_RUN:-false}" = "true" ]; then
     printf "${YELLOW}[DRY-RUN]${NC} Would symlink: %s -> %s\n" "$(basename "$target")" "$source"
   else
@@ -124,6 +130,12 @@ done
 for file in "${CUSTOM_ZSH_FILES[@]}"; do
   source="$SCRIPT_DIR/custom-zsh/$file"
   target="$ZSH_CUSTOM/$file"
+
+  # Nothing to install — skip rather than create a dangling symlink.
+  if [ ! -e "$source" ]; then
+    printf "${YELLOW}Skip:${NC} source missing, nothing to install: %s\n" "$source"
+    continue
+  fi
 
   if [ "${DRY_RUN:-false}" = "true" ]; then
     printf "${YELLOW}[DRY-RUN]${NC} Would symlink: %s -> %s\n" "$file" "$source"

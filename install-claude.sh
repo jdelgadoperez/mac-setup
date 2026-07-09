@@ -71,6 +71,12 @@ symlink_claude_entry() {
   local source="$1"
   local target="$2"
 
+  # Nothing to install — skip rather than create a dangling symlink.
+  if [ ! -e "$source" ]; then
+    printf "${YELLOW}Skip:${NC} source missing, nothing to install: %s\n" "$source"
+    return
+  fi
+
   if [ "${DRY_RUN:-false}" = "true" ]; then
     printf "${YELLOW}[DRY-RUN]${NC} Would symlink: %s -> %s\n" "$target" "$source"
   else
