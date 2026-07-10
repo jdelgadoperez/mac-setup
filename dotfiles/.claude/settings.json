@@ -3,18 +3,6 @@
   "permissions": {
     "allow": [
       "Bash([:*)",
-      "Bash(acli jira getBoardList:*)",
-      "Bash(acli jira getComments:*)",
-      "Bash(acli jira getFieldValue:*)",
-      "Bash(acli jira getIssue:*)",
-      "Bash(acli jira getIssueList:*)",
-      "Bash(acli jira getLinkList:*)",
-      "Bash(acli jira getProjectList:*)",
-      "Bash(acli jira getSprintIssueList:*)",
-      "Bash(acli jira getSprintList:*)",
-      "Bash(acli jira getWorklog:*)",
-      "Bash(acli jira workitem search:*)",
-      "Bash(acli jira workitem view:*)",
       "Bash(aws acm describe-:*)",
       "Bash(aws acm list-:*)",
       "Bash(aws cloudformation describe-:*)",
@@ -216,9 +204,10 @@
     ],
     "defaultMode": "default",
     "disableBypassPermissionsMode": "disable",
-    "allowManagedHooksOnly": true,
+    "allowManagedHooksOnly": false,
     "allowManagedPermissionRulesOnly": false
   },
+  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -226,7 +215,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank hooks context-summary >> ~/.memory-bank/ingest.log 2>&1 &"
+            "command": "memory-bank hooks context-summary >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       },
@@ -234,7 +223,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/icm hook start"
+            "command": "/usr/local/bin/icm hook start < /dev/null"
           }
         ]
       }
@@ -245,7 +234,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/context-monitor.js"
+            "command": "node ~/.claude/hooks/context-monitor.js < /dev/null"
           }
         ]
       },
@@ -253,7 +242,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/icm hook post"
+            "command": "/usr/local/bin/icm hook post < /dev/null"
           }
         ]
       },
@@ -273,7 +262,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Purr.aiff"
+            "command": "afplay /System/Library/Sounds/Purr.aiff </dev/null >/dev/null 2>&1 &"
           }
         ]
       },
@@ -282,7 +271,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
+            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       },
@@ -291,7 +280,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank distill --since 3h >> ~/.memory-bank/ingest.log 2>&1 &"
+            "command": "memory-bank distill --since 3h >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       }
@@ -302,7 +291,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank hooks recall 2>> ~/.memory-bank/ingest.log"
+            "command": "memory-bank hooks recall >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       },
@@ -310,7 +299,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/icm hook prompt"
+            "command": "/usr/local/bin/icm hook prompt < /dev/null"
           }
         ]
       }
@@ -320,7 +309,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/icm hook compact"
+            "command": "/usr/local/bin/icm hook compact < /dev/null"
           }
         ]
       },
@@ -329,7 +318,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
+            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       }
@@ -340,7 +329,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/icm hook pre"
+            "command": "/usr/local/bin/icm hook pre < /dev/null"
           }
         ]
       },
@@ -349,7 +338,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rtk hook claude"
+            "command": "rtk hook claude < /dev/null"
           }
         ]
       }
@@ -367,7 +356,10 @@
     "frontend-design@claude-plugins-official": false,
     "playwright@claude-plugins-official": false,
     "superpowers@claude-plugins-official": true,
-    "obsidian@obsidian-skills": true
+    "obsidian@obsidian-skills": true,
+    "deep-plan@piercelamb-plugins": true,
+    "deep-implement@piercelamb-plugins": true,
+    "deep-project@piercelamb-plugins": true
   },
   "extraKnownMarketplaces": {
     "piercelamb-plugins": {
@@ -428,14 +420,8 @@
       "Fucking around and finding out"
     ]
   },
-  "alwaysThinkingEnabled": true,
+  "alwaysThinkingEnabled": false,
   "effortLevel": "medium",
-  "mcpServers": {
-    "memory-bank": {
-      "command": "memory-bank",
-      "args": [
-        "mcp"
-      ]
-    }
-  }
+  "agentPushNotifEnabled": true,
+  "inputNeededNotifEnabled": true
 }

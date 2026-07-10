@@ -82,6 +82,16 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 - [Important] When invoking built-in agents (`Explore`, `Plan`, `general-purpose`, or `Agent` with no `subagent_type`), pass `model: "sonnet"` unless the task genuinely needs Opus-level reasoning (novel architecture, complex multi-file debugging, deep synthesis). Routine exploration, file search, and research should run on Sonnet.
 - Named subagents define their own model in frontmatter — do not override unless asked.
 
+## Execution Mode Default
+
+- [Important] Whenever a workflow, skill, or plan-execution flow (e.g. deep-implement,
+  superpowers executing-plans / subagent-driven-development) would offer a choice between
+  subagent-driven and inline execution, always choose subagent-driven WITHOUT asking.
+  Do not surface the execution-mode menu. Only fall back to inline if subagent dispatch
+  is genuinely impossible, and say so explicitly when you do.
+- This does NOT override the PR-review agent-selection step (see "PR Reviews"), which must
+  always let me confirm the agents.
+
 ## Orchestrated Commands
 
 When writing or modifying any multi-agent orchestrated command in `~/.claude/commands/`, consult `@rules/orchestrated-commands.md` first. Covers the 6-step flow, artifact conventions, approval gate rules, parallel dispatch, and shared anti-patterns.
