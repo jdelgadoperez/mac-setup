@@ -16,10 +16,14 @@ do not write a report file.
 
 ## Target repos
 
-The 14 indexed repos under `~/projects`:
-cvforge, dp.github.io, home-lab, jdelgadoperez.github.io, job-hunt, job-hunter,
-job-hunter.wiki, memory-bank, mac-setup, paperboy, sandbox, spotify-exit,
-status-monitor, substacker.
+Discover the target repos at runtime — do not rely on a hardcoded list. Run:
+
+    ls -d ~/projects/*/.git 2>/dev/null | sed 's#/.git##'
+
+to enumerate every git repo under `~/projects`. Query each one that has a
+CodeGraph index (`codegraph status <repo>` reports `initialized: true`); note
+any that are not yet indexed as uncoverable in your coverage report. This keeps
+the command's coverage in lockstep with the installer, which scans the same set.
 
 ## Flow
 
