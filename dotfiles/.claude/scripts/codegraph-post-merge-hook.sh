@@ -13,9 +13,20 @@ if [ -z "$repo_root" ]; then
 fi
 
 branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
-if [ "$branch" != "main" ]; then
-  # Only re-index on merges into main.
-  exit 0
+
+default_branch="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)"
+default_branch="${default_branch#origin/}"
+
+if [ -n "$default_branch" ]; then
+  # origin/HEAD is set — re-index only on the true default branch.
+  if [ "$branch" != "$default_branch" ]; then
+    exit 0
+  fi
+else
+  # No origin/HEAD — fall back to the common default branch names.
+  if [ "$branch" != "main" ] && [ "$branch" != "master" ]; then
+    exit 0
+  fi
 fi
 
 if ! command -v codegraph >/dev/null 2>&1; then
@@ -23,8 +34,15 @@ if ! command -v codegraph >/dev/null 2>&1; then
   exit 0
 fi
 
-if ! codegraph sync --quiet "$repo_root" >&2; then
-  echo "codegraph-post-merge: sync failed for $repo_root (merge unaffected)" >&2
+if codegraph status --json "$repo_root" 2>/dev/null | grep -q '"initialized":true'; then
+  if ! codegraph sync --quiet "$repo_root" >&2; then
+    echo "codegraph-post-merge: sync failed for $repo_root (merge unaffected)" >&2
+  fi
+else
+  # Never indexed — do the one-time init so future syncs work.
+  if ! codegraph init "$repo_root" >&2; then
+    echo "codegraph-post-merge: init failed for $repo_root (merge unaffected)" >&2
+  fi
 fi
 
 exit 0
