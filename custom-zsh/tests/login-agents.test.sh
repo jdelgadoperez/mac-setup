@@ -57,6 +57,23 @@ out="$(agents inspect demo 2>&1)"
 check "inspect shows label" "$(printf '%s' "$out" | grep -q 'com.jdp.agent.demo' && echo 0 || echo 1)"
 check "inspect shows json" "$(printf '%s' "$out" | grep -q '"status": "success"' && echo 0 || echo 1)"
 
+# ps: discovery + kind from plist fixtures
+cat > "$LOGIN_AGENTS_ON_LOGIN_DIR/com.jdp.agent.demo.plist" <<'EOF'
+<plist><dict><key>Label</key><string>com.jdp.agent.demo</string><key>RunAtLoad</key><true/></dict></plist>
+EOF
+cat > "$LOGIN_AGENTS_ON_LOGIN_DIR/com.jdp.agent.watch.plist" <<'EOF'
+<plist><dict><key>Label</key><string>com.jdp.agent.watch</string><key>KeepAlive</key><true/></dict></plist>
+EOF
+
+check "kind: oneshot (no KeepAlive)" "$([ "$(_la_kind demo)" = "oneshot" ] && echo 0 || echo 1)"
+check "kind: daemon (KeepAlive)" "$([ "$(_la_kind watch)" = "daemon" ] && echo 0 || echo 1)"
+
+psout="$(agents ps 2>&1)"
+check "ps: header present" "$(printf '%s' "$psout" | grep -q 'NAME' && echo 0 || echo 1)"
+check "ps: lists demo" "$(printf '%s' "$psout" | grep -q 'demo' && echo 0 || echo 1)"
+check "ps: lists watch" "$(printf '%s' "$psout" | grep -q 'watch' && echo 0 || echo 1)"
+check "ps: demo shows last exit 0" "$(printf '%s' "$psout" | grep demo | grep -q ' 0 ' && echo 0 || echo 1)"
+
 echo "==============================="
 echo "Results: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
