@@ -11,6 +11,9 @@ alias speed="speedtest"
 
 ## Navigation
 PROJ_DIR="$HOME/projects"
+# CDPATH: `cd <repo-name>` from anywhere jumps into that project (e.g. `cd mac-setup`).
+# Leading "." keeps normal relative cd behavior taking precedence.
+export CDPATH=".:$PROJ_DIR:$HOME"
 alias gohome="cd $HOME/"
 alias navicheats="cd ~/.local/share/navi/cheats"
 alias proj="cd $PROJ_DIR"
