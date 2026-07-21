@@ -94,6 +94,15 @@ hok="$(agents health demo 2>&1)"
 check "health: runs hook (output)" "$(printf '%s' "$hok" | grep -q healthy-output && echo 0 || echo 1)"
 check "health: reports pass" "$(printf '%s' "$hok" | grep -qi 'pass' && echo 0 || echo 1)"
 
+# health: failing hook reports fail and returns non-zero
+cat > "$LOGIN_AGENTS_ON_LOGIN_DIR/health/broken.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "broken-output"; exit 1
+EOF
+chmod +x "$LOGIN_AGENTS_ON_LOGIN_DIR/health/broken.sh"
+hfail_out="$(agents health broken 2>&1)"; hfail_exit=$?
+check "health: failing hook reports fail and returns non-zero" "$(printf '%s' "$hfail_out" | grep -qi 'fail' > /dev/null && [ "$hfail_exit" -ne 0 ] && echo 0 || echo 1)"
+
 # stats: oneshot with no live pid
 sout="$(agents stats demo 2>&1)"
 check "stats: not running message" "$(printf '%s' "$sout" | grep -qi 'not running' && echo 0 || echo 1)"
