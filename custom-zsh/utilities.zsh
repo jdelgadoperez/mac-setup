@@ -27,6 +27,15 @@ function listAlfredWorkflowIds() {
   done
 }
 
+### Make a directory (with parents) and cd into it
+function mkcd() {
+  if [ -z "$1" ]; then
+    echo "Usage: mkcd <dir>"
+    return 1
+  fi
+  mkdir -p "$1" && cd "$1"
+}
+
 function dadjoke() {
   curl -s -H "Accept: text/plain" https://icanhazdadjoke.com/
 }

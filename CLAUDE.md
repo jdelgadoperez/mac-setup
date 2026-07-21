@@ -150,6 +150,12 @@ cleanpkgs [npm|yarn|pnpm]    # Auto-detects if not specified
 updatelibs                   # Normal update
 updatelibs clean             # Clean reinstall of all dependencies
 
+# Make a directory (with parents) and cd into it
+mkcd <dir>
+
+# Kill whatever process is listening on a TCP port (complements viewports)
+killport 3000
+
 # Clone and cd into repo
 gccd <git-repo-url>
 
@@ -190,6 +196,10 @@ The repository supports both Intel and Apple Silicon Macs via the `getmactype()`
 
 ### Custom Zsh Files Location
 During `install-zsh.sh`, files from `custom-zsh/` are copied to `$ZSH_CUSTOM/` (typically `~/.oh-my-zsh/custom/`), where Oh My Zsh automatically sources them.
+
+### Shell Navigation & Project Binaries
+- **`CDPATH`** (`custom-zsh/aliases.zsh`) is set to `.:$PROJ_DIR:$HOME`, so `cd <repo-name>` jumps into any project under `~/projects` from anywhere. The leading `.` keeps normal relative `cd` taking precedence.
+- **Project-local `node_modules/.bin`** (`custom-zsh/development.zsh`) is prepended to `PATH` as relative entries walking up 8 directory levels, so project binaries (`eslint`, `vitest`, `tsc`, ...) run directly without `npx`. The block is idempotent (guarded against duplicate entries on re-source).
 
 ### Performance Optimization
 The `.zshrc` uses lazy loading for heavy tools. To profile shell startup:

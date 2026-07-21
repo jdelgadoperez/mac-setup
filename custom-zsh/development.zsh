@@ -3,6 +3,27 @@
 # Package management, environment setup, and development tools
 ######################################################################################
 
+# Project-local node_modules/.bin on PATH (borrowed from kentcdodds/dotfiles).
+# Relative PATH entries resolve against the current directory at lookup time, so
+# adding ./node_modules/.bin and several parent levels lets you run project
+# binaries (eslint, vitest, tsc, prettier, ...) directly from any subdirectory —
+# no `npx` and no `package.json` script needed. Prefers the closest one first.
+# NOTE: this puts repo-local binaries ahead of globals; only affects Node projects,
+# but be mindful when running bare commands inside untrusted repos.
+if [[ ":$PATH:" != *":./node_modules/.bin:"* ]]; then
+  # Anonymous function keeps the loop vars out of the interactive shell scope.
+  () {
+    local nm="./node_modules/.bin"
+    local up="../"
+    local i
+    for i in {1..7}; do
+      nm="${nm}:${up}node_modules/.bin"
+      up="../${up}"
+    done
+    export PATH="${nm}:${PATH}"
+  }
+fi
+
 # Generic function to ensure a service is running
 # Usage: ensure_service "Service Name" "check_command" "app_name" [sleep_interval] [prerequisite_function]
 function ensure_service() {
