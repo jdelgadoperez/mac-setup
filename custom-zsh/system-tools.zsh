@@ -166,6 +166,27 @@ function viewports() {
   fi
 }
 
+function killport() {
+  # Kill whatever process is listening on a TCP port (complements `viewports`).
+  # Usage: killport 3000
+  local port="$1"
+  if [ -z "$port" ]; then
+    echo "Usage: killport <port>"
+    return 1
+  fi
+
+  local pids
+  pids=$(lsof -ti "tcp:${port}" 2>/dev/null)
+
+  if [ -z "$pids" ]; then
+    echo -e "${YELLOW}No process is listening on port ${port}${NC}"
+    return 0
+  fi
+
+  echo -e "${GREEN}Killing process(es) on port ${port}: $(echo $pids | tr '\n' ' ')${NC}"
+  echo "$pids" | xargs kill -9 2>/dev/null
+}
+
 function listhelpers() {
   local target_dir="${2:-$ZSH_CUSTOM}" # Default to $ZSH_CUSTOM if no directory specified
   target_dir=$(realpath "$target_dir") # Get absolute path
