@@ -74,6 +74,30 @@ check "ps: lists demo" "$(printf '%s' "$psout" | grep -q 'demo' && echo 0 || ech
 check "ps: lists watch" "$(printf '%s' "$psout" | grep -q 'watch' && echo 0 || echo 1)"
 check "ps: demo shows last exit 0" "$(printf '%s' "$psout" | grep demo | grep -q ' 0 ' && echo 0 || echo 1)"
 
+# logs
+echo "hello-log-line" > "$LOGIN_AGENTS_STATE_DIR/demo.log"
+logout="$(agents logs demo 2>&1)"
+check "logs: prints log contents" "$(printf '%s' "$logout" | grep -q hello-log-line && echo 0 || echo 1)"
+
+# health: missing hook
+hmiss="$(agents health demo 2>&1)"
+check "health: no hook message" "$(printf '%s' "$hmiss" | grep -qi 'no healthcheck' && echo 0 || echo 1)"
+
+# health: present hook runs and its exit is surfaced
+mkdir -p "$LOGIN_AGENTS_ON_LOGIN_DIR/health"
+cat > "$LOGIN_AGENTS_ON_LOGIN_DIR/health/demo.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "healthy-output"; exit 0
+EOF
+chmod +x "$LOGIN_AGENTS_ON_LOGIN_DIR/health/demo.sh"
+hok="$(agents health demo 2>&1)"
+check "health: runs hook (output)" "$(printf '%s' "$hok" | grep -q healthy-output && echo 0 || echo 1)"
+check "health: reports pass" "$(printf '%s' "$hok" | grep -qi 'pass' && echo 0 || echo 1)"
+
+# stats: oneshot with no live pid
+sout="$(agents stats demo 2>&1)"
+check "stats: not running message" "$(printf '%s' "$sout" | grep -qi 'not running' && echo 0 || echo 1)"
+
 echo "==============================="
 echo "Results: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
