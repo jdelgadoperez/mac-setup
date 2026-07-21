@@ -9,6 +9,11 @@ APPS=(
   # "OrbStack"
 )
 
+if [ "${#APPS[@]}" -eq 0 ]; then
+  echo "no apps configured — edit on-login/agents/launch-apps.sh APPS array"
+  exit 0
+fi
+
 status=0
 for app in "${APPS[@]}"; do
   if open -ga "$app"; then
@@ -19,7 +24,4 @@ for app in "${APPS[@]}"; do
   fi
 done
 
-if [ "${#APPS[@]}" -eq 0 ]; then
-  echo "no apps configured — edit on-login/agents/launch-apps.sh APPS array"
-fi
 exit "$status"
