@@ -24,6 +24,11 @@ if [[ ":$PATH:" != *":./node_modules/.bin:"* ]]; then
   }
 fi
 
+# mac-setup standalone executables
+if [[ ":$PATH:" != *":$HOME/projects/mac-setup/bin:"* ]]; then
+  export PATH="$HOME/projects/mac-setup/bin:$PATH"
+fi
+
 # Generic function to ensure a service is running
 # Usage: ensure_service "Service Name" "check_command" "app_name" [sleep_interval] [prerequisite_function]
 function ensure_service() {
