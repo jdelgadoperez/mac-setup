@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# run-agent <name> -- <command> [args...]
+# Instrumentation wrapper: stamps timing, captures exit + duration, writes a
+# last-run JSON snapshot and appends a framed block to a per-agent log, then
+# exits with the child's real exit code (transparent to launchd).
+set -uo pipefail
+
+STATE_DIR="${LOGIN_AGENTS_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/login-agents}"
+LOG_MAX_BYTES="${LOGIN_AGENTS_LOG_MAX_BYTES:-1048576}"
+
+name="${1:-}"
+if [ -z "$name" ] || [ "${2:-}" != "--" ]; then
+  echo "usage: run-agent <name> -- <command> [args...]" >&2
+  exit 64
+fi
+shift 2  # drop name and --
+
+mkdir -p "$STATE_DIR"
+json_file="$STATE_DIR/$name.json"
+log_file="$STATE_DIR/$name.log"
+
+now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+now_ms()  { echo $(( $(date +%s) * 1000 )); }
+
+started_at="$(now_iso)"
+start_ms="$(now_ms)"
+
+printf '\xe2\x94\x80\xe2\x94\x80 %s  run start \xe2\x94\x80\xe2\x94\x80\n' "$started_at" >> "$log_file"
+
+# Run child; tee combined output to terminal/launchd and the log.
+"$@" 2>&1 | tee -a "$log_file"
+exit_code="${PIPESTATUS[0]}"
+
+finished_at="$(now_iso)"
+duration_ms=$(( $(now_ms) - start_ms ))
+status="success"; [ "$exit_code" -eq 0 ] || status="failure"
+
+printf '\xe2\x94\x80\xe2\x94\x80 %s  exit=%s  %sms  %s \xe2\x94\x80\xe2\x94\x80\n' \
+  "$finished_at" "$exit_code" "$duration_ms" "$status" >> "$log_file"
+
+# Rotate: if log exceeds cap, keep the tail.
+if [ -f "$log_file" ]; then
+  bytes=$(wc -c < "$log_file" | tr -d ' ')
+  if [ "$bytes" -gt "$LOG_MAX_BYTES" ]; then
+    tail -c "$LOG_MAX_BYTES" "$log_file" > "$log_file.tmp" && mv "$log_file.tmp" "$log_file"
+  fi
+fi
+
+# Hand-rolled JSON snapshot (no jq dependency on the write path).
+printf '{\n  "name": "%s",\n  "status": "%s",\n  "exit_code": %s,\n  "duration_ms": %s,\n  "started_at": "%s",\n  "finished_at": "%s"\n}\n' \
+  "$name" "$status" "$exit_code" "$duration_ms" "$started_at" "$finished_at" > "$json_file"
+
+exit "$exit_code"
