@@ -201,6 +201,29 @@ During `install-zsh.sh`, files from `custom-zsh/` are copied to `$ZSH_CUSTOM/` (
 - **`CDPATH`** (`custom-zsh/aliases.zsh`) is set to `.:$PROJ_DIR:$HOME`, so `cd <repo-name>` jumps into any project under `~/projects` from anywhere. The leading `.` keeps normal relative `cd` taking precedence.
 - **Project-local `node_modules/.bin`** (`custom-zsh/development.zsh`) is prepended to `PATH` as relative entries walking up 8 directory levels, so project binaries (`eslint`, `vitest`, `tsc`, ...) run directly without `npx`. The block is idempotent (guarded against duplicate entries on re-source).
 
+### Login Agents Observability
+Login tasks run as launchd LaunchAgents wrapped by `bin/run-agent <name> -- <cmd>`,
+which stamps timing, captures exit code + duration, writes a last-run snapshot to
+`~/.local/state/login-agents/<name>.json`, and appends a rotated log
+(`<name>.log`, capped at 1 MB). Plists in `on-login/` are the source of truth and
+exec the wrapper — never the script directly — so observability is uniform.
+
+The `agents` CLI (`custom-zsh/login-agents.zsh`, `caff`-style) gives Docker-style views:
+- `agents ps [--running]` — table of all defined agents: name, state, last-run, exit, runs, kind
+- `agents logs [-f] <name>` — per-agent log (`-f` follows, like `docker logs -f`)
+- `agents events <name>` — live `log stream` for the process
+- `agents health <name>` — runs `on-login/health/<name>.sh` on demand
+- `agents stats <name>` — `%cpu/%mem/etime` for a running daemon
+- `agents restart <name>` — `launchctl kickstart -k`
+- `agents inspect <name>` — raw state + resolved label/plist/health paths
+
+Install/uninstall via `dorothy agents install|uninstall|list [name]` — it substitutes
+the `__REPO__` placeholder in each plist with the absolute repo path, symlinks/materializes
+into `~/Library/LaunchAgents/`, and `launchctl bootstrap`s. Agents are labeled
+`com.jdp.agent.<name>`. Add a new agent: see `on-login/README.md`.
+
+Standalone executables (e.g. `run-agent`) live in `bin/`, which is on `PATH`.
+
 ### Performance Optimization
 The `.zshrc` uses lazy loading for heavy tools. To profile shell startup:
 ```bash
