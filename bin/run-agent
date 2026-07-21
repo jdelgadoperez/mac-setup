@@ -15,7 +15,7 @@ if [ -z "$name" ] || [ "${2:-}" != "--" ]; then
 fi
 shift 2  # drop name and --
 
-mkdir -p "$STATE_DIR"
+mkdir -p "$STATE_DIR" || { echo "run-agent: cannot create state dir $STATE_DIR" >&2; exit 1; }
 json_file="$STATE_DIR/$name.json"
 log_file="$STATE_DIR/$name.log"
 

@@ -38,6 +38,14 @@ JB="$LOGIN_AGENTS_STATE_DIR/bad-agent.json"
 check "failure: exit_code matches child" "$([ "$(json "$JB" exit_code)" = "$rc" ] && echo 0 || echo 1)"
 check "failure: status=failure" "$([ "$(json "$JB" status)" = "failure" ] && echo 0 || echo 1)"
 
+# rotation: with a tiny cap, the log stays bounded near the cap
+export LOGIN_AGENTS_LOG_MAX_BYTES=2048
+"$WRAP" rot-agent -- /bin/sh -c 'for i in $(seq 1 500); do echo "line-$i-xxxxxxxxxxxxxxxx"; done' >/dev/null 2>&1
+LR="$LOGIN_AGENTS_STATE_DIR/rot-agent.log"
+rbytes=$(wc -c < "$LR" | tr -d ' ')
+check "rotation: log bounded (<= 2x cap)" "$([ "$rbytes" -le 4096 ] && echo 0 || echo 1)"
+unset LOGIN_AGENTS_LOG_MAX_BYTES
+
 echo "==============================="
 echo "Results: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
