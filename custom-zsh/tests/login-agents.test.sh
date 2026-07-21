@@ -36,6 +36,23 @@ EOF
 check "json_get status" "$([ "$(_la_json_get "$LOGIN_AGENTS_STATE_DIR/demo.json" status)" = "success" ] && echo 0 || echo 1)"
 check "json_get exit_code" "$([ "$(_la_json_get "$LOGIN_AGENTS_STATE_DIR/demo.json" exit_code)" = "0" ] && echo 0 || echo 1)"
 
+# Force the bash/sed fallback branch: shadow `command -v jq` to report absent,
+# and shadow `jq` itself to fail loudly if it's ever invoked, so a pass here
+# can only happen via the sed path, never via real jq.
+fallback_status="$(
+  jq() { echo "ERROR: jq was called!" >&2; return 99; }
+  command() { if [ "$1" = "-v" ] && [ "$2" = "jq" ]; then return 1; fi; builtin command "$@"; }
+  _la_json_get "$LOGIN_AGENTS_STATE_DIR/demo.json" status
+)"
+check "json_get fallback (no jq) returns status" "$([ "$fallback_status" = "success" ] && echo 0 || echo 1)"
+
+fallback_exit_code="$(
+  jq() { echo "ERROR: jq was called!" >&2; return 99; }
+  command() { if [ "$1" = "-v" ] && [ "$2" = "jq" ]; then return 1; fi; builtin command "$@"; }
+  _la_json_get "$LOGIN_AGENTS_STATE_DIR/demo.json" exit_code
+)"
+check "json_get fallback (no jq) returns exit_code" "$([ "$fallback_exit_code" = "0" ] && echo 0 || echo 1)"
+
 out="$(agents inspect demo 2>&1)"
 check "inspect shows label" "$(printf '%s' "$out" | grep -q 'com.jdp.agent.demo' && echo 0 || echo 1)"
 check "inspect shows json" "$(printf '%s' "$out" | grep -q '"status": "success"' && echo 0 || echo 1)"
