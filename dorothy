@@ -41,6 +41,7 @@ ${YELLOW}COMMANDS:${NC}
   ${GREEN}update${NC}       Update all managed tools and dependencies
   ${GREEN}list${NC}         List available components and their status
   ${GREEN}sync${NC}         Sync dotfiles (create symlinks)
+  ${GREEN}agents${NC}       Install/observe login LaunchAgents
   ${GREEN}local${NC}        Manage machine-specific .local override files
   ${GREEN}doctor${NC}       Check system health and diagnose issues
   ${GREEN}help${NC}         Show this help message
@@ -896,6 +897,74 @@ cmd_doctor() {
 }
 
 ###############################################################################
+# Login Agents                                                                #
+###############################################################################
+
+cmd_agents() {
+  local action="${1:-list}"; shift 2>/dev/null || true
+  local repo="$SCRIPT_DIR"
+  local src_dir="$repo/on-login"
+  local dest_dir="$HOME/Library/LaunchAgents"
+  local state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/login-agents"
+
+  _agents_names() {
+    local f base
+    for f in "$src_dir"/com.jdp.agent.*.plist; do
+      [ -e "$f" ] || continue
+      base="$(basename "$f")"; base="${base#com.jdp.agent.}"; base="${base%.plist}"
+      echo "$base"
+    done
+  }
+
+  case "$action" in
+    install)
+      createdirsafely "$dest_dir"
+      local names=("$@"); [ ${#names[@]} -gt 0 ] || names=($(_agents_names))
+      local name src dest
+      for name in "${names[@]}"; do
+        src="$src_dir/com.jdp.agent.$name.plist"
+        dest="$dest_dir/com.jdp.agent.$name.plist"
+        if [ ! -f "$src" ]; then logerror "No such agent: $name"; continue; fi
+        sed "s|__REPO__|$repo|g" "$src" > "$dest"
+        launchctl bootout "gui/${UID}/com.jdp.agent.$name" 2>/dev/null || true
+        if launchctl bootstrap "gui/${UID}" "$dest" 2>/dev/null; then
+          logsuccess "Installed agent: $name"
+        else
+          logerror "Failed to bootstrap: $name"
+        fi
+      done
+      ;;
+    uninstall)
+      local purge=0 names=()
+      for a in "$@"; do
+        if [ "$a" = "--purge" ]; then purge=1; else names+=("$a"); fi
+      done
+      [ ${#names[@]} -gt 0 ] || names=($(_agents_names))
+      local name dest
+      for name in "${names[@]}"; do
+        dest="$dest_dir/com.jdp.agent.$name.plist"
+        launchctl bootout "gui/${UID}/com.jdp.agent.$name" 2>/dev/null || true
+        rm -f "$dest"
+        [ "$purge" = "1" ] && rm -f "$state_dir/$name.json" "$state_dir/$name.log"
+        logsuccess "Uninstalled agent: $name"
+      done
+      ;;
+    list)
+      if command -v agents >/dev/null 2>&1; then
+        agents ps
+      else
+        loginfo "Defined agents:"; _agents_names
+      fi
+      ;;
+    *)
+      logerror "Unknown agents action: $action"
+      printf "Usage: dorothy agents <install|uninstall|list> [name...]\n"
+      return 1
+      ;;
+  esac
+}
+
+###############################################################################
 # Main Entry Point                                                            #
 ###############################################################################
 
@@ -927,9 +996,14 @@ main() {
         show_version
         exit 0
         ;;
-      install|update|list|sync|local|doctor|help|version)
-        command=$1
-        shift
+      install|update|list|sync|local|doctor|agents|help|version)
+        if [ -z "$command" ]; then
+          command=$1
+          shift
+        else
+          args+=("$1")
+          shift
+        fi
         ;;
       *)
         args+=("$1")
@@ -963,6 +1037,9 @@ main() {
       ;;
     doctor)
       cmd_doctor
+      ;;
+    agents)
+      cmd_agents "${args[@]}"
       ;;
     help)
       show_help
