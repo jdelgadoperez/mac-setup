@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jdp.agent.launch-apps</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__REPO__/bin/run-agent</string>
+    <string>launch-apps</string>
+    <string>--</string>
+    <string>__REPO__/on-login/agents/launch-apps.sh</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
