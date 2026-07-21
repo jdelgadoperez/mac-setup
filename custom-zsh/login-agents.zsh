@@ -47,7 +47,7 @@ agents() {
   local sub="${1:-help}"; shift 2>/dev/null
   case "$sub" in
     inspect)
-      local name="$1"
+      local name="${1:-}"
       [ -n "$name" ] || { echo "usage: agents inspect <name>" >&2; return 64; }
       echo "${BOLD}label:${NC}  $(_la_label "$name")"
       echo "${BOLD}plist:${NC}  $(_la_plist_path "$name")"
@@ -78,17 +78,17 @@ agents() {
     logs)
       local follow=0
       if [ "${1:-}" = "-f" ]; then follow=1; shift; fi
-      local name="$1"; [ -n "$name" ] || { echo "usage: agents logs [-f] <name>" >&2; return 64; }
+      local name="${1:-}"; [ -n "$name" ] || { echo "usage: agents logs [-f] <name>" >&2; return 64; }
       local lf="$(_la_state_dir)/$name.log"
       [ -f "$lf" ] || { echo "no log for '$name'" >&2; return 1; }
       if [ "$follow" = "1" ]; then tail -f "$lf"; else cat "$lf"; fi
       ;;
     events)
-      local name="$1"; [ -n "$name" ] || { echo "usage: agents events <name>" >&2; return 64; }
+      local name="${1:-}"; [ -n "$name" ] || { echo "usage: agents events <name>" >&2; return 64; }
       log stream --predicate "process == \"$name\""
       ;;
     health)
-      local name="$1"; [ -n "$name" ] || { echo "usage: agents health <name>" >&2; return 64; }
+      local name="${1:-}"; [ -n "$name" ] || { echo "usage: agents health <name>" >&2; return 64; }
       local hook="$(_la_health_path "$name")"
       if [ ! -x "$hook" ] && [ ! -f "$hook" ]; then
         echo "no healthcheck defined for '$name'"; return 0
@@ -98,13 +98,13 @@ agents() {
       if [ "$hstatus" -eq 0 ]; then echo "${GREEN}health: pass${NC}"; else echo "${RED}health: fail (exit $hstatus)${NC}"; return "$hstatus"; fi
       ;;
     stats)
-      local name="$1"; [ -n "$name" ] || { echo "usage: agents stats <name>" >&2; return 64; }
+      local name="${1:-}"; [ -n "$name" ] || { echo "usage: agents stats <name>" >&2; return 64; }
       local pid="$(_la_launchctl_field "$name" pid)"
       if [ -z "$pid" ]; then echo "$name: not running (oneshot or stopped)"; return 0; fi
       ps -o pid,%cpu,%mem,etime -p "$pid"
       ;;
     restart)
-      local name="$1"; [ -n "$name" ] || { echo "usage: agents restart <name>" >&2; return 64; }
+      local name="${1:-}"; [ -n "$name" ] || { echo "usage: agents restart <name>" >&2; return 64; }
       launchctl kickstart -k "gui/${UID}/$(_la_label "$name")"
       ;;
     help|--help|-h|"")

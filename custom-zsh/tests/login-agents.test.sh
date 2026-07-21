@@ -107,6 +107,11 @@ check "health: failing hook reports fail and returns non-zero" "$(printf '%s' "$
 sout="$(agents stats demo 2>&1)"
 check "stats: not running message" "$(printf '%s' "$sout" | grep -qi 'not running' && echo 0 || echo 1)"
 
+# set -u safety: calling a subcommand with NO name arg must hit the usage
+# guard (return 64), not crash with "parameter not set" under nounset.
+( setopt nounset; agents inspect >/dev/null 2>&1 ); rc=$?
+check "inspect: set -u safe, missing name returns usage (64)" "$([ "$rc" -eq 64 ] && echo 0 || echo 1)"
+
 echo "==============================="
 echo "Results: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
