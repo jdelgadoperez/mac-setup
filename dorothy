@@ -905,7 +905,7 @@ cmd_agents() {
   local repo="$SCRIPT_DIR"
   local src_dir="$repo/on-login"
   local dest_dir="$HOME/Library/LaunchAgents"
-  local state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/login-agents"
+  local state_dir="${LOGIN_AGENTS_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/login-agents}"
 
   _agents_names() {
     local f base
