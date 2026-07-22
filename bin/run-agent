@@ -20,7 +20,18 @@ json_file="$STATE_DIR/$name.json"
 log_file="$STATE_DIR/$name.log"
 
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
-now_ms()  { echo $(( $(date +%s) * 1000 )); }
+
+# Portable millisecond epoch clock. macOS ships BSD date, which does not
+# support `date +%s%3N` (GNU-only) -- that would print a literal "N" here.
+# Prefer python3, then perl (both are commonly present on macOS), and fall
+# back to whole-second resolution so this never breaks on a minimal system.
+if command -v python3 >/dev/null 2>&1; then
+  now_ms() { python3 -c 'import time; print(int(time.time()*1000))'; }
+elif command -v perl >/dev/null 2>&1; then
+  now_ms() { perl -MTime::HiRes=time -e 'printf("%d", time()*1000)'; }
+else
+  now_ms() { echo $(( $(date +%s) * 1000 )); }
+fi
 
 started_at="$(now_iso)"
 start_ms="$(now_ms)"
