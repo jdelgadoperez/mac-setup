@@ -46,6 +46,20 @@ rbytes=$(wc -c < "$LR" | tr -d ' ')
 check "rotation: log bounded (<= 2x cap)" "$([ "$rbytes" -le 4096 ] && echo 0 || echo 1)"
 unset LOGIN_AGENTS_LOG_MAX_BYTES
 
+# sub-second resolution: a ~50ms child must record a non-zero, sub-1000ms
+# duration_ms. Against the old whole-second now_ms() (date +%s * 1000), any
+# run finishing inside the same second would record exactly 0 -- this would
+# have failed before the fix. Only runs if a ms-precision backend exists.
+if command -v python3 >/dev/null 2>&1 || command -v perl >/dev/null 2>&1; then
+  "$WRAP" fast-agent -- /bin/sh -c 'sleep 0.05' >/dev/null 2>&1
+  JF="$LOGIN_AGENTS_STATE_DIR/fast-agent.json"
+  fast_ms="$(json "$JF" duration_ms)"
+  check "sub-second: duration_ms > 0 and < 1000 (got ${fast_ms:-<missing>})" \
+    "$([ -n "$fast_ms" ] && [ "$fast_ms" -gt 0 ] 2>/dev/null && [ "$fast_ms" -lt 1000 ] 2>/dev/null && echo 0 || echo 1)"
+else
+  echo "SKIP  sub-second: no python3/perl available for ms-precision clock"
+fi
+
 echo "==============================="
 echo "Results: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
