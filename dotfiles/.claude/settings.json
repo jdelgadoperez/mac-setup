@@ -271,7 +271,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
+            "command": "( pgrep -f 'memory-bank ingest claude-code' >/dev/null || memory-bank ingest claude-code ) >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       },
@@ -280,7 +280,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank distill --since 3h >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
+            "command": "( ANTHROPIC_API_KEY=$(security find-generic-password -s ANTHROPIC_API_KEY -w 2>/dev/null); [ -n \"$ANTHROPIC_API_KEY\" ] && export ANTHROPIC_API_KEY && memory-bank distill --since 3h ) >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       }
@@ -318,7 +318,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank ingest claude-code >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
+            "command": "( pgrep -f 'memory-bank ingest claude-code' >/dev/null || memory-bank ingest claude-code ) >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
           }
         ]
       }
