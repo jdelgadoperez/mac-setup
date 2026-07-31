@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Config Audit</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --hairline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --bar:            #2a78d6;   /* sequential blue, series slot 1 */
+    --bar-track:      #f0efec;
+    --status-good:     #0ca30c;
+    --status-warning:  #fab219;
+    --status-serious:  #ec835a;
+    --status-critical: #d03b3b;
+    --good-text:       #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --hairline:       #2c2c2a;
+      --border:         rgba(255,255,255,0.10);
+      --bar:            #3987e5;
+      --bar-track:      #383835;
+      --good-text:      #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:           #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --hairline:       #2c2c2a;
+    --border:         rgba(255,255,255,0.10);
+    --bar:            #3987e5;
+    --bar-track:      #383835;
+    --good-text:      #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  header h1 { font-size: 28px; margin: 0 0 4px; }
+  header .meta { color: var(--text-secondary); font-size: 13px; }
+  header .meta code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+  }
+
+  section { margin-top: 44px; }
+  h2 {
+    font-size: 19px; margin: 0 0 4px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--hairline);
+  }
+  h2 + .section-note { color: var(--text-secondary); font-size: 13px; margin: 6px 0 16px; }
+
+  /* ---- Scorecard ---- */
+  .scorecard { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    min-width: 128px;
+    flex: 1 1 128px;
+  }
+  .tile .value { font-size: 30px; font-weight: 650; line-height: 1.15; }
+  .tile .label { color: var(--text-secondary); font-size: 12.5px; margin-top: 2px; }
+  .tile.grade .value { font-size: 40px; }
+  .tile .sub { color: var(--text-muted); font-size: 12px; }
+
+  .dimension-scores { margin-top: 18px; display: grid; gap: 10px; }
+  .dim { display: grid; grid-template-columns: 190px 1fr 44px; gap: 12px; align-items: center; }
+  .dim .name { font-size: 13.5px; color: var(--text-secondary); }
+  .dim .track { display: block; background: var(--bar-track); border-radius: 4px; height: 10px; overflow: hidden; }
+  .dim .fill { display: block; background: var(--bar); height: 100%; border-radius: 0 4px 4px 0; }
+  .dim .num {
+    font-size: 13px; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Findings ---- */
+  .finding {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 12px;
+  }
+  .finding .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .finding .title { font-weight: 600; }
+  .finding .scope { color: var(--text-muted); font-size: 12px; }
+  .finding p { margin: 8px 0 0; color: var(--text-secondary); font-size: 14px; }
+  .finding .fix { color: var(--text-primary); }
+  .finding .fix strong { font-weight: 600; }
+  .finding code, td code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    background: var(--bar-track);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  /* Severity badge: icon + label + color — never color alone */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 650; letter-spacing: .02em;
+    text-transform: uppercase;
+    padding: 2px 9px; border-radius: 99px;
+    border: 1.5px solid currentColor;
+  }
+  .badge-critical { color: var(--status-critical); }
+  .badge-serious  { color: var(--status-serious); }
+  .badge-warning  { color: var(--status-warning); }
+  .badge-good     { color: var(--good-text); }
+  .badge svg { width: 12px; height: 12px; flex: none; }
+
+  /* ---- Inventory tables ---- */
+  .table-wrap { overflow-x: auto; margin-top: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th {
+    text-align: left; color: var(--text-muted); font-weight: 600;
+    font-size: 12px; padding: 6px 12px 6px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  td {
+    padding: 7px 12px 7px 0;
+    border-bottom: 1px solid var(--hairline);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+  td:first-child { color: var(--text-primary); white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* Context-cost bars */
+  .costbar { display: grid; grid-template-columns: 230px 1fr 90px; gap: 12px; align-items: center; margin-top: 8px; }
+  .costbar .name { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .costbar .track { display: block; background: var(--bar-track); border-radius: 4px; height: 12px; overflow: hidden; }
+  .costbar .fill { display: block; background: var(--bar); height: 100%; border-radius: 0 4px 4px 0; }
+  .costbar .num { font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* ---- Quick wins ---- */
+  .quickwins { margin: 14px 0 0; padding: 0; list-style: none; }
+  .quickwins li {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 8px;
+    display: flex; gap: 10px; align-items: baseline;
+    font-size: 14px;
+  }
+  .quickwins .n {
+    flex: none; font-weight: 650; color: var(--bar);
+    font-variant-numeric: tabular-nums;
+  }
+
+  footer {
+    margin-top: 56px; padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+    color: var(--text-muted); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Claude Config Audit</h1>
+  <!-- @SECTION:META — replace with real date, machine, and audited scopes -->
+  <div class="meta">
+    Generated 2026-01-01 · scopes: <code>~/.claude</code> + <code>/path/to/project</code>
+  </div>
+  <!-- @END:META -->
+</header>
+
+<section id="scorecard">
+  <h2>Scorecard</h2>
+  <div class="section-note">Overall health and inventory at a glance.</div>
+  <!-- @SECTION:SCORECARD — grade tile + one tile per inventory count + findings-by-severity tiles -->
+  <div class="scorecard">
+    <div class="tile grade"><div class="value">B+</div><div class="label">Overall grade</div></div>
+    <div class="tile"><div class="value">12</div><div class="label">Commands</div></div>
+    <div class="tile"><div class="value">5</div><div class="label">Skills</div></div>
+    <div class="tile"><div class="value">3</div><div class="label">Agents</div></div>
+    <div class="tile"><div class="value">4</div><div class="label">MCP servers</div></div>
+    <div class="tile"><div class="value">2</div><div class="label">Hooks</div></div>
+  </div>
+  <div class="dimension-scores">
+    <div class="dim"><span class="name">Overlaps &amp; conflicts</span><span class="track"><span class="fill" style="width:80%"></span></span><span class="num">80</span></div>
+    <div class="dim"><span class="name">Gaps</span><span class="track"><span class="fill" style="width:65%"></span></span><span class="num">65</span></div>
+    <div class="dim"><span class="name">Hygiene &amp; security</span><span class="track"><span class="fill" style="width:90%"></span></span><span class="num">90</span></div>
+    <div class="dim"><span class="name">Efficiency</span><span class="track"><span class="fill" style="width:70%"></span></span><span class="num">70</span></div>
+  </div>
+  <!-- @END:SCORECARD -->
+</section>
+
+<section id="findings">
+  <h2>Findings</h2>
+  <div class="section-note">Grouped by dimension, most severe first. Each has a concrete fix.</div>
+  <!-- @SECTION:FINDINGS — one .finding card per finding; reuse the badge markup below verbatim per severity -->
+  <div class="finding">
+    <div class="head">
+      <span class="badge badge-serious">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1 15 14H1L8 1Zm-.9 5h1.8l-.2 4H7.3l-.2-4Zm.9 6.8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>
+        Serious
+      </span>
+      <span class="title">Example finding title</span>
+      <span class="scope">user scope</span>
+    </div>
+    <p><strong>What:</strong> description of what was observed.</p>
+    <p><strong>Why it matters:</strong> the consequence of leaving it as-is.</p>
+    <p class="fix"><strong>Fix:</strong> the exact file to edit / command to run.</p>
+  </div>
+  <div class="finding">
+    <div class="head">
+      <span class="badge badge-critical">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm-.9 3.5h1.8L8.7 9H7.3l-.2-5.5ZM8 13a1.1 1.1 0 1 1 0-2.2A1.1 1.1 0 0 1 8 13Z"/></svg>
+        Critical
+      </span>
+      <span class="title">badge-critical example (octagon icon)</span>
+    </div>
+  </div>
+  <div class="finding">
+    <div class="head">
+      <span class="badge badge-warning">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.8 3h1.6v5H7.2V4Zm.8 8.2a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>
+        Warning
+      </span>
+      <span class="title">badge-warning example</span>
+    </div>
+  </div>
+  <div class="finding">
+    <div class="head">
+      <span class="badge badge-good">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M6.4 12.4 2 8l1.4-1.4 3 3 6.2-6.2L14 4.8l-7.6 7.6Z"/></svg>
+        Good
+      </span>
+      <span class="title">badge-good example — use for healthy areas worth calling out</span>
+    </div>
+  </div>
+  <!-- @END:FINDINGS -->
+</section>
+
+<section id="inventory">
+  <h2>Inventory</h2>
+  <div class="section-note">Everything configured, by scope.</div>
+  <!-- @SECTION:INVENTORY — one table per kind (commands, skills, agents, MCP servers, hooks); omit empty kinds -->
+  <h3>Commands &amp; skills</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Kind</th><th>Scope</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/example</code></td><td>command</td><td>user</td><td>Example description.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- @END:INVENTORY -->
+
+  <!-- @SECTION:CONTEXT_COST — one .costbar per memory file / always-loaded config, widths scaled to the largest -->
+  <h3>Context cost (loaded every session)</h3>
+  <div class="costbar"><span class="name">~/.claude/CLAUDE.md</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="num">1,820 words</span></div>
+  <div class="costbar"><span class="name">project CLAUDE.md</span><span class="track"><span class="fill" style="width:52%"></span></span><span class="num">940 words</span></div>
+  <!-- @END:CONTEXT_COST -->
+</section>
+
+<section id="quick-wins">
+  <h2>Quick wins</h2>
+  <div class="section-note">The highest-value fixes, in order.</div>
+  <!-- @SECTION:QUICK_WINS — ≤ 7 items -->
+  <ol class="quickwins">
+    <li><span class="n">1</span><span>First and most valuable fix.</span></li>
+    <li><span class="n">2</span><span>Second fix.</span></li>
+  </ol>
+  <!-- @END:QUICK_WINS -->
+</section>
+
+<footer>
+  Generated by <code>/config-audit</code> · secrets redacted at collection time · self-contained, renders offline
+</footer>
+
+</main>
+</body>
+</html>
