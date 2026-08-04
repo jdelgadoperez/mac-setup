@@ -214,10 +214,27 @@ cosmetic inconsistency.
 alongside 1 per-file (`config-audit`). The mix that caused the original
 corruption is still present, so the next audit run will flag it.
 
-**Still open (outside the audit).** Whatever tool creates per-file links should
-refuse when the parent directory is already a symlink — resolve with `realpath`
-and skip when source and target are the same inode. `install-claude.sh` is not
-that tool; it links whole directories and is not the culprit.
+**Root cause found and fixed (2026-08-04).** The culprit is
+`install-claude-config.sh`, a *second* installer that walks
+`dotfiles/.claude/` and links every file individually. Run after
+`install-claude.sh` has dir-symlinked the skills, its target path resolves
+through that link back to the source, and its conflict branch `rm -rf`s the
+source and links it to itself.
+
+Reproduced end to end in a sandbox: the sequence yields `Too many levels of
+symbolic links` and destroys the source. It also explains the blast pattern
+exactly — all 14 skills in `install-claude.sh`'s `CLAUDE_SKILLS` plus 6 other
+dir-symlinked skills were hit, while `config-audit` (a real directory with
+per-file links inside) was untouched.
+
+A guard existed but tested the *target*: `[ -e "$target" ]` is false for an
+already-corrupted dangling self-link, so a rerun bypassed it. Now compares
+resolved *parent* directories, which holds in both clean and corrupted states.
+A dry run against the live config protects 34 files — the exact set corrupted
+before — and proposes no destructive action.
+
+Not a zsh helper: no `ln -s` exists anywhere in `custom-zsh/` or the live
+oh-my-zsh custom files.
 
 ---
 
