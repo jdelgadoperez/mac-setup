@@ -337,6 +337,15 @@
             "command": "rtk hook claude < /dev/null"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/cd-git-allow.sh"
+          }
+        ]
       }
     ]
   },
