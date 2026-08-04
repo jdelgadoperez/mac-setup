@@ -79,6 +79,17 @@ edit, command to run, or setting to change).
 - `settings.local.json` or `.mcp.json` not gitignored in a repo.
 
 **Hygiene & security**
+- **Check `parse_error` first, before any other analysis.** Any settings file,
+  `~/.claude.json`, or `.mcp.json` carrying a `parse_error` is a **critical**
+  finding: malformed JSON silently disables *every* setting in that file —
+  permissions, hooks, model, plugins. Name the file and quote the parser
+  message in the fix. Two traps: (a) on a parse error the collector
+  early-returns, so `permissions` and `hooks` are *absent* rather than empty —
+  never report "no permission rules configured" for a file that failed to
+  parse, the rules exist and are simply inert; (b) a scope in this state must
+  not be graded as healthy — cap the overall grade at **F** while any config
+  file fails to parse, since nothing else you measure about that scope is
+  actually in effect.
 - Anything the collector marked `redacted` living in a *committed* file (secrets
   belong in `.env` / `settings.local.json`, never in tracked config).
 - Stale references: commands pointing at paths that no longer exist, MCP servers
@@ -113,7 +124,9 @@ alone.
 Fill in:
 - **Scorecard** — overall grade (A–F from the four dimension scores) plus stat
   tiles: counts of commands, skills, agents, MCP servers, hooks, and findings
-  by severity.
+  by severity. If any config file failed to parse (see `parse_error` above),
+  the grade is **F** regardless of the dimension scores, and the scorecard says
+  why — a scope whose settings don't load has no working configuration to grade.
 - **Findings** — one card per finding, grouped by dimension, ordered most
   severe first, each with its concrete fix.
 - **Inventory** — tables of commands/skills/agents/MCP servers with scope and

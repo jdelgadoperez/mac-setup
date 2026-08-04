@@ -198,7 +198,7 @@ finding — it is the precondition for this class of corruption.
 
 ## 7. `parse_error` is collected but never reported
 
-- **Status:** open
+- **Status:** fixed (2026-08-04)
 - **Found:** 2026-08-04, edge-case testing
 - **Severity:** high — the most severe config failure is invisible in the report
 
@@ -220,13 +220,23 @@ than any finding the audit currently reports, and it is exactly the state a
 user would run an audit to discover. A report that grades this setup as healthy
 is actively misleading.
 
-**Fix sketch.** Add to the Hygiene & security dimension: if any settings file
-has a non-null `parse_error`, emit a `critical` finding naming the file and the
-parser message, and cap the overall grade. Same treatment for a `.mcp.json`
-that fails to parse.
+**Fix applied.** `SKILL.md` now opens the Hygiene & security dimension with a
+`parse_error` check covering settings files, `~/.claude.json`, and `.mcp.json`,
+emitting a `critical` finding that names the file and quotes the parser
+message. Step 4 caps the overall grade at **F** whenever any config file fails
+to parse, since nothing measured about that scope is actually in effect.
 
-**Regression test.** A scope whose `settings.json` is invalid JSON must produce
-a critical finding, not a clean report.
+The instruction also calls out the misreading trap, confirmed against real
+collector output: `summarize_settings()` early-returns on a parse error, so
+`permissions` and `hooks` are **absent** from the JSON rather than empty. A
+report must not conclude "no permission rules configured" — the rules exist and
+are inert.
+
+**Verified.** A fixture whose `settings.json` contains `not json{{{` yields
+`parse_error: "Expecting value: line 1 column 1 (char 0)"` with `permissions`
+and `hooks` absent. The real user config shows no `parse_error` on either
+settings file or `~/.claude.json`, so the new critical finding does not fire on
+healthy input.
 
 ---
 
