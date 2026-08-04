@@ -63,6 +63,13 @@ project you run it from.
 The audit is **read-only**: it never edits your settings or tooling, only
 recommends.
 
+## Known issues
+
+Bugs in this skill itself — collector parsing quirks, false positives, and
+their fix sketches — are tracked in [KNOWN-ISSUES.md](KNOWN-ISSUES.md). Add an
+entry there whenever a run produces a finding that turns out to be wrong, so
+the report's own accuracy stays auditable.
+
 ## Related commands
 
 Two companion deep-dives live in `dotfiles/.claude/commands/` (installed by
