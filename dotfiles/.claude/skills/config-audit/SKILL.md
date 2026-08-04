@@ -72,7 +72,7 @@ edit, command to run, or setting to change).
   anywhere.
 - Any allow rule granting an interpreter or runner (`bash`, `python`, `node`,
   `npx`, `npm`, `make`, `docker exec`, …) — flag as **critical**: it nullifies
-  every deny rule. Point to `/permissions-audit` for the full boundary analysis.
+  every deny rule. Point to `/audit:permissions` for the full boundary analysis.
 - No hooks where the user's workflow implies them (formatting, tests, secret scanning).
 - Commands/skills/agents without descriptions (won't trigger reliably); commands
   that use `$ARGUMENTS` but declare no `argument-hint`.

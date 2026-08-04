@@ -75,10 +75,10 @@ the report's own accuracy stays auditable.
 Two companion deep-dives live in `dotfiles/.claude/commands/` (installed by
 the same `install-claude-config.sh` run):
 
-- **/permissions-audit** — focused security audit of whether permission rules
+- **/audit:permissions** — focused security audit of whether permission rules
   still form a boundary (blanket interpreter grants, deny/ask coverage, scope
   hygiene). `/config-audit` flags the headline problems; this digs in.
-- **/spec-audit** — audits how completely a project is specified for safe
+- **/audit:spec** — audits how completely a project is specified for safe
   agent delegation, and predicts where an agent would silently fill gaps.
 
 Both are adapted (trimmed and de-vendored) from
