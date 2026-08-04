@@ -6,3 +6,5 @@ CLAUDE.local.md
 .githooks/pre-commit.blocked-files
 .codegraph/
 .backup/
+__pycache__/
+*.pyc
