@@ -157,6 +157,45 @@ the stronger claim.
 
 ---
 
+## 6. Report blamed the wrong tool for the self-referential symlinks
+
+- **Status:** open (diagnosis corrected; underlying install bug not yet fixed)
+- **Found:** 2026-08-04
+- **Severity:** medium — a fix aimed at the wrong file fixes nothing
+
+**Observed.** The report recommended "fix the installer step that created
+self-referential symlinks." Reading `install-claude.sh` shows it symlinks whole
+skill *directories*:
+
+```bash
+symlink_claude_entry "$CLAUDE_DOTFILES/skills/$skill" "$CLAUDE_DIR/skills/$skill"
+```
+
+That cannot produce a file-level loop like `ship/SKILL.md -> ship/SKILL.md`,
+and it already guards against dangling links with an `[ ! -e "$source" ]` check.
+The installer was not the culprit.
+
+**Actual mechanism.** Two linking styles coexist under `~/.claude/skills/`:
+
+| Style | Example | Shape |
+|-------|---------|-------|
+| Installer (dir-level) | `ship`, `pr`, `writing-voice` | `~/.claude/skills/X` → dotfiles `skills/X` |
+| Per-file | `config-audit` | real dir; `SKILL.md` → dotfiles `skills/X/SKILL.md` |
+
+A per-file linking pass run against a skill whose directory is *already* a
+dir-symlink resolves `~/.claude/skills/X/SKILL.md` through the link back to the
+dotfiles source, then creates a link from that source onto itself — the exact
+self-loop observed, and it lands in the dotfiles repo rather than in
+`~/.claude`.
+
+**Fix sketch.** Pick one style and make it exclusive. Before creating a
+per-file link, refuse when the parent directory is a symlink (or resolve the
+target with `realpath` and skip when source and target are the same inode).
+The audit should also flag *mixed* linking styles under `skills/` as its own
+finding — it is the precondition for this class of corruption.
+
+---
+
 ## Non-issues (checked, working as intended)
 
 - **Quote stripping in frontmatter.** `.strip("\"'")` was suspected of mangling
