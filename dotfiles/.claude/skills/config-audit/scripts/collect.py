@@ -112,17 +112,42 @@ def parse_frontmatter(path):
     if end == -1:
         return {}
     fields = {}
-    for line in text[3:end].splitlines():
-        m = re.match(r"^([A-Za-z_-]+):\s*(.*)$", line)
-        if m:
-            fields[m.group(1).lower()] = m.group(2).strip().strip("\"'")
+    lines = text[3:end].splitlines()
+    index = 0
+    while index < len(lines):
+        match = re.match(r"^([A-Za-z_-]+):\s*(.*)$", lines[index])
+        index += 1
+        if not match:
+            continue
+        key = match.group(1).lower()
+        value = match.group(2).strip()
+
+        # A bare key, or an explicit `|`/`>` block indicator, means the value
+        # continues on the following more-indented lines.
+        if value in ("", "|", ">", "|-", ">-", "|+", ">+"):
+            continuation = []
+            while index < len(lines):
+                following = lines[index]
+                if following.strip() and not following[:1].isspace():
+                    break
+                if following.strip():
+                    continuation.append(following.strip())
+                index += 1
+            value = " ".join(continuation)
+
+        fields[key] = value.strip().strip("\"'")
     return fields
 
 
-def broken_link_entry(path, directory, kind):
-    """A dangling symlink is inventory too — record it instead of crashing."""
+def broken_link_entry(path, directory, kind, name=None):
+    """A dangling symlink is inventory too — record it instead of crashing.
+
+    `name` lets the caller supply the display name it would otherwise derive
+    from frontmatter — skills pass their directory name, so a broken skill
+    reads as `ship` rather than `ship/SKILL`.
+    """
     return {
-        "name": path.relative_to(directory).with_suffix("").as_posix(),
+        "name": name or path.relative_to(directory).with_suffix("").as_posix(),
         "kind": kind,
         "path": str(path),
         "bytes": 0,
@@ -165,7 +190,7 @@ def inventory_skills(directory):
     for skill_md in sorted(directory.glob("*/SKILL.md")):
         skill_dir = skill_md.parent
         if not skill_md.exists():
-            items.append(broken_link_entry(skill_md, directory, "skill"))
+            items.append(broken_link_entry(skill_md, directory, "skill", name=skill_dir.name))
             continue
         fm = parse_frontmatter(skill_md)
         files = [p for p in skill_dir.rglob("*") if p.is_file()]
@@ -307,6 +332,10 @@ def scan_project_scope(project):
         "skills": inventory_skills(dot / "skills"),
         "mcp_json": file_stats(project / ".mcp.json"),
         "is_git_repo": (project / ".git").exists(),
+        # Run from $HOME, "project scope" resolves to the user's own config and
+        # duplicates the user scope. Flag it so the report collapses the two
+        # rather than presenting the same files as a second, distinct scope.
+        "mirrors_user_scope": project.resolve() == Path.home().resolve(),
     }
     if scope["mcp_json"]["exists"]:
         data, err = load_json(project / ".mcp.json")
