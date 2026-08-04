@@ -222,6 +222,14 @@
             "command": "/usr/local/bin/icm hook start < /dev/null"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/load-skill-anti-sycophancy.sh"
+          }
+        ]
       }
     ],
     "SessionEnd": [],
@@ -298,6 +306,14 @@
             "command": "/usr/local/bin/icm hook prompt < /dev/null"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/opus-delegation-reminder.sh"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -344,6 +360,33 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/cd-git-allow.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/inject-sonnet-default.sh"
+          }
+        ],
+        "matcher": "Task"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/dod-commit-nudge.sh"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pre-push-checks/scripts/block-remote-branch-delete.sh"
           }
         ]
       }
