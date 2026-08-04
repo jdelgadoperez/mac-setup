@@ -123,6 +123,40 @@ as a second scope.
 
 ---
 
+## 5. Report asserted a dangling symlink was unrecoverable without checking history
+
+- **Status:** open
+- **Found:** 2026-08-04
+- **Severity:** medium — a wrong factual claim that drives a destructive recommendation
+
+**Observed.** The generated report stated that
+`agents/research-analyst.md` was "**not** tracked in git — unlike the skills
+breakage, there is nothing to restore," and recommended recreate-or-delete.
+That was false. The file was added in `3e2d163` and deleted in `40e872e`; its
+full content was recoverable the whole time via
+`git show 40e872e^:dotfiles/.claude/agents/research-analyst.md`.
+
+**Root cause.** The check used to support the claim was
+`git log --diff-filter=A -- '*research-analyst*'`, whose output was misread as
+empty. A single `--diff-filter=A` query on a glob does not establish that a
+path was never tracked, and nothing verified the negative before it was
+written into the report as fact.
+
+**Why it matters.** The claim pointed toward deleting a file presented as
+unrecoverable. If the user had accepted the framing without the follow-up
+history check, the reasoning for the decision would have been wrong even
+though the file was in fact restorable.
+
+**Fix sketch.** Never assert "not in git" from a single log query. Before any
+finding claims a file is unrecoverable, run
+`git log --all --oneline --follow -- <path>` **and**
+`git log --all --diff-filter=D -- <path>`; if either returns commits, report
+the file as recoverable and name the restoring commit. When history is
+genuinely empty, say "no commit found for this path" rather than asserting
+the stronger claim.
+
+---
+
 ## Non-issues (checked, working as intended)
 
 - **Quote stripping in frontmatter.** `.strip("\"'")` was suspected of mangling
