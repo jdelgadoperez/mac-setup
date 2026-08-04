@@ -358,7 +358,10 @@ sync_dotfiles() {
   local SKIP_FILES=(".claude.json")
 
   # Find all files in dotfiles directory (excluding .git and .DS_Store)
-  find "$dotfiles_dir" -type f ! -path "*/.git/*" ! -name ".DS_Store" | while read -r file; do
+  find "$dotfiles_dir" \
+    \( -name '__pycache__' -o -name '.ruff_cache' -o -name '.pytest_cache' \
+       -o -name 'node_modules' -o -name '.git' \) -prune -o \
+    -type f ! -name ".DS_Store" -print | while read -r file; do
     local rel_path="${file#$dotfiles_dir/}"
     local target="$HOME/$rel_path"
     local target_dir=$(dirname "$target")
@@ -381,6 +384,46 @@ sync_dotfiles() {
       fi
       continue
     fi
+
+    # Refuse to write through a symlinked parent directory.
+    #
+    # install-claude-config.sh links whole skill directories, so
+    # ~/.claude/skills/ship is a link to dotfiles/.claude/skills/ship. A
+    # per-file pass then computes a target *inside* that link, which resolves
+    # straight back to the source file. The rm -f below would delete the real
+    # file in the repo and replace it with a link to itself.
+    #
+    # This is exactly how 19 skills (34 files) were silently corrupted.
+    if [ "$(cd "$target_dir" 2>/dev/null && pwd -P)" = "$(cd "$(dirname "$file")" 2>/dev/null && pwd -P)" ]; then
+      printf "${YELLOW}⊘${NC} Skipped: %s (already reachable via a linked parent)\n" "$rel_path"
+      continue
+    fi
+
+    # Don't hijack a link owned by another repo. Some entries under ~/.claude
+    # are installed by the tool that maintains them — memory-bank ships
+    # skills/memory-search and skills/memory-recall, job-hunt ships
+    # commands/job/. Where dotfiles carries a stale duplicate, relinking would
+    # silently swap the maintained source for the copy in this repo.
+    # Check the nearest symlinked ancestor, not the file: memory-bank owns
+    # ~/.claude/skills/memory-search as a *directory* link, while the file
+    # inside it may still resolve into dotfiles. Relinking per-file there
+    # would swap the maintained source for this repo's stale duplicate.
+    local ancestor="$target_dir"
+    while [ "$ancestor" != "$HOME" ] && [ "$ancestor" != "/" ]; do
+      if [ -L "$ancestor" ]; then
+        local owner
+        owner="$(readlink "$ancestor")"
+        case "$owner" in
+          "$dotfiles_dir"/*) ;;  # ours — safe
+          *)
+            printf "${YELLOW}⊘${NC} Skipped: %s (owned by %s)\n" "$rel_path" "$owner"
+            continue 2
+            ;;
+        esac
+        break
+      fi
+      ancestor="$(dirname "$ancestor")"
+    done
 
     if $dry_run; then
       printf "${YELLOW}[DRY RUN]${NC} Would link: %s -> %s\n" "$rel_path" "$target"
