@@ -2,7 +2,6 @@
   "cleanupPeriodDays": 7,
   "permissions": {
     "allow": [
-      "Bash([:*)",
       "Bash(aws acm describe-:*)",
       "Bash(aws acm list-:*)",
       "Bash(aws cloudformation describe-:*)",
