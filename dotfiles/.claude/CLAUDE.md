@@ -38,6 +38,7 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 - **After pushing fixes** in response to review feedback, always re-request reviews from the original reviewers
 - Check **all four comment surfaces** before reviewing or declaring feedback addressed: inline comments, review submissions, conversation-level comments, and GraphQL `reviewThreads` (surfaces RESOLVED + OUTDATED threads)
 - **Tone**: fewer nitpicks on staff/principal engineer PRs; frame structural suggestions as questions; never post unverified factual claims
+- Before posting any review to GitHub, read `@rules/github-review-posting.md` — it is the canonical atomic-posting rule (inline comments + body + event in one API call), event derivation, and the pre-post checklist. Not imported here because it only applies when actually posting.
 
 ## Git & Repo Hygiene
 
@@ -51,6 +52,8 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 - Avoid chaining commands with `&&` - it causes hangs and failures
 - Use normal `git` commands instead of absolute paths like `/usr/bin/git`
 - [Important] Before any destructive shell operation (`sed -i`, `rm`, bulk file rewrites), snapshot to a `.backup/` dir or preview the change on a single file first. Never run `sed` across multiple files without first verifying the pattern produces the correct output on one file.
+
+@rules/fnm-bash-hang.md
 
 ## Documentation Lookups
 
@@ -94,7 +97,7 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 ## Orchestrated Commands
 
-When writing or modifying any multi-agent orchestrated command in `~/.claude/commands/`, consult `@rules/orchestrated-commands.md` first. Covers the 6-step flow, artifact conventions, approval gate rules, parallel dispatch, and shared anti-patterns.
+When writing or modifying any multi-agent orchestrated command in `~/.claude/commands/`, read `~/.claude/rules/orchestrated-commands.md` first — it covers the 6-step flow, artifact conventions, approval gate rules, parallel dispatch, and shared anti-patterns. Deliberately not an `@import`: it is ~1,750 words of reference material needed only when authoring such a command, so it is read on demand rather than loaded into every session.
 
 ## Context Efficiency
 
