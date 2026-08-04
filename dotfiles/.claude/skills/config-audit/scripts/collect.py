@@ -119,12 +119,30 @@ def parse_frontmatter(path):
     return fields
 
 
+def broken_link_entry(path, directory, kind):
+    """A dangling symlink is inventory too — record it instead of crashing."""
+    return {
+        "name": path.relative_to(directory).with_suffix("").as_posix(),
+        "kind": kind,
+        "path": str(path),
+        "bytes": 0,
+        "description": "",
+        "frontmatter_keys": [],
+        "has_description": False,
+        "broken_symlink": True,
+        "symlink_target": os.readlink(path) if path.is_symlink() else None,
+    }
+
+
 def inventory_markdown_dir(directory, kind):
     """Commands and agents: one .md per entry (possibly nested)."""
     items = []
     if not directory.is_dir():
         return items
     for md in sorted(directory.rglob("*.md")):
+        if not md.exists():
+            items.append(broken_link_entry(md, directory, kind))
+            continue
         fm = parse_frontmatter(md)
         items.append(
             {
@@ -146,6 +164,9 @@ def inventory_skills(directory):
         return items
     for skill_md in sorted(directory.glob("*/SKILL.md")):
         skill_dir = skill_md.parent
+        if not skill_md.exists():
+            items.append(broken_link_entry(skill_md, directory, "skill"))
+            continue
         fm = parse_frontmatter(skill_md)
         files = [p for p in skill_dir.rglob("*") if p.is_file()]
         items.append(
