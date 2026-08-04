@@ -43,7 +43,13 @@ install_symlink() {
   # If an ancestor directory of the target is already a symlink into the source
   # tree, the target path resolves to the source file itself. Linking here would
   # overwrite the real source file with a self-referential symlink. Skip it.
-  if [ -e "$target" ] && [ "$(realpath "$target" 2>/dev/null)" = "$(realpath "$source" 2>/dev/null)" ]; then
+  #
+  # Compare the resolved *parent* directories, not the target itself: once a
+  # file has already been corrupted into a broken self-link, `[ -e "$target" ]`
+  # is false (a dangling link fails -e) and a target-based check waves it
+  # through, re-running the same destructive branch. The parent still resolves
+  # correctly in that state, so this catches both the first pass and any rerun.
+  if [ "$(realpath "$target_dir" 2>/dev/null)" = "$(realpath "$(dirname "$source")" 2>/dev/null)" ]; then
     if [ "$DRY_RUN" = "true" ]; then
       printf "${YELLOW}[DRY-RUN]${NC} Already reachable via linked parent: %s\n" "$(basename "$target")"
     else
@@ -129,7 +135,12 @@ while IFS= read -r -d '' source_file; do
   relative="${source_file#"$SOURCE_DIR/"}"
   target_file="$TARGET_DIR/$relative"
   install_symlink "$source_file" "$target_file"
-done < <(find "$SOURCE_DIR" -type f -print0 | sort -z)
+done < <(
+  find "$SOURCE_DIR" \
+    \( -name '__pycache__' -o -name '.ruff_cache' -o -name '.pytest_cache' \
+       -o -name 'node_modules' -o -name '.DS_Store' \) -prune -o \
+    -type f -print0 | sort -z
+)
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
