@@ -196,7 +196,52 @@ finding — it is the precondition for this class of corruption.
 
 ---
 
+## 7. `parse_error` is collected but never reported
+
+- **Status:** open
+- **Found:** 2026-08-04, edge-case testing
+- **Severity:** high — the most severe config failure is invisible in the report
+
+**Observed.** Fed a `settings.json` containing `not json{{{`, the collector
+correctly records:
+
+```json
+"settings": { "exists": true, "keys": null,
+              "parse_error": "Expecting value: line 1 column 1 (char 0)" }
+```
+
+But `SKILL.md` never instructs the analysis to check `parse_error`. Nothing in
+the four analysis dimensions mentions it, so the report would show the scope as
+present-and-fine.
+
+**Why it matters.** A malformed settings file silently disables **every**
+setting it contains — permissions, hooks, model, plugins. It is strictly worse
+than any finding the audit currently reports, and it is exactly the state a
+user would run an audit to discover. A report that grades this setup as healthy
+is actively misleading.
+
+**Fix sketch.** Add to the Hygiene & security dimension: if any settings file
+has a non-null `parse_error`, emit a `critical` finding naming the file and the
+parser message, and cap the overall grade. Same treatment for a `.mcp.json`
+that fails to parse.
+
+**Regression test.** A scope whose `settings.json` is invalid JSON must produce
+a critical finding, not a clean report.
+
+---
+
 ## Non-issues (checked, working as intended)
+
+- **`file_stats()` unguarded `.stat()` (collect.py:100).** Looks like the same
+  crash class as issue #3, but the function early-returns on
+  `if not path.exists()`, and `Path.exists()` is False for dangling symlinks.
+  Not reachable.
+
+- **Malformed frontmatter degrades gracefully.** Verified against an empty
+  file, a file with no frontmatter, and frontmatter with an unterminated `---`
+  block: each yields `has_description: false` and an empty description rather
+  than raising. Correct behavior — distinct from issue #1, which is about
+  *valid* YAML the line-regex cannot read.
 
 - **Quote stripping in frontmatter.** `.strip("\"'")` was suspected of mangling
   values containing internal quotes. It does not — `str.strip` only removes
