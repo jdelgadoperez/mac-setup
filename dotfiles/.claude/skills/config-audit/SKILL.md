@@ -31,6 +31,12 @@ python3 <skill-dir>/scripts/collect.py --out <scratchpad>/config-inventory.json
 ```
 
 Pass `--project <dir>` if the user is auditing a project other than the cwd.
+
+If the project scope comes back with `mirrors_user_scope: true`, it resolved to
+`$HOME` and is the *same files* as the user scope. Audit it as a single scope:
+say so once in the report meta, drop the duplicate scope from the scorecard and
+inventory, and never report the same file twice as though two scopes disagreed.
+Suggest re-running from inside a real project for a true two-scope audit.
 The collector inventories both scopes and **redacts secrets** (tokens, cookies,
 API keys, high-entropy strings) — never bypass it by reading raw settings values
 into the report. Read the resulting JSON as the source of truth for *what
@@ -95,6 +101,23 @@ edit, command to run, or setting to change).
 - Stale references: commands pointing at paths that no longer exist, MCP servers
   whose command isn't installed, expired-cookie patterns; broken `@import` lines
   in CLAUDE.md (an `@path` line whose target doesn't exist).
+- Broken symlinks (`broken_symlink: true`). Before recommending deletion, check
+  whether the content is recoverable — a dangling link usually means the target
+  moved, not that the content is gone. Run `git log --all --oneline --follow --
+  <target>` **and** `git log --all --diff-filter=D -- <target>` in the repo the
+  link points into. If either returns commits, the fix is `git restore` or
+  `git checkout <sha>^ -- <path>`, and the finding must name that commit.
+  Never assert a file is untracked or unrecoverable from a single `git log`
+  query — that claim drives a destructive recommendation, so it needs the
+  stronger check. If history really is empty, say "no commit found for this
+  path", not "it was never tracked".
+- *Mixed* symlink styles under `skills/` — some entries linked at the directory
+  level (`skills/X` → source `skills/X`) and others per-file (`skills/X/SKILL.md`
+  → source). Flag as **serious** even when nothing is broken yet: a per-file
+  linking pass run against an already-dir-symlinked skill resolves back through
+  the link and links the source onto itself, corrupting the *source repo*
+  rather than the install. This is a precondition for silent, repo-side data
+  loss, not a cosmetic inconsistency.
 - Deprecated or unknown settings keys; references to deprecated model names
   (e.g. `claude-2`, `claude-3-haiku`, `claude-instant`, `gpt-3.5`).
 
