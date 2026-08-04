@@ -134,7 +134,7 @@ echo ""
 [ "$INSTALL_XCODE" = "true" ] && sh "$SCRIPT_DIR/install-xcode.sh"
 [ "$INSTALL_BREW" = "true" ] && sh "$SCRIPT_DIR/install-brew.sh" "$INSTALL_APPS"
 [ "$INSTALL_GIT" = "true" ] && sh "$SCRIPT_DIR/config-git.sh"
-[ "$INSTALL_CLAUDE" = "true" ] && sh "$SCRIPT_DIR/install-claude.sh"
+[ "$INSTALL_CLAUDE" = "true" ] && bash "$SCRIPT_DIR/install-claude-config.sh" --yes
 
 # Install Zsh and switch to it
 if [ "$INSTALL_ZSH" = "true" ]; then

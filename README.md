@@ -61,7 +61,7 @@ sh ./install-brew.sh true       # Homebrew + packages (pass 'true' to install GU
 sh ./config-git.sh              # Git configuration
 sh ./install-zsh.sh             # Zsh + Oh My Zsh + plugins
 sh ./install-dracula.sh         # Dracula theme for multiple apps
-sh ./install-claude-config.sh   # Symlink portable Claude Code config into ~/.claude/
+bash ./install-claude-config.sh   # Symlink portable Claude Code config into ~/.claude/
 ```
 
 ### After Installation
@@ -106,7 +106,7 @@ sh ./install-claude-config.sh   # Symlink portable Claude Code config into ~/.cl
 
 **Claude Code:**
 - Claude Code CLI and personal configuration (settings, hooks, slash commands)
-- Portable `claude-config/` directory with agents, hooks, scripts, and rules — installed via `install-claude-config.sh`, which symlinks each file into `~/.claude/` so edits in either location propagate instantly
+- Portable `dotfiles/.claude/` directory with agents, hooks, scripts, and rules — installed via `install-claude-config.sh`, which symlinks each file into `~/.claude/` so edits in either location propagate instantly
 
 **Git Hooks** (`.githooks/`):
 - `prepare-commit-msg` — strips `Co-Authored-By: Claude` lines from every commit message automatically
@@ -169,7 +169,7 @@ See `custom-zsh/` directory for complete list of functions and aliases.
 mac-setup/
 ├── dorothy                   # Main CLI tool (install via install-dorothy.sh)
 ├── install-dorothy.sh        # Install Dorothy globally
-├── install-claude-config.sh  # Symlink installer for claude-config/ → ~/.claude/
+├── install-claude-config.sh  # Symlink installer for dotfiles/.claude/ → ~/.claude/
 ├── run.sh                    # Legacy orchestrator script
 ├── install-*.sh              # Individual installation scripts
 ├── config-git.sh             # Git configuration
@@ -181,7 +181,7 @@ mac-setup/
 │   ├── pre-commit            # Blocks staged files matching ~/.config/git/hooks/pre-commit.blocked-files
 │   └── pre-commit.blocked-files.example  # Template for the machine-local blocklist
 │
-├── claude-config/            # Portable Claude Code config — symlinked into ~/.claude/
+├── dotfiles/.claude/            # Portable Claude Code config — symlinked into ~/.claude/
 │   ├── CLAUDE.md             # Generalized global Claude Code instructions
 │   ├── agents/
 │   │   └── research-analyst.md
@@ -281,17 +281,17 @@ Edit files in `dotfiles/` directory, then:
 - Re-run the appropriate installer to update symlinks, or
 - Manually copy to `$HOME`
 
-### Claude Code Config (`claude-config/`)
+### Claude Code Config (`dotfiles/.claude/`)
 
-`install-claude-config.sh` creates symlinks from `claude-config/<path>` to `~/.claude/<path>`. Because they're symlinks, edits made in either location are immediately reflected in the other — no re-running the installer after changes.
+`install-claude-config.sh` creates symlinks from `dotfiles/.claude/<path>` to `~/.claude/<path>`. Because they're symlinks, edits made in either location are immediately reflected in the other — no re-running the installer after changes.
 
 ```bash
-sh ./install-claude-config.sh            # Symlink all files (prompts before each)
-sh ./install-claude-config.sh --dry-run  # Preview what would be linked without changes
-sh ./install-claude-config.sh --yes      # Symlink all without interactive prompts
+bash ./install-claude-config.sh            # Symlink all files (prompts before each)
+bash ./install-claude-config.sh --dry-run  # Preview what would be linked without changes
+bash ./install-claude-config.sh --yes      # Symlink all without interactive prompts
 ```
 
-To add a new rule, hook, or agent: drop the file into the appropriate `claude-config/` subdirectory and re-run the installer. The symlink will be created and Claude Code picks it up immediately.
+To add a new rule, hook, or agent: drop the file into the appropriate `dotfiles/.claude/` subdirectory and re-run the installer. The symlink will be created and Claude Code picks it up immediately.
 
 ### Git Hooks (`.githooks/`)
 

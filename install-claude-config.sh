@@ -1,6 +1,26 @@
 #!/bin/bash
 # install-claude-config.sh — symlinks files from dotfiles/.claude/ into ~/.claude/
 #
+# The single installer for Claude Code config. It replaced install-claude.sh,
+# which linked whole directories from a hand-maintained list of files, skills,
+# and agent categories.
+#
+# ONE LINKING MODEL: per-file. Every regular file under dotfiles/.claude/ is
+# discovered by walking the tree and linked individually. Do not add
+# directory-level symlinks here or in any sibling script — mixing the two
+# models is what corrupted 19 skills. Once ~/.claude/skills/X is a link to the
+# source directory, a per-file pass computes a target inside it that resolves
+# back to the source, and overwriting that target destroys the real file in
+# the repo. The parent-directory guard in install_symlink() is the backstop,
+# but the actual fix is never creating dir symlinks in the first place.
+#
+# Walking beats a curated list: install-claude.sh's list had drifted badly —
+# it named 9 agent categories that no longer exist and only 1 of the 12 files
+# in rules/, so most of rules/ was linked by this script anyway.
+#
+# Per-file also protects unrelated tooling: ~/.claude/commands/job/ links into
+# the separate job-hunt repo. A directory-level model would clobber it.
+#
 # Idempotent: existing matching symlinks are left in place; conflicting
 # non-symlink files trigger an interactive prompt (skip / overwrite /
 # backup-then-overwrite).
@@ -17,6 +37,13 @@ source "$SCRIPT_DIR/shared.sh"
 
 SOURCE_DIR="$SCRIPT_DIR/dotfiles/.claude"
 TARGET_DIR="$HOME/.claude"
+
+# Warn if claude CLI is not installed, but still set up config
+if ! command -v claude &> /dev/null; then
+  printf "${YELLOW}Warning:${NC} claude CLI not found — install it via Homebrew or npm first\n"
+  printf "  brew install claude\n"
+  printf "Config will be symlinked now and will take effect once claude is installed.\n\n"
+fi
 
 DRY_RUN=false
 AUTO_YES=false

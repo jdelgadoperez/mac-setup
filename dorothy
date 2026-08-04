@@ -317,7 +317,11 @@ install_component() {
       if ! $dry_run; then
         loginfo "Setting up Claude Code configuration"
       fi
-      sh "$SCRIPT_DIR/install-claude.sh"
+      if $dry_run; then
+        bash "$SCRIPT_DIR/install-claude-config.sh" --dry-run
+      else
+        bash "$SCRIPT_DIR/install-claude-config.sh" --yes
+      fi
       ;;
     dotfiles)
       if ! $dry_run; then
