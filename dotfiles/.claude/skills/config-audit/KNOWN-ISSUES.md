@@ -12,7 +12,7 @@ Status legend: `open` · `fixed` · `wontfix`
 
 ## 1. Multi-line YAML frontmatter values parse as empty → false "missing description"
 
-- **Status:** open
+- **Status:** fixed (2026-08-04)
 - **Found:** 2026-08-03, first `/config-audit` run
 - **Severity:** medium — produces false findings that erode trust in the report
 
@@ -50,20 +50,25 @@ value begins on a following line:
 
 So ~9 entries can be mislabeled "missing description" in any given run.
 
-**Fix sketch.** Handle block scalars in `parse_frontmatter()`: when the value
-capture is empty, consume subsequent lines that are more-indented than the key
-and join them (collapsing whitespace). Also accept the explicit `|` and `>`
-block indicators. A tiny hand-rolled pass is enough — no need to add a YAML
-dependency for this.
+**Fix applied.** `parse_frontmatter()` now walks the block with an index
+instead of mapping line-by-line. When a key's inline value is empty or an
+explicit block indicator (`|`, `>`, `|-`, `>-`, `|+`, `>+`), it consumes the
+following more-indented lines and joins them with single spaces. Still no YAML
+dependency.
 
-**Regression test.** A skill whose `description:` spans three indented lines
-must report `has_description: true` and the joined text.
+**Verified.** Six cases pass: multi-line joins correctly; the key *following* a
+block is not swallowed; single-line, quoted, and genuinely-empty values are
+unchanged; internal quotes survive. Against the real config, skills with no
+description went 1 → 0 (`staff-eng-pre-flight` now reports its full
+description). The single remaining flag, `review/code-review-core`, is a true
+positive — that file has no frontmatter at all, being a shared include rather
+than a standalone command.
 
 ---
 
 ## 2. Skill `name` falls back to `<dir>/SKILL` instead of the skill directory name
 
-- **Status:** open
+- **Status:** fixed (2026-08-04)
 - **Found:** 2026-08-03
 - **Severity:** low — cosmetic, but noisy in report tables
 
@@ -77,9 +82,13 @@ path-derived name. In `broken_link_entry()` the fallback is
 yields `ship/SKILL`. `inventory_skills()` uses the correct
 `skill_dir.name` fallback, but only on the path where the file parses.
 
-**Fix sketch.** In `broken_link_entry()`, accept the intended display name from
-the caller rather than always deriving it from the file path — skills should
-pass `skill_dir.name`, commands/agents keep the current path-derived form.
+**Fix applied.** `broken_link_entry()` takes an optional `name` argument;
+`inventory_skills()` passes `skill_dir.name`. Commands and agents keep the
+path-derived form, which is correct for them.
+
+**Verified.** A fixture with a dangling `skills/myskill/SKILL.md` reports
+`name: "myskill"` (was `myskill/SKILL`), while a dangling
+`agents/broken-agent.md` still reports `broken-agent`.
 
 ---
 
@@ -108,7 +117,7 @@ returns `False` for dangling links, so that path needed no change.
 
 ## 4. Project scope silently mirrors user scope when run from `$HOME`
 
-- **Status:** open
+- **Status:** fixed (2026-08-04)
 - **Severity:** low — confusing output, not incorrect
 
 **Observed.** Run with no `--project`, the cwd was `$HOME`, so "project scope"
@@ -116,10 +125,17 @@ resolved to `~/CLAUDE.md` and `~/.claude/`, duplicating user scope. The report
 then shows two scopes that are largely the same files, and
 `is_git_repo: false` for a "project".
 
-**Fix sketch.** When the resolved project root equals `$HOME` or is not a git
-repo, either skip project scope or mark it clearly as "not a distinct project"
-in the JSON, so the report can collapse the duplicate rather than presenting it
-as a second scope.
+**Fix applied.** `scan_project_scope()` emits `mirrors_user_scope`, true when
+the resolved project root is `$HOME`. `SKILL.md` step 1 instructs the analysis
+to audit it as a single scope — say so once in the report meta, drop the
+duplicate from the scorecard and inventory, never report the same file twice as
+though two scopes disagreed, and suggest re-running from inside a real project.
+
+Keyed on `$HOME` rather than "not a git repo": a legitimate non-git project
+directory is still a distinct scope worth auditing separately.
+
+**Verified.** `--project $HOME` → `true`; `--project ~/projects/mac-setup` and
+an arbitrary scratch directory → `false`.
 
 ---
 
@@ -147,19 +163,20 @@ unrecoverable. If the user had accepted the framing without the follow-up
 history check, the reasoning for the decision would have been wrong even
 though the file was in fact restorable.
 
-**Fix sketch.** Never assert "not in git" from a single log query. Before any
-finding claims a file is unrecoverable, run
-`git log --all --oneline --follow -- <path>` **and**
-`git log --all --diff-filter=D -- <path>`; if either returns commits, report
-the file as recoverable and name the restoring commit. When history is
-genuinely empty, say "no commit found for this path" rather than asserting
-the stronger claim.
+**Fix applied.** `SKILL.md` now carries this as a Hygiene & security rule:
+before recommending deletion of a broken symlink, run both
+`git log --all --oneline --follow -- <target>` and
+`git log --all --diff-filter=D -- <target>`; if either returns commits, the fix
+is `git restore` / `git checkout <sha>^ -- <path>` and the finding must name
+the commit. The rule states explicitly that a single `git log` query cannot
+support an "unrecoverable" claim, and that empty history is reported as "no
+commit found for this path" rather than "never tracked".
 
 ---
 
 ## 6. Report blamed the wrong tool for the self-referential symlinks
 
-- **Status:** open (diagnosis corrected; underlying install bug not yet fixed)
+- **Status:** fixed (2026-08-04) — audit now flags the precondition
 - **Found:** 2026-08-04
 - **Severity:** medium — a fix aimed at the wrong file fixes nothing
 
@@ -188,11 +205,19 @@ dotfiles source, then creates a link from that source onto itself — the exact
 self-loop observed, and it lands in the dotfiles repo rather than in
 `~/.claude`.
 
-**Fix sketch.** Pick one style and make it exclusive. Before creating a
-per-file link, refuse when the parent directory is a symlink (or resolve the
-target with `realpath` and skip when source and target are the same inode).
-The audit should also flag *mixed* linking styles under `skills/` as its own
-finding — it is the precondition for this class of corruption.
+**Fix applied (audit side).** `SKILL.md` now flags *mixed* linking styles under
+`skills/` as a **serious** Hygiene finding even when nothing is broken yet,
+naming it as a precondition for silent repo-side data loss rather than a
+cosmetic inconsistency.
+
+**Verified.** Counting the real `~/.claude/skills/`: 27 dir-level symlinks
+alongside 1 per-file (`config-audit`). The mix that caused the original
+corruption is still present, so the next audit run will flag it.
+
+**Still open (outside the audit).** Whatever tool creates per-file links should
+refuse when the parent directory is already a symlink — resolve with `realpath`
+and skip when source and target are the same inode. `install-claude.sh` is not
+that tool; it links whole directories and is not the culprit.
 
 ---
 
