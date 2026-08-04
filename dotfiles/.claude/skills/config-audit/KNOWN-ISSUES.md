@@ -1,0 +1,131 @@
+# config-audit — Known Issues
+
+Running log of bugs in the `config-audit` skill itself (collector, template, or
+analysis heuristics) — **not** findings about the audited configuration.
+
+Each entry records how the bug was *observed*, its *root cause*, and the
+*fix sketch*, so it can be picked up later without re-deriving the diagnosis.
+
+Status legend: `open` · `fixed` · `wontfix`
+
+---
+
+## 1. Multi-line YAML frontmatter values parse as empty → false "missing description"
+
+- **Status:** open
+- **Found:** 2026-08-03, first `/config-audit` run
+- **Severity:** medium — produces false findings that erode trust in the report
+
+**Observed.** The report flagged `staff-eng-pre-flight` as having no
+`description`, but the skill loads correctly in Claude Code and the harness
+lists its full description. The frontmatter is valid YAML using a multi-line
+block value:
+
+```yaml
+name: staff-eng-pre-flight
+description:
+  Use before opening a PR, requesting reviews, marking a draft ready, or
+  pushing a substantive code change to a feature branch — ...
+```
+
+**Root cause.** `parse_frontmatter()` (`scripts/collect.py:106`) matches each
+line independently with:
+
+```python
+re.match(r"^([A-Za-z_-]+):\s*(.*)$", line)
+```
+
+For `description:` the capture group is empty, and the continuation lines match
+nothing, so they are silently dropped. Confirmed by direct reproduction — the
+parsed value is `''`.
+
+**Blast radius.** Not a one-off. Scanning `~/.claude` for frontmatter keys whose
+value begins on a following line:
+
+| Directory | Affected files |
+|-----------|----------------|
+| `skills/` | 3 |
+| `commands/` | 6 |
+| `agents/` | 0 |
+
+So ~9 entries can be mislabeled "missing description" in any given run.
+
+**Fix sketch.** Handle block scalars in `parse_frontmatter()`: when the value
+capture is empty, consume subsequent lines that are more-indented than the key
+and join them (collapsing whitespace). Also accept the explicit `|` and `>`
+block indicators. A tiny hand-rolled pass is enough — no need to add a YAML
+dependency for this.
+
+**Regression test.** A skill whose `description:` spans three indented lines
+must report `has_description: true` and the joined text.
+
+---
+
+## 2. Skill `name` falls back to `<dir>/SKILL` instead of the skill directory name
+
+- **Status:** open
+- **Found:** 2026-08-03
+- **Severity:** low — cosmetic, but noisy in report tables
+
+**Observed.** In the first run, 19 skills were named `ship/SKILL`,
+`pr/SKILL`, `writing-voice/SKILL`, … rather than `ship`, `pr`, `writing-voice`.
+
+**Root cause.** Two interacting causes. Those skills were unreadable (broken
+symlinks), so no frontmatter `name` was available and the code fell back to a
+path-derived name. In `broken_link_entry()` the fallback is
+`path.relative_to(directory).with_suffix("")`, which for `ship/SKILL.md`
+yields `ship/SKILL`. `inventory_skills()` uses the correct
+`skill_dir.name` fallback, but only on the path where the file parses.
+
+**Fix sketch.** In `broken_link_entry()`, accept the intended display name from
+the caller rather than always deriving it from the file path — skills should
+pass `skill_dir.name`, commands/agents keep the current path-derived form.
+
+---
+
+## 3. Collector crashed outright on a dangling symlink
+
+- **Status:** fixed (2026-08-03)
+- **Severity:** high — the audit could not run at all
+
+**Observed.** First invocation died with
+`FileNotFoundError: .../agents/research-analyst.md` before writing any output.
+
+**Root cause.** `inventory_markdown_dir()` called `md.stat()` on every path
+returned by `rglob("*.md")`. `rglob` yields dangling symlinks, and `stat()`
+follows the link and raises.
+
+**Fix applied.** Added a `broken_link_entry()` helper and an `md.exists()`
+guard in `inventory_markdown_dir()`, plus the same guard on `SKILL.md` in
+`inventory_skills()`. Broken links are now *recorded as inventory* with
+`broken_symlink: true` — which is what surfaced the 19-broken-skills finding —
+rather than aborting the run.
+
+**Note.** `inventory_skills()`'s byte-sum uses `p.is_file()`, which already
+returns `False` for dangling links, so that path needed no change.
+
+---
+
+## 4. Project scope silently mirrors user scope when run from `$HOME`
+
+- **Status:** open
+- **Severity:** low — confusing output, not incorrect
+
+**Observed.** Run with no `--project`, the cwd was `$HOME`, so "project scope"
+resolved to `~/CLAUDE.md` and `~/.claude/`, duplicating user scope. The report
+then shows two scopes that are largely the same files, and
+`is_git_repo: false` for a "project".
+
+**Fix sketch.** When the resolved project root equals `$HOME` or is not a git
+repo, either skip project scope or mark it clearly as "not a distinct project"
+in the JSON, so the report can collapse the duplicate rather than presenting it
+as a second scope.
+
+---
+
+## Non-issues (checked, working as intended)
+
+- **Quote stripping in frontmatter.** `.strip("\"'")` was suspected of mangling
+  values containing internal quotes. It does not — `str.strip` only removes
+  leading/trailing characters, so `Use "ship" to deploy` survives intact.
+  Verified by direct reproduction.
