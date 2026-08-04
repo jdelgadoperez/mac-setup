@@ -138,9 +138,6 @@ Before ANY externally-visible mutation (`gh pr review`, `gh api POST/PATCH`, Sla
 
 @RTK.md
 
-## gstack
-
-@rules/gstack.md
 
 <!-- CODEGRAPH_START -->
 ## CodeGraph

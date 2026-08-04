@@ -22,7 +22,17 @@ CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # inside a quoted string or other shell context. Anchor to a command
 # boundary: start-of-string, semicolon, &&, ||, single pipe, command
 # substitution opener, or backtick.
-if echo "$CMD" | grep -qE '(^|;|&&|\|\||\||\$\(|`)[[:space:]]*git[[:space:]]+-C\b'; then
+#
+# Match against the whole command as ONE string (-z), not line by line:
+# grep treats every newline as `^`, so a heredoc body that merely mentions
+# `git -C` — a commit message, a doc block — was blocked as if it were a
+# command. With -z the anchor means true start-of-input.
+# Boundary check in python, not grep: BSD grep applies `^` per line even with
+# -z, so a multi-line command that merely *mentions* the flag (a commit
+# message heredoc, a doc block) was blocked as if it were invoking it.
+# python's \A anchors to true start-of-string, and [ \t] keeps the gap from
+# spanning a newline.
+if printf '%s' "$CMD" | python3 -c 'import re,sys; sys.exit(0 if re.search(r"(\A|;|&&|\|\||\||\$\(|`)[ \t]*git[ \t]+-C\b", sys.stdin.read()) else 1)'; then
   echo '{"decision":"block","reason":"Do not use git -C. Use cd into the directory instead."}'
   exit 0
 fi
