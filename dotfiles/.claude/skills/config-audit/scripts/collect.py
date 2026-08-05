@@ -16,6 +16,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -279,6 +280,213 @@ def summarize_mcp(config, source):
     return servers
 
 
+# --- permission reachability -------------------------------------------------
+#
+# A deny rule only holds if the capability it names cannot be reached another
+# way on THIS machine. Two rules govern everything below:
+#
+#   1. Resolve, never execute. shutil.which() is a PATH lookup plus os.access;
+#      it does not run the binary it finds. Nothing in this section may call
+#      subprocess/os.system/exec. A security auditor that executes what it
+#      discovers is a worse problem than the gaps it reports.
+#   2. No hardcoded alternates table. Which binaries exist differs per machine,
+#      so a baked-in list produces false positives on one host and misses real
+#      gaps on another. Everything is derived from the rules themselves plus a
+#      live PATH probe, and only installed binaries are ever reported.
+
+RULE_RE = re.compile(r"^(?P<surface>[A-Za-z]+)\((?P<body>.*)\)$", re.S)
+
+# This IS a fixed list, and that is defensible where the earlier "equivalent
+# tools" table was not. These are POSIX text utilities whose defining purpose is
+# emitting file contents -- that does not vary by machine or by who installed
+# what. The list only ever filters rules the user already granted, and each hit
+# is still confirmed against PATH, so a name here proves nothing on its own.
+# Deny bodies mentioning these are path-scoped (the right shape) rather than
+# flag-scoped (the leaky shape). Used only to suppress false positives.
+SENSITIVE_PATH_RE = re.compile(
+    r"(\.env|\.pem|\.key|\.ssh|credential|secret|\.aws|id_rsa|id_ed25519|"
+    r"\.p12|\.pfx|\.netrc|\.npmrc|token)",
+    re.IGNORECASE,
+)
+
+FILE_READING_BINARIES = frozenset({
+    "awk", "cat", "col", "cut", "diff", "egrep", "fgrep", "fold", "grep",
+    "head", "jq", "less", "more", "nl", "od", "paste", "rev", "rg", "sed",
+    "sort", "strings", "tac", "tail", "tr", "uniq", "wc", "xxd", "yq",
+})
+
+# Deliberately NOT implemented: "sibling binary" detection (flagging scp/sftp
+# because ssh is denied). Every execution-free signal available here -- name
+# prefix, directory co-location -- either floods the report with coincidences
+# ('su' -> 'sum', 'superclaude') or reports the wrong family members
+# (ssh-keygen, not scp) while missing the real ones. The only thing that works
+# is a hand-written table of equivalent tools, which is precisely what breaks
+# when this skill runs on a machine with a different toolset. Equivalent-
+# capability analysis is left to the model, which can reason about intent; the
+# collector reports only what it can establish from the rules plus PATH.
+
+
+def parse_rule(rule):
+    """Split 'Bash(gpg -d:*)' into surface/binary/rest. None if unparseable."""
+    match = RULE_RE.match(rule.strip())
+    if not match:
+        return None
+    surface = match.group("surface")
+    body = match.group("body").strip()
+    # Trailing ':*' / '*' are glob suffixes, not part of the command.
+    body = re.sub(r":\*$", "", body).strip()
+    tokens = body.split()
+    if not tokens:
+        return {"surface": surface, "binary": None, "rest": "", "raw": rule}
+    binary = tokens[0].strip("*").strip()
+    # Path-style rules (Read(**/.env)) have no binary.
+    if surface != "Bash":
+        return {"surface": surface, "binary": None, "rest": body, "raw": rule}
+    return {
+        "surface": surface,
+        "binary": os.path.basename(binary) if binary else None,
+        "rest": " ".join(tokens[1:]).strip("*").strip(),
+        "raw": rule,
+    }
+
+
+def which(binary):
+    """PATH lookup only. Never executes the result."""
+    if not binary or any(c in binary for c in "*?[]$"):
+        return None
+    try:
+        return shutil.which(binary)
+    except (OSError, ValueError):
+        return None
+
+
+def path_binaries():
+    """Every executable name on PATH. Filesystem listing, no execution."""
+    names = {}
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not entry:
+            continue
+        try:
+            directory = Path(entry)
+            if not directory.is_dir():
+                continue
+            for item in directory.iterdir():
+                if item.name in names:
+                    continue
+                if os.access(item, os.X_OK) and not item.is_dir():
+                    names[item.name] = str(item)
+        except (OSError, PermissionError):
+            continue
+    return names
+
+
+def analyze_reachability(rule_sets):
+    """Report deny rules whose capability is reachable another way here.
+
+    rule_sets: list of (scope_label, permissions_dict). Deny rules from any
+    scope are tested against allow rules from every scope, because a project
+    allow rule can route around a user deny rule.
+    """
+    allow, deny, ask = [], [], []
+    for label, perms in rule_sets:
+        for mode, bucket in (("allow", allow), ("deny", deny), ("ask", ask)):
+            for rule in perms.get(mode, []) or []:
+                parsed = parse_rule(rule) if isinstance(rule, str) else None
+                if parsed:
+                    parsed["scope"] = label
+                    bucket.append(parsed)
+
+    denied_binaries = {r["binary"] for r in deny if r["binary"]}
+    gated_binaries = denied_binaries | {r["binary"] for r in ask if r["binary"]}
+    installed = path_binaries()
+    findings = []
+
+    # (1) Cross-surface: secret paths denied on one tool surface while another
+    # surface can read the same bytes. The reader set comes from the allow list
+    # itself -- whatever the user actually permitted -- not a fixed list.
+    path_denies = [r for r in deny if r["surface"] != "Bash" and r["rest"]]
+    # Bash binaries already denied against secret-looking paths are guarded and
+    # must not be reported as a way around the Read denies.
+    path_guarded_binaries = {
+        r["binary"] for r in deny
+        if r["surface"] == "Bash" and r["binary"] and r["rest"]
+        and SENSITIVE_PATH_RE.search(r["rest"])
+    }
+    if path_denies:
+        readers = {}
+        for rule in allow:
+            if rule["surface"] != "Bash" or not rule["binary"]:
+                continue
+            binary = rule["binary"]
+            if binary in gated_binaries or binary in readers:
+                continue
+            # Already covered by a path-scoped Bash deny ('cat *.env') -- the
+            # reader cannot reach the protected files, so it is not a gap.
+            if binary in path_guarded_binaries:
+                continue
+            # Only binaries that can emit file contents matter here. A rule
+            # granting mkdir/echo/pwd cannot exfiltrate a denied path, and
+            # listing it dilutes the finding.
+            if binary not in FILE_READING_BINARIES:
+                continue
+            resolved = which(binary)
+            if resolved:
+                readers[binary] = {"binary": binary, "path": resolved,
+                                   "rule": rule["raw"], "scope": rule["scope"]}
+        readers = list(readers.values())
+        if readers:
+            findings.append({
+                "kind": "cross_surface",
+                "denied_surfaces": sorted({r["surface"] for r in path_denies}),
+                "denied_paths": [r["raw"] for r in path_denies],
+                "reachable_via": sorted(readers, key=lambda r: r["binary"]),
+                "detail": (
+                    "Path denies are scoped to one tool surface; these allowed "
+                    "Bash binaries are installed and can read the same files."
+                ),
+            })
+
+    # (2) Flag-scoped: a binary denied only for certain flags. Other invocations
+    # of the same installed binary remain allowed.
+    by_binary = {}
+    for rule in deny:
+        if not (rule["binary"] and rule["rest"]):
+            continue
+        # A deny naming a sensitive PATH ('cat *.env') is the correct way to
+        # write this rule, not a gap. Only flag rules that constrain the
+        # invocation itself ('gpg -d', 'rm -rf /'), where the same binary
+        # stays reachable for equivalent work.
+        if SENSITIVE_PATH_RE.search(rule["rest"]):
+            continue
+        by_binary.setdefault(rule["binary"], []).append(rule)
+    for binary, rules in by_binary.items():
+        resolved = which(binary)
+        if not resolved:
+            continue
+        if any(r["binary"] == binary and not r["rest"] for r in deny):
+            continue  # also denied binary-wide -> not a gap
+        findings.append({
+            "kind": "flag_scoped",
+            "denied_binary": binary,
+            "path": resolved,
+            "denied_rules": [r["raw"] for r in rules],
+            "detail": (
+                f"'{binary}' is installed and denied only for specific flags; "
+                "other invocations of the same binary are not covered."
+            ),
+        })
+
+    return {
+        "note": (
+            "Machine-specific. Only binaries resolvable on this host's PATH are "
+            "reported, so results differ per machine by design. Probing is "
+            "PATH resolution only -- no binary is executed."
+        ),
+        "path_binaries_seen": len(installed),
+        "findings": findings,
+    }
+
+
 def scan_user_scope(home):
     root = home / ".claude"
     scope = {
@@ -370,6 +578,16 @@ def main():
         result["scopes"]["user"] = scan_user_scope(Path.home())
     if not args.user_only:
         result["scopes"]["project"] = scan_project_scope(Path(args.project).resolve())
+
+    # Reachability spans scopes: a project allow rule can route around a user
+    # deny rule, so it is computed across everything collected, not per scope.
+    rule_sets = []
+    for label, scope in result["scopes"].items():
+        for key in ("settings", "settings_local"):
+            perms = (scope.get(key) or {}).get("permissions")
+            if perms:
+                rule_sets.append((f"{label}/{key}", perms))
+    result["permission_reachability"] = analyze_reachability(rule_sets)
 
     payload = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
