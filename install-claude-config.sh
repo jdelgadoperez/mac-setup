@@ -41,7 +41,10 @@
 set -e
 set -o pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# CDPATH= : cd echoes the resolved dir when it uses CDPATH, which would be
+# captured by $( ) and double the path. Harmless for absolute paths, breaks
+# relative invocation.
+SCRIPT_DIR="$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/shared.sh"
 
 SOURCE_DIR="$SCRIPT_DIR/dotfiles/.claude"
