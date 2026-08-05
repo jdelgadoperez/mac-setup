@@ -6,8 +6,17 @@
 
 set -uo pipefail
 
+HOOK_SRC="${BASH_SOURCE[0]}"
+while [ -L "$HOOK_SRC" ]; do HOOK_SRC="$(readlink "$HOOK_SRC")"; done
+# CDPATH= : cd echoes the resolved dir when it uses CDPATH, which would be
+# captured by $( ) and double the path. Harmless for absolute paths, breaks
+# relative invocation.
+HOOK_DIR="$(CDPATH= cd "$(dirname "$HOOK_SRC")" && pwd)"
+# shellcheck source=/dev/null
+if [ -r "$HOOK_DIR/../../hook-log.sh" ]; then . "$HOOK_DIR/../../hook-log.sh"; else hook_log() { :; }; fi
+
 # Fail-open on internal errors so hook bugs don't lock the user out
-trap 'exit 0' ERR
+trap 'hook_log block-remote-branch-delete error "internal failure — protection did not run"; exit 0' ERR
 
 INPUT=$(cat)
 
@@ -29,9 +38,17 @@ is_gh_api_branch_delete() {
     && echo "$1" | grep -Eq 'refs/heads/'
 }
 
-if echo "$CMD" | grep -Eq "$git_delete_long" \
-   || echo "$CMD" | grep -Eq "$git_delete_colon" \
-   || is_gh_api_branch_delete "$CMD"; then
+matched_pattern=""
+if echo "$CMD" | grep -Eq "$git_delete_long"; then
+  matched_pattern="git-delete-long"
+elif echo "$CMD" | grep -Eq "$git_delete_colon"; then
+  matched_pattern="git-delete-colon"
+elif is_gh_api_branch_delete "$CMD"; then
+  matched_pattern="gh-api-delete"
+fi
+
+if [ -n "$matched_pattern" ]; then
+  hook_log block-remote-branch-delete blocked "$matched_pattern"
   jq -n '{
     "hookSpecificOutput": {
       "hookEventName": "PreToolUse",
