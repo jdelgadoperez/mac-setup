@@ -19,7 +19,10 @@ HOOK_SRC="${BASH_SOURCE[0]}"
 while [ -L "$HOOK_SRC" ]; do HOOK_SRC="$(readlink "$HOOK_SRC")"; done
 HOOK_DIR="$(cd "$(dirname "$HOOK_SRC")" && pwd)"
 # shellcheck source=/dev/null
-[ -r "$HOOK_DIR/hook-log.sh" ] && . "$HOOK_DIR/hook-log.sh" || hook_log() { :; }
+# if/else, not `A && B || C`: with the && || form the no-op fallback also runs
+# when sourcing succeeds but returns non-zero, clobbering the real logger
+# (shellcheck SC2015). Verified: that form silently replaced a working helper.
+if [ -r "$HOOK_DIR/hook-log.sh" ]; then . "$HOOK_DIR/hook-log.sh"; else hook_log() { :; }; fi
 
 INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
