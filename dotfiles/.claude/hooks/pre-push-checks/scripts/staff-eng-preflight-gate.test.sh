@@ -3,7 +3,10 @@
 # Classifies each case as DENY / NUDGE / SILENT and asserts the expected class.
 set -uo pipefail
 
-GATE="$(cd "$(dirname "$0")" && pwd)/staff-eng-preflight-gate.sh"
+# CDPATH= : cd echoes the resolved dir when it uses CDPATH, which would be
+# captured by $( ) and double the path. Harmless for absolute paths, breaks
+# relative invocation.
+GATE="$(CDPATH= cd "$(dirname "$0")" && pwd)/staff-eng-preflight-gate.sh"
 
 cls() {
   local cmd="$1" out
