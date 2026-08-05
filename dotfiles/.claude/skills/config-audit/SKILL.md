@@ -79,6 +79,31 @@ edit, command to run, or setting to change).
 - Any allow rule granting an interpreter or runner (`bash`, `python`, `node`,
   `npx`, `npm`, `make`, `docker exec`, …) — flag as **critical**: it nullifies
   every deny rule. Point to `/audit:permissions` for the full boundary analysis.
+- **Deny rules that name a mechanism when they meant to protect an asset.** A
+  deny only holds if the capability it names cannot be reached another way *on
+  this machine*. The collector emits a `permission_reachability` block for this;
+  treat it as evidence, not as prose to paste. Two finding shapes:
+  - `cross_surface` — secret paths denied on one tool surface while allowed
+    binaries on another surface can read the same bytes. `Read(**/.env)` blocks
+    the Read tool, but an allowed `Bash(cat:*)` reads the identical file with no
+    prompt. Severity **serious**: it is the difference between a boundary and a
+    speed bump. Fix names both halves — add `Bash(...)`-scoped denies for every
+    listed reader, then re-run.
+  - `flag_scoped` — a binary denied only for certain flags (`gpg -d`) while the
+    same installed binary stays reachable via others (`gpg --output`). Usually
+    **warning**; raise to serious when the binary decrypts or exfiltrates.
+    Note that path-scoped denies (`Bash(cat *.env)`) are the *correct* shape and
+    are deliberately not reported.
+
+  Read `permission_reachability.findings` before writing anything about the
+  permission model. It is machine-specific by design — a work laptop with `aws`
+  and `vault` installed yields findings a personal machine cannot, and vice
+  versa. Never carry a finding across machines from a previous run, and never
+  extend the list by reasoning about tools that "probably" exist: if a binary
+  is not in the collector's output, it was not on this host's PATH. You may
+  reason *beyond* the collector about equivalent-capability tools it cannot
+  detect (it deliberately does not guess at tool families), but any such claim
+  must be verified with `command -v` before it enters the report.
 - No hooks where the user's workflow implies them (formatting, tests, secret scanning).
 - Commands/skills/agents without descriptions (won't trigger reliably); commands
   that use `$ARGUMENTS` but declare no `argument-hint`.
