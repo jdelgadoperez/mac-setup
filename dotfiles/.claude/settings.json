@@ -219,14 +219,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/icm hook start < /dev/null"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "bash ~/.claude/hooks/load-skill-anti-sycophancy.sh"
           }
         ]
@@ -239,14 +231,6 @@
           {
             "type": "command",
             "command": "node ~/.claude/hooks/context-monitor.js < /dev/null"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/usr/local/bin/icm hook post < /dev/null"
           }
         ]
       },
@@ -303,28 +287,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/icm hook prompt < /dev/null"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "bash ~/.claude/hooks/opus-delegation-reminder.sh"
           }
         ]
       }
     ],
     "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/usr/local/bin/icm hook compact < /dev/null"
-          }
-        ]
-      },
       {
         "matcher": "",
         "hooks": [
@@ -336,15 +304,6 @@
       }
     ],
     "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/usr/local/bin/icm hook pre < /dev/null"
-          }
-        ]
-      },
       {
         "matcher": "Bash",
         "hooks": [
