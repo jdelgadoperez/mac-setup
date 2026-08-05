@@ -294,7 +294,7 @@ def summarize_mcp(config, source):
 #      gaps on another. Everything is derived from the rules themselves plus a
 #      live PATH probe, and only installed binaries are ever reported.
 
-RULE_RE = re.compile(r"^(?P<surface>[A-Za-z]+)\((?P<body>.*)\)$", re.S)
+RULE_RE = re.compile(r"^(?P<surface>[A-Za-z]+)\((?P<body>.*)\)$", re.DOTALL)
 
 # This IS a fixed list, and that is defensible where the earlier "equivalent
 # tools" table was not. These are POSIX text utilities whose defining purpose is
