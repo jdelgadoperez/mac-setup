@@ -9,3 +9,9 @@ CLAUDE.local.md
 __pycache__/
 *.pyc
 .ruff_cache/
+
+# Hook diagnostic logs. hook-log.sh writes to $HOME/.claude/hook-logs/ and so
+# cannot land here today; these patterns are a guard against a future edit
+# making that path relative, which would silently start committing hook output.
+*.jsonl
+hook-logs/
