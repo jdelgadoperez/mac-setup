@@ -269,11 +269,8 @@ update_symlink_conflict() {
 
   # diverged or broken-symlink from here on: show diff (if there's content to
   # diff) and prompt, unless dry-run.
-  local label="diverged"
-  [ "$classification" = "broken-symlink" ] && label="broken symlink"
-
   if [ "$classification" = "diverged" ]; then
-    printf "${YELLOW}Diverged (%s):${NC} %s\n" "$label" "$target"
+    printf "${YELLOW}Diverged:${NC} %s\n" "$target"
     print_update_diff "$source" "$target" "truncated"
   else
     printf "${YELLOW}Broken symlink:${NC} %s -> %s (target missing)\n" "$target" "$(readlink "$target")"
