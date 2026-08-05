@@ -296,11 +296,6 @@ def summarize_mcp(config, source):
 
 RULE_RE = re.compile(r"^(?P<surface>[A-Za-z]+)\((?P<body>.*)\)$", re.DOTALL)
 
-# This IS a fixed list, and that is defensible where the earlier "equivalent
-# tools" table was not. These are POSIX text utilities whose defining purpose is
-# emitting file contents -- that does not vary by machine or by who installed
-# what. The list only ever filters rules the user already granted, and each hit
-# is still confirmed against PATH, so a name here proves nothing on its own.
 # Deny bodies mentioning these are path-scoped (the right shape) rather than
 # flag-scoped (the leaky shape). Used only to suppress false positives.
 SENSITIVE_PATH_RE = re.compile(
@@ -309,11 +304,26 @@ SENSITIVE_PATH_RE = re.compile(
     re.IGNORECASE,
 )
 
+# This IS a fixed list, and that is defensible where the earlier "equivalent
+# tools" table was not. These are POSIX text utilities whose defining purpose is
+# emitting file contents -- that does not vary by machine or by who installed
+# what. The list only ever filters rules the user already granted, and each hit
+# is still confirmed against PATH, so a name here proves nothing on its own.
 FILE_READING_BINARIES = frozenset({
     "awk", "cat", "col", "cut", "diff", "egrep", "fgrep", "fold", "grep",
     "head", "jq", "less", "more", "nl", "od", "paste", "rev", "rg", "sed",
     "sort", "strings", "tac", "tail", "tr", "uniq", "wc", "xxd", "yq",
 })
+
+# Claude Code extends Read/Edit deny rules to file commands it recognizes in
+# Bash, so a `Read(**/.env)` deny already covers `cat .env` -- these readers are
+# NOT a way around the rule and must not be reported as one. Source:
+# https://code.claude.com/docs/en/permissions ("Read and Edit deny rules apply
+# to Claude's built-in file tools and to file commands Claude Code recognizes in
+# Bash, such as cat, head, tail, and sed"). The docs call this coverage
+# best-effort and name only these four, so anything outside the set is treated
+# as uncovered. If the documented set grows, update this and cite the doc.
+READ_RULE_AWARE_BINARIES = frozenset({"cat", "head", "tail", "sed"})
 
 # Deliberately NOT implemented: "sibling binary" detection (flagging scp/sftp
 # because ssh is denied). Every execution-free signal available here -- name
@@ -431,18 +441,44 @@ def analyze_reachability(rule_sets):
                 continue
             resolved = which(binary)
             if resolved:
-                readers[binary] = {"binary": binary, "path": resolved,
-                                   "rule": rule["raw"], "scope": rule["scope"]}
-        readers = list(readers.values())
-        if readers:
+                readers[binary] = {
+                    "binary": binary,
+                    "path": resolved,
+                    "rule": rule["raw"],
+                    "scope": rule["scope"],
+                    # Claude Code applies Read/Edit denies to these when it
+                    # recognizes them as file commands in Bash.
+                    "covered_by_read_rule": binary in READ_RULE_AWARE_BINARIES,
+                }
+        uncovered = sorted(
+            (r for r in readers.values() if not r["covered_by_read_rule"]),
+            key=lambda r: r["binary"],
+        )
+        covered = sorted(
+            (r for r in readers.values() if r["covered_by_read_rule"]),
+            key=lambda r: r["binary"],
+        )
+        if uncovered:
             findings.append({
                 "kind": "cross_surface",
                 "denied_surfaces": sorted({r["surface"] for r in path_denies}),
                 "denied_paths": [r["raw"] for r in path_denies],
-                "reachable_via": sorted(readers, key=lambda r: r["binary"]),
+                "reachable_via": uncovered,
+                "already_covered": covered,
                 "detail": (
-                    "Path denies are scoped to one tool surface; these allowed "
-                    "Bash binaries are installed and can read the same files."
+                    "Path denies are scoped to one tool surface. Claude Code "
+                    "extends Read/Edit denies to file commands it recognizes in "
+                    "Bash (cat/head/tail/sed), so those are already covered and "
+                    "listed separately. The binaries in reachable_via are NOT in "
+                    "that documented set: they are allowed, installed, and can "
+                    "read the same files."
+                ),
+                "caveat": (
+                    "Bash rule matching is command-string-based, so a Bash deny "
+                    "cannot reliably protect a path -- command substitution, "
+                    "variable indirection, and recursive traversal all evade it. "
+                    "Recommend sandbox.credentials.files (OS-enforced) rather "
+                    "than more Bash deny patterns."
                 ),
             })
 
