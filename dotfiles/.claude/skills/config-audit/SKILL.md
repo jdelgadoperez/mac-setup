@@ -84,11 +84,28 @@ edit, command to run, or setting to change).
   this machine*. The collector emits a `permission_reachability` block for this;
   treat it as evidence, not as prose to paste. Two finding shapes:
   - `cross_surface` — secret paths denied on one tool surface while allowed
-    binaries on another surface can read the same bytes. `Read(**/.env)` blocks
-    the Read tool, but an allowed `Bash(cat:*)` reads the identical file with no
-    prompt. Severity **serious**: it is the difference between a boundary and a
-    speed bump. Fix names both halves — add `Bash(...)`-scoped denies for every
-    listed reader, then re-run.
+    binaries on another surface can read the same bytes. **Read `reachable_via`
+    only — never `already_covered`.** Claude Code extends `Read`/`Edit` denies to
+    file commands it recognizes in Bash (`cat`, `head`, `tail`, `sed`), so those
+    are genuinely protected by an existing `Read(**/.env)` rule and appear in
+    `already_covered`; reporting them as gaps is a false positive. Severity
+    **serious** when `reachable_via` is non-empty.
+
+    **Do not recommend more `Bash(...)` deny patterns as the fix.** Bash rule
+    matching is command-string-based, so `Bash(cat *.env*)` is defeated by
+    command substitution (`cat $(echo …)`), variable indirection, extra spaces,
+    and recursive traversal (`grep -r` never puts the path in the command
+    string). The official docs call such argument-constraining patterns fragile.
+    Recommending them ships security theater. The real fixes, in order:
+    1. `sandbox.credentials.files` with `"mode": "deny"` — OS-enforced (Seatbelt
+       on macOS), no pattern matching to evade. Requires Claude Code ≥ 2.1.187.
+       Flag the tradeoff: enabling `sandbox` turns on filesystem *and* network
+       isolation for Bash and its children, which can break tooling that writes
+       outside the working directory.
+    2. A `PreToolUse` hook on `Bash` — wider net than rules, but still
+       command-string-based and evadable by the same tricks. Position it as the
+       fallback when sandboxing is too disruptive, not as a second layer.
+    3. Say plainly that the residue is best-effort by design, if neither fits.
   - `flag_scoped` — a binary denied only for certain flags (`gpg -d`) while the
     same installed binary stays reachable via others (`gpg --output`). Usually
     **warning**; raise to serious when the binary decrypts or exfiltrates.
