@@ -17,7 +17,10 @@
 # contain sibling helpers. Follow the link to find the real source directory.
 HOOK_SRC="${BASH_SOURCE[0]}"
 while [ -L "$HOOK_SRC" ]; do HOOK_SRC="$(readlink "$HOOK_SRC")"; done
-HOOK_DIR="$(cd "$(dirname "$HOOK_SRC")" && pwd)"
+# CDPATH= : cd echoes the resolved dir when it uses CDPATH, which would be
+# captured by $( ) and double the path. Harmless for absolute paths, breaks
+# relative invocation.
+HOOK_DIR="$(CDPATH= cd "$(dirname "$HOOK_SRC")" && pwd)"
 # shellcheck source=/dev/null
 # if/else, not `A && B || C`: with the && || form the no-op fallback also runs
 # when sourcing succeeds but returns non-zero, clobbering the real logger
