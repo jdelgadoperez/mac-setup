@@ -12,6 +12,15 @@
 # which avoids the need to prompt the user for every directory change.
 # See rules/fnm-bash-hang.md for full context.
 
+# Resolve through symlinks: ~/.claude/hooks/ is a directory of per-file links
+# into mac-setup, so dirname($0) lands in the install dir, which does not
+# contain sibling helpers. Follow the link to find the real source directory.
+HOOK_SRC="${BASH_SOURCE[0]}"
+while [ -L "$HOOK_SRC" ]; do HOOK_SRC="$(readlink "$HOOK_SRC")"; done
+HOOK_DIR="$(cd "$(dirname "$HOOK_SRC")" && pwd)"
+# shellcheck source=/dev/null
+[ -r "$HOOK_DIR/hook-log.sh" ] && . "$HOOK_DIR/hook-log.sh" || hook_log() { :; }
+
 INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
 [ "$TOOL" != "Bash" ] && exit 0
@@ -33,14 +42,17 @@ CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # python's \A anchors to true start-of-string, and [ \t] keeps the gap from
 # spanning a newline.
 if printf '%s' "$CMD" | python3 -c 'import re,sys; sys.exit(0 if re.search(r"(\A|;|&&|\|\||\||\$\(|`)[ \t]*git[ \t]+-C\b", sys.stdin.read()) else 1)'; then
+  hook_log cd-git-allow blocked "git -C"
   echo '{"decision":"block","reason":"Do not use git -C. Use cd into the directory instead."}'
   exit 0
 fi
 
 # Auto-approve pure cd commands (no chaining operators that could smuggle other commands)
 if echo "$CMD" | grep -qE '^cd\s+[^;&|$`()]+$' && ! echo "$CMD" | grep -qE '[;&|]|&&|\|\||`|\$\('; then
+  hook_log cd-git-allow approved "cd"
   echo '{"decision":"approve"}'
   exit 0
 fi
 
+hook_log cd-git-allow passthrough ""
 exit 0
