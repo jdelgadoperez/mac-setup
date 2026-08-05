@@ -16,8 +16,10 @@
 # calling hook's exit code and control flow are completely unaffected.
 
 hook_log() {
-  # Off switch
-  if [ "$CLAUDE_HOOK_LOG" = "0" ] || [ "$CLAUDE_HOOK_LOG" = "off" ]; then
+  # Off switch. Use ${VAR-} (not "$VAR") so this is safe under a caller's
+  # `set -u` — CLAUDE_HOOK_LOG is normally unset, and this helper must never
+  # be the reason a hook dies to an unbound-variable error.
+  if [ "${CLAUDE_HOOK_LOG-}" = "0" ] || [ "${CLAUDE_HOOK_LOG-}" = "off" ]; then
     return 0
   fi
 
