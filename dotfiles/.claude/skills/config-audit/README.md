@@ -63,12 +63,18 @@ project you run it from.
 The audit is **read-only**: it never edits your settings or tooling, only
 recommends.
 
-## Known issues
+## Design notes
 
-Bugs in this skill itself — collector parsing quirks, false positives, and
-their fix sketches — are tracked in [KNOWN-ISSUES.md](KNOWN-ISSUES.md). Add an
-entry there whenever a run produces a finding that turns out to be wrong, so
-the report's own accuracy stays auditable.
+Most analysis heuristics exist because an earlier run produced a *wrong report*
+— a false finding, a missed critical failure, or a confident claim that turned
+out to be false. [DESIGN-NOTES.md](DESIGN-NOTES.md) records the reasoning behind
+each one, organized by heuristic: what the rule is, the failure that motivated
+it, and the trap to avoid. Read the relevant section before changing a
+heuristic, or you will re-derive the bug.
+
+When a run produces a finding that turns out to be wrong, fix the heuristic and
+write down why there — including approaches tried and rejected. That negative
+knowledge is the part git history doesn't preserve.
 
 ## Related commands
 

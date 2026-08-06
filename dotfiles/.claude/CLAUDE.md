@@ -38,7 +38,7 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 - **After pushing fixes** in response to review feedback, always re-request reviews from the original reviewers
 - Check **all four comment surfaces** before reviewing or declaring feedback addressed: inline comments, review submissions, conversation-level comments, and GraphQL `reviewThreads` (surfaces RESOLVED + OUTDATED threads)
 - **Tone**: fewer nitpicks on staff/principal engineer PRs; frame structural suggestions as questions; never post unverified factual claims
-- Before posting any review to GitHub, read `@rules/github-review-posting.md` — it is the canonical atomic-posting rule (inline comments + body + event in one API call), event derivation, and the pre-post checklist. Not imported here because it only applies when actually posting.
+- Before posting any review to GitHub, read `~/.claude/reference/github-review-posting.md` — it is the canonical atomic-posting rule (inline comments + body + event in one API call), event derivation, and the pre-post checklist. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## Git & Repo Hygiene
 
@@ -97,7 +97,7 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 ## Orchestrated Commands
 
-When writing or modifying any multi-agent orchestrated command in `~/.claude/commands/`, read `~/.claude/rules/orchestrated-commands.md` first — it covers the 6-step flow, artifact conventions, approval gate rules, parallel dispatch, and shared anti-patterns. Deliberately not an `@import`: it is ~1,750 words of reference material needed only when authoring such a command, so it is read on demand rather than loaded into every session.
+When writing or modifying any multi-agent orchestrated command in `~/.claude/commands/`, read `~/.claude/reference/orchestrated-commands.md` first — it covers the 6-step flow, artifact conventions, approval gate rules, parallel dispatch, and shared anti-patterns. It lives in `reference/` rather than `rules/`: it is ~1,750 words needed only when authoring such a command, and everything in `rules/` loads into every session.
 
 ## Context Efficiency
 

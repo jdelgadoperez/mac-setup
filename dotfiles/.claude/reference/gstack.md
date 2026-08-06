@@ -5,7 +5,7 @@
 > file is deliberately *not* imported by CLAUDE.md: while gstack is absent, the
 > "never use `mcp__claude-in-chrome__*`" rule below is a prohibition with no
 > working alternative, which would leave web browsing with no permitted path.
-> Re-add `@rules/gstack.md` to CLAUDE.md only after installing gstack.
+> Re-add it as `@rules/gstack.md` (moving it back into `rules/`) only after installing gstack.
 
 - Use the `/browse` skill from gstack for all web browsing tasks.
 - **Never** use `mcp__claude-in-chrome__*` tools — use gstack's `/browse` instead.
