@@ -1,3 +1,8 @@
+---
+name: code-review-core
+description: Shared review logic included by /review:pr and /review:prs subagents — not invoked directly. Callers provide output_path and sidecar_path; this file does not post to GitHub.
+---
+
 # Code Review Core
 
 Shared review logic used by batch `/review:prs` subagents.
