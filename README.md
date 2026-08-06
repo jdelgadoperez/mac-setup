@@ -196,11 +196,13 @@ mac-setup/
 │   │   ├── manage-status.sh
 │   │   ├── manage-toggle.sh
 │   │   └── list-ai-items.py
-│   └── rules/                # Behavioral rules loaded by Claude Code
-│       ├── context7.md
+│   ├── rules/                # Behavioral rules loaded by Claude Code
+│   │   ├── context7.md
+│   │   ├── check-mode-before-mutating.md
+│   │   └── fnm-bash-hang.md
+│   └── reference/            # On-demand reference docs (not loaded every session)
 │       ├── github-review-posting.md
-│       ├── check-mode-before-mutating.md
-│       ├── fnm-bash-hang.md
+│       ├── gstack.md
 │       └── orchestrated-commands.md
 │
 ├── dotfiles/                 # Dotfiles to symlink to $HOME

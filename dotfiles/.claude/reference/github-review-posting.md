@@ -1,6 +1,6 @@
 # GitHub Review Posting Rules
 
-Canonical rules for posting code reviews to GitHub PRs. Applies to any command or skill that posts a review (inline comments + body + event). Reference from command `allowed-tools` as `Rule(~/.claude/rules/github-review-posting.md)`.
+Canonical rules for posting code reviews to GitHub PRs. Applies to any command or skill that posts a review (inline comments + body + event). Reference from command `allowed-tools` as `Rule(~/.claude/reference/github-review-posting.md)`.
 
 ## The atomic-posting rule
 
