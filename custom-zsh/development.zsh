@@ -626,6 +626,18 @@ function updatelibs() {
   echo "${BLUE}==============================================================================${NC}"
   updategitdirectory $ZSH_CUSTOM/plugins "plugin" "$CLEAN_LIBS"
 
+  # Insecure directory check (skipped on every shell startup via ZSH_DISABLE_COMPFIX;
+  # run it here instead, since a plugin update is the most likely way $fpath picks up
+  # a writable/insecure directory)
+  local insecure_dirs
+  insecure_dirs="$(compaudit 2>/dev/null)"
+  if [[ -n "$insecure_dirs" ]]; then
+    echo "${YELLOW}⚠️  compaudit found insecure directories in \$fpath:${NC}"
+    echo "$insecure_dirs"
+    echo "${YELLOW}   Run 'compaudit' for details, or fix perms with 'chmod g-w,o-w <dir>'${NC}"
+  fi
+  echo ""
+
   # Project repositories
   echo "${BLUE}==============================================================================${NC}"
   echo "${BLUE}[4/9] Update ${CYAN}project repositories${NC}"
