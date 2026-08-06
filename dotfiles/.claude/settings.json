@@ -219,6 +219,14 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node ~/.claude/hooks/session-start.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "bash ~/.claude/hooks/load-skill-anti-sycophancy.sh"
           }
         ]
@@ -363,10 +371,10 @@
     "frontend-design@claude-plugins-official": false,
     "playwright@claude-plugins-official": false,
     "superpowers@claude-plugins-official": true,
-    "obsidian@obsidian-skills": true,
-    "deep-plan@piercelamb-plugins": true,
-    "deep-implement@piercelamb-plugins": true,
-    "deep-project@piercelamb-plugins": true
+    "deep-plan@piercelamb-plugins": false,
+    "deep-implement@piercelamb-plugins": false,
+    "deep-project@piercelamb-plugins": false,
+    "obsidian@obsidian-skills": false
   },
   "extraKnownMarketplaces": {
     "piercelamb-plugins": {

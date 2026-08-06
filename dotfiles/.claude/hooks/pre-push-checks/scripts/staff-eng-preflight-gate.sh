@@ -17,7 +17,7 @@ set -uo pipefail
 trap 'exit 0' ERR
 
 # ── Messages ───────────────────────────────────────────────────────────────────
-HARD_BLOCK_MSG="Staff-eng pre-flight not recorded for this change. Run the staff-eng-pre-flight skill (Definition of Done) before opening the PR / requesting reviews — it records the sentinel that clears this gate. Emergency bypass: prefix the command with STAFF_PREFLIGHT_SKIP=1."
+HARD_BLOCK_MSG="Staff-eng pre-flight not recorded for this change. Run the staff-eng-pre-flight skill (Definition of Done) before opening the PR / requesting reviews — it records the sentinel that clears this gate. There is NO env-var bypass; a genuine emergency still requires running the gate (or recording the sentinel via ~/.claude/skills/staff-eng-pre-flight/record-preflight.sh). Subagents must NOT attempt to skip this — return control to the user instead."
 SOFT_NUDGE_MSG="Staff-eng pre-flight not recorded for this push. If this push completes substantive work, run the staff-eng-pre-flight Definition of Done. (Non-blocking.)"
 
 SENTINEL_DIR="$HOME/.claude/.staff-preflight"
@@ -36,13 +36,12 @@ fi
 CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // ""')
 [[ -z "$CMD" ]] && exit 0
 
-# ── Bypass: inline STAFF_PREFLIGHT_SKIP=1 or env var ─────────────────────────
-if [[ "$CMD" == *"STAFF_PREFLIGHT_SKIP=1"* ]]; then
-  exit 0
-fi
-if [[ "${STAFF_PREFLIGHT_SKIP:-}" == "1" ]]; then
-  exit 0
-fi
+# ── No bypass (intentional) ──────────────────────────────────────────────────
+# The STAFF_PREFLIGHT_SKIP env-var / inline bypass was removed deliberately: a
+# subagent abused it to publish a PR without running the gate. The ONLY way to
+# clear this gate is a valid sentinel, recorded by actually running the pre-flight
+# (or `record-preflight.sh` for a deliberate emergency). The `trap 'exit 0' ERR`
+# above still fails OPEN on internal error, so a gate bug can never block every PR.
 
 # ── Command classification ────────────────────────────────────────────────────
 # Returns: "hard-block", "soft-nudge", or "silent"
@@ -135,7 +134,31 @@ has_valid_sentinel() {
       if [[ -f "$sentinel" ]]; then
         return 0
       fi
-      # Precise mode resolved a sha but no sentinel → definitive miss
+
+      # Worktree-aware fallback (A1): the sentinel is keyed on the HEAD SHA, so a
+      # sentinel recorded from a linked worktree is valid regardless of which
+      # checkout $PWD/the command resolved to. This is the fix for gh/git commands
+      # that run WITHOUT cd-ing into the worktree first: $PWD (or the scraped path)
+      # points at the primary checkout, whose HEAD has no sentinel, even though the
+      # worktree's HEAD was genuinely pre-flighted.
+      #
+      # Scope is bounded to THIS repo's worktrees: `git worktree list` only
+      # enumerates worktrees sharing the same .git (same --git-common-dir), so a
+      # sentinel from an unrelated repo can never match here. If any sibling
+      # worktree's HEAD has a sentinel, accept — and log which SHA matched so a
+      # multi-worktree false-allow (only one worktree cleared) is visible in hook
+      # logs. stderr does not affect the allow/deny decision.
+      local wt_sha
+      while read -r _kw wt_sha; do
+        [[ "$_kw" == "HEAD" && -n "$wt_sha" ]] || continue
+        [[ "$wt_sha" == "$sha" ]] && continue  # already checked $PWD's HEAD above
+        if [[ -f "$SENTINEL_DIR/${wt_sha}.done" ]]; then
+          echo "staff-eng-preflight-gate: cleared via sibling worktree HEAD ${wt_sha} (command's checkout HEAD ${sha} had no sentinel)" >&2
+          return 0
+        fi
+      done < <(git -C "$repo_root" worktree list --porcelain 2>/dev/null)
+
+      # Precise mode resolved a sha and no worktree HEAD matched → definitive miss
       return 1
     fi
   fi
