@@ -2,6 +2,12 @@
   "cleanupPeriodDays": 7,
   "permissions": {
     "allow": [
+      "Bash(.venv/bin/memory-bank hooks:*)",
+      "Bash(.venv/bin/memory-bank setup:*)",
+      "Bash(STARSHIP_LOG=trace starship prompt --path ~/projects)",
+      "Bash(STARSHIP_LOG=trace starship prompt --path ~/projects/mac-setup)",
+      "Bash(STARSHIP_LOG=trace starship prompt)",
+      "Bash(STARSHIP_LOG=warn starship prompt *)",
       "Bash(aws acm describe-:*)",
       "Bash(aws acm list-:*)",
       "Bash(aws cloudformation describe-:*)",
@@ -41,7 +47,11 @@
       "Bash(aws sqs list-:*)",
       "Bash(aws sts get-caller-identity:*)",
       "Bash(basename:*)",
+      "Bash(brew config:*)",
       "Bash(cat:*)",
+      "Bash(codegraph --help)",
+      "Bash(codegraph --version)",
+      "Bash(command -v pyenv)",
       "Bash(cut:*)",
       "Bash(date:*)",
       "Bash(diff:*)",
@@ -49,6 +59,7 @@
       "Bash(echo:*)",
       "Bash(file:*)",
       "Bash(find:*)",
+      "Bash(fzf *)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
       "Bash(gh pr checks:*)",
@@ -61,6 +72,7 @@
       "Bash(gh repo view:*)",
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
+      "Bash(gh search prs:*)",
       "Bash(git add:*)",
       "Bash(git blame:*)",
       "Bash(git branch:*)",
@@ -97,15 +109,42 @@
       "Bash(head:*)",
       "Bash(jq:*)",
       "Bash(ls:*)",
+      "Bash(memory-bank --version)",
+      "Bash(memory-bank distill *)",
+      "Bash(memory-bank hooks:*)",
+      "Bash(memory-bank ingest:*)",
+      "Bash(memory-bank search *)",
+      "Bash(memory-bank stats:*)",
+      "Bash(memory-bank ui:*)",
       "Bash(mkdir:*)",
       "Bash(npm list:*)",
       "Bash(npm run:*)",
       "Bash(npm test:*)",
       "Bash(npm version:*)",
       "Bash(pwd:*)",
+      "Bash(pyenv --version)",
       "Bash(realpath:*)",
       "Bash(rg:*)",
+      "Bash(rtk diff *)",
+      "Bash(rtk find *)",
+      "Bash(rtk gh pr list*)",
+      "Bash(rtk gh pr view*)",
+      "Bash(rtk gh pr diff*)",
+      "Bash(rtk gh pr checks*)",
+      "Bash(rtk gh issue list*)",
+      "Bash(rtk gh issue view*)",
+      "Bash(rtk gh run list*)",
+      "Bash(rtk gh run view*)",
+      "Bash(rtk gh repo view*)",
+      "Bash(rtk git *)",
+      "Bash(rtk ls *)",
+      "Bash(rtk ps *)",
+      "Bash(rtk pytest *)",
+      "Bash(rtk read *)",
       "Bash(sort:*)",
+      "Bash(starship --version)",
+      "Bash(starship config *)",
+      "Bash(starship init *)",
       "Bash(tail:*)",
       "Bash(terraform fmt:*)",
       "Bash(terraform output:*)",
@@ -120,6 +159,7 @@
       "Bash(terraform workspace show:*)",
       "Bash(test:*)",
       "Bash(tflint:*)",
+      "Bash(timeout 5 rtk --version)",
       "Bash(tr:*)",
       "Bash(tsc:*)",
       "Bash(uniq:*)",
@@ -132,12 +172,11 @@
       "Bash(yarn test:*)",
       "Bash(yarn tsc:*)",
       "Bash(yarn why:*)",
+      "Bash(~/.bun/bin/bun --version)",
       "Glob",
       "Grep",
       "Read",
-      "Bash(gh search prs:*)",
-      "Bash(gh api repos/:*)",
-      "Bash(gh pr review:*)"
+      "Read(//Users/jessdelgadoperez/.local/share/uv/tools/memory-bank/bin/**)"
     ],
     "deny": [
       "Bash(age --decrypt:*)",
@@ -153,14 +192,12 @@
       "Bash(chamber read:*)",
       "Bash(chmod 777 *)",
       "Bash(chown -R *)",
-      "Bash(curl *attacker*)",
       "Bash(doppler secrets:*)",
-      "Bash(gpg --decrypt:*)",
-      "Bash(gpg -d:*)",
+      "Bash(gpg:*)",
       "Bash(helm get values:*)",
       "Bash(kubectl get secret:*)",
       "Bash(nc *)",
-      "Bash(openssl enc -d:*)",
+      "Bash(openssl:*)",
       "Bash(python* -c *socket*)",
       "Bash(rm -rf /)",
       "Bash(rm -rf /*)",
@@ -173,7 +210,6 @@
       "Bash(sudo:*)",
       "Bash(vault kv get:*)",
       "Bash(vault read:*)",
-      "Bash(wget -O - *)",
       "Read(**/*.key)",
       "Read(**/*.pem)",
       "Read(**/.aws/credentials)",
@@ -331,22 +367,22 @@
         ]
       },
       {
+        "matcher": "Task",
         "hooks": [
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/inject-sonnet-default.sh"
           }
-        ],
-        "matcher": "Task"
+        ]
       },
       {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/dod-commit-nudge.sh"
           }
-        ],
-        "matcher": "Bash"
+        ]
       },
       {
         "matcher": "Bash",
@@ -437,6 +473,7 @@
   },
   "alwaysThinkingEnabled": false,
   "effortLevel": "medium",
+  "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "inputNeededNotifEnabled": true
+  "advisorModel": "fable"
 }
