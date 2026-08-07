@@ -61,6 +61,21 @@ API keys, high-entropy strings) — never bypass it by reading raw settings valu
 into the report. Read the resulting JSON as the source of truth for *what
 exists*.
 
+**Then run the session-mode probe, once, before any analysis.** The collector
+emits it at `session_permission_mode` and prints it to stderr:
+
+```bash
+some-nonexistent-cmd-xyz-$$ --probe
+```
+
+It matches no allow rule at any scope, so its outcome reveals the auditing
+session's own mode. Ran without a prompt → the session pre-approves Bash, and
+every behavioural permission test you might run is unfalsifiable; record this and
+mark such findings `inferred`. Prompted or denied → the session enforces rules and
+behavioural tests mean something. Do not skip this because settings declare
+`defaultMode: "default"` — the live mode can differ, and only the live mode
+decides whether a test is informative. See the **Evidence rule** in step 3.
+
 ### 2. Deep-read selectively
 
 The inventory gives names, sizes, and descriptions. Additionally read (with
@@ -89,6 +104,43 @@ governing many unrelated repos is the enabler; an over-broad interpreter grant
 inside it inherits that blast radius across every repo, so the container-scope
 finding inherits the grant's severity — it cannot be rated `warning` while the
 grant it enables is rated `critical`.
+
+**Evidence rule — applies to EVERY behavioural claim, whatever its source.**
+A test whose failing result is indistinguishable from "no enforcement is running"
+is not evidence. Before reporting any claim about how the harness *behaves* —
+permission matching, deny coverage, hook firing, rule precedence — state what a
+**failing** test would have looked like. If you cannot describe the failure you
+would have observed, you do not have a test; you have an observation consistent
+with your hypothesis and with several others.
+
+This rule is not scoped to the collector's `permission_reachability` output. It
+governs any inference you make yourself, including ones the collector never
+mentions. A real false positive on this machine came from exactly that gap: an
+auditor reasoned that an env-prefixed command (`GIT_OPTIONAL_LOCKS=0 git push`)
+would evade a bare-command `ask` rule, ran it, saw no prompt, and reported it as
+**empirically confirmed**. The control — the *same command without the prefix* —
+also ran unprompted, as did a command matching no allow rule at all. The session
+was in auto mode, which pre-approves Bash. Every test measured the session mode,
+not the rule set. The hypothesis may still be true; it was simply never tested.
+
+Two consequences, both mandatory:
+
+1. **Run the session-mode probe before any behavioural permission test.** The
+   collector emits it at `session_permission_mode` and prints it to stderr:
+   run `some-nonexistent-cmd-xyz-$$ --probe` in the auditing session. If it
+   executes without a prompt, the session pre-approves Bash and **no**
+   behavioural permission test in that session can distinguish "the rule allowed
+   it" from "the mode allowed it." Report every such finding as *inferred*, and
+   say plainly that it is untestable from this session and name the session type
+   needed to settle it. Note that `configured_default_mode` is **not** a
+   substitute: settings may declare `"default"` while the live session runs in
+   auto mode — that exact mismatch occurred here.
+2. **Never write "confirmed", "verified", or "empirically" without naming the
+   control.** A confirmed finding must state the observation that *would have*
+   falsified it and report that the control was run and came out the other way.
+   Findings without a control are `inferred` — a different class from severity.
+   Render the distinction in the report: an inference presented with a severity
+   badge reads as a measurement, and readers act on it as one.
 
 **Overlaps & conflicts**
 - Same-name commands/skills/agents at user and project scope (project shadows user).
@@ -286,7 +338,14 @@ Fill in:
   meaning on its own, so the tile still reads correctly in monochrome — colour
   is a second channel, never the only one.
 - **Findings** — one card per finding, grouped by dimension, ordered most
-  severe first, each with its concrete fix.
+  severe first, each with its concrete fix. Any finding asserting how the harness
+  *behaves* that was not confirmed against a control carries a second badge,
+  `badge-inferred` ("Inferred — not tested"), alongside its severity badge, and
+  says in the card what would settle it. Severity answers "how bad if true";
+  the evidence class answers "do we know it's true" — a severity badge alone
+  reads as a measurement. If the session-mode probe showed the session
+  pre-approves Bash, note that once in the report meta as well: it explains why
+  the behavioural findings could not be tested.
 - **Inventory** — tables of commands/skills/agents/MCP servers with scope and
   description; the context-cost bars for memory files.
 - **Quick wins** — a short checklist of the highest-value fixes (aim for ≤ 7).

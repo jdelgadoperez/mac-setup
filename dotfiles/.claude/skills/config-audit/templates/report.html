@@ -156,6 +156,18 @@
   .badge-good     { color: var(--good-text); }
   .badge svg { width: 12px; height: 12px; flex: none; }
 
+  /* Evidence class, orthogonal to severity. A claim about how the harness
+     BEHAVES that was reasoned but not tested against a control must carry
+     this alongside its severity badge — a severity badge alone reads as a
+     measurement, and readers act on it as one. Dashed border and muted text
+     distinguish it from the solid severity badges without adding a colour. */
+  .badge-inferred {
+    color: var(--text-muted);
+    border-style: dashed;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
   /* ---- Inventory tables ---- */
   .table-wrap { overflow-x: auto; margin-top: 14px; }
   table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
@@ -281,6 +293,24 @@
       </span>
       <span class="title">badge-good example — use for healthy areas worth calling out</span>
     </div>
+  </div>
+  <div class="finding">
+    <div class="head">
+      <span class="badge badge-warning">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.8 3h1.6v5H7.2V4Zm.8 8.2a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>
+        Warning
+      </span>
+      <span class="badge badge-inferred">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5A6.5 6.5 0 1 0 8 14.5 6.5 6.5 0 0 0 8 1.5Zm0 1.4a5.1 5.1 0 1 1 0 10.2A5.1 5.1 0 0 1 8 2.9Zm-.7 2.2h1.4v1.4H7.3V5.1Zm0 2.5h1.4v3.6H7.3V7.6Z"/></svg>
+        Inferred — not tested
+      </span>
+      <span class="title">Evidence class: pair with a severity badge for any untested behavioural claim</span>
+    </div>
+    <p>Use whenever a claim about harness behaviour (permission matching, deny
+    coverage, rule precedence, hook firing) was reasoned but not confirmed
+    against a control — including when the session-mode probe shows the auditing
+    session pre-approves Bash, which makes such tests unfalsifiable. State what
+    would settle it.</p>
   </div>
   <!-- @END:FINDINGS -->
 </section>

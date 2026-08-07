@@ -305,6 +305,10 @@ def summarize_settings(path):
                 for mode in ("allow", "deny", "ask")
                 if perms.get(mode)
             },
+            # Configured mode only. This is what the file DECLARES, not what the
+            # auditing session is actually running under -- see
+            # session_permission_mode at the top level for the observed value.
+            "default_mode": perms.get("defaultMode"),
             "hooks": {
                 event: len(entries) if isinstance(entries, list) else 1
                 for event, entries in hooks.items()
@@ -787,6 +791,52 @@ def _root_warnings(project_root):
     return warnings
 
 
+def session_mode_probe(scopes):
+    """Emit the gate that decides whether ANY behavioural permission test is meaningful.
+
+    The collector runs as a subprocess. By the time it executes, the harness has
+    already decided to allow it -- so it cannot observe whether the auditing
+    session gates Bash calls. That is only observable from inside the session, by
+    running a command that matches no allow rule and seeing whether it prompts.
+
+    This block therefore does not measure the mode; it hands the auditor a probe
+    and the rule needed to interpret it. Emitting the probe (rather than trusting
+    the auditor to invent one) is deliberate: a real false positive on this
+    machine came from an auditor testing a `git push` bypass inside an auto-mode
+    session, where every command runs unprompted and no test can fail.
+    """
+    configured = {}
+    for label, scope in (scopes or {}).items():
+        for key in ("settings", "settings_local"):
+            mode = (scope.get(key) or {}).get("default_mode")
+            if mode:
+                configured[f"{label}/{key}"] = mode
+
+    return {
+        "status": "unmeasured",
+        "observed": None,
+        "configured_default_mode": configured or None,
+        "probe_command": "some-nonexistent-cmd-xyz-$$ --probe",
+        "how_to_read": (
+            "Run probe_command in the auditing session BEFORE any behavioural "
+            "permission claim. If it executes without a permission prompt, the "
+            "session pre-approves Bash (auto/bypass mode) and NO test in that "
+            "session can distinguish 'the rule allowed it' from 'the mode "
+            "allowed it' -- every behavioural permission finding is then "
+            "unverifiable and must be reported as inferred, never as confirmed. "
+            "If it prompts or is denied, the session enforces rules and "
+            "behavioural tests are meaningful."
+        ),
+        "caveat": (
+            "configured_default_mode is what the settings files DECLARE. It is "
+            "not authoritative: the live session mode can differ (a session may "
+            "run in auto mode while settings say 'default'), and only the live "
+            "mode determines whether a test means anything. Never substitute the "
+            "configured value for running the probe."
+        ),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", default=os.getcwd(), help="project dir to audit")
@@ -838,6 +888,19 @@ def main():
             if perms:
                 rule_sets.append((f"{label}/{key}", perms))
     result["permission_reachability"] = analyze_reachability(rule_sets)
+    result["session_permission_mode"] = session_mode_probe(result["scopes"])
+
+    # Printed to stderr for the same reason the resolved roots are: an auditor
+    # who never opens the JSON must still see that behavioural permission tests
+    # are gated on running this probe first.
+    print(
+        "SESSION MODE: unmeasured. Before ANY behavioural permission claim, run:\n"
+        "  some-nonexistent-cmd-xyz-$$ --probe\n"
+        "  ran without a prompt -> session pre-approves Bash; permission tests "
+        "prove nothing (report findings as inferred, not confirmed)\n"
+        "  prompted / denied     -> session enforces rules; tests are meaningful",
+        file=sys.stderr,
+    )
 
     payload = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
