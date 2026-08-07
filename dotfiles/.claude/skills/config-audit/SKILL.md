@@ -24,19 +24,38 @@ what's missing, and what should be improved.
 
 ### 1. Collect (deterministic)
 
-Run the bundled collector from this skill's directory:
+Run the bundled collector from this skill's directory, always passing
+`--project` explicitly:
 
 ```bash
-python3 <skill-dir>/scripts/collect.py --out <scratchpad>/config-inventory.json
+python3 <skill-dir>/scripts/collect.py --project <dir> --out <scratchpad>/config-inventory.json
 ```
 
-Pass `--project <dir>` if the user is auditing a project other than the cwd.
+**Always pass `--project <dir>` explicitly, on every invocation, including
+re-runs and verification runs.** Never rely on cwd — a stray `cd` earlier in
+the shell session silently changes what gets audited.
+
+The collector prints the resolved project root and user root to stderr, and
+emits a warning when the root's basename looks wrong (`.claude`, `skills`,
+`commands`, `agents`, `hooks`, `rules`) or when the directory has no
+CLAUDE.md / `.claude/` / `.mcp.json`. **Check the resolved root before
+analysing anything.** Surface any such warning as a **critical** finding — an
+audit of the wrong directory is worse than no audit, because it reports a
+clean bill of health for a scope that was never examined.
+
+When re-running to verify a fix, **assert both runs resolved the same
+project root before diffing counts.** A count that drops to zero is more
+likely a wrong root than a successful cleanup — treat implausible zeros
+(`allow=0, skills=0`, etc.) as suspected misconfiguration, not success, until
+the resolved root is confirmed identical.
 
 If the project scope comes back with `mirrors_user_scope: true`, it resolved to
 `$HOME` and is the *same files* as the user scope. Audit it as a single scope:
 say so once in the report meta, drop the duplicate scope from the scorecard and
 inventory, and never report the same file twice as though two scopes disagreed.
-Suggest re-running from inside a real project for a true two-scope audit.
+Suggest re-running from inside a real project for a true two-scope audit. (This
+is distinct from the wrong-root warning above: `mirrors_user_scope` means the
+root resolved correctly to `$HOME`, not that it resolved to the wrong directory.)
 The collector inventories both scopes and **redacts secrets** (tokens, cookies,
 API keys, high-entropy strings) — never bypass it by reading raw settings values
 into the report. Read the resulting JSON as the source of truth for *what
@@ -61,8 +80,29 @@ severity (`critical` / `serious` / `warning` / `good`), scope, a one-line
 **what**, a short **why it matters**, and a concrete **fix** (the exact file to
 edit, command to run, or setting to change).
 
+**Cause/effect severity rule.** When one finding is the **structural enabler**
+of another, its severity is **at least** that of the finding it enables — a
+cause is never rated below its effect. The two findings must cross-reference
+each other explicitly: the enabler names what it enables, the effect names the
+enabler. Example: a permission file at a container directory (e.g. `~/projects`)
+governing many unrelated repos is the enabler; an over-broad interpreter grant
+inside it inherits that blast radius across every repo, so the container-scope
+finding inherits the grant's severity — it cannot be rated `warning` while the
+grant it enables is rated `critical`.
+
 **Overlaps & conflicts**
 - Same-name commands/skills/agents at user and project scope (project shadows user).
+- **A name collision (skill vs. command vs. agent) is reportable as an overlap
+  or trigger conflict only when BOTH artifacts actually load.** Before writing
+  such a finding, confirm `loads: true` for each skill (and on-disk existence
+  for commands/agents) — a directory whose frontmatter lives in a file other
+  than `SKILL.md` never loads and cannot conflict with anything. If one side
+  doesn't load, this is a **dead-weight finding** (see Hygiene, below), not a
+  conflict: different severity (`warning`, not `serious`), different fix
+  (delete or repair the non-loading artifact, not rename/merge the colliding
+  one), different wording. Naming the wrong mechanism can still land on the
+  right fix by luck — that is not good enough; the finding must name the
+  actual cause.
 - Multiple tools doing the same job (e.g. two scraping commands, a skill and a
   plugin with the same purpose, redundant MCP servers with overlapping capabilities).
 - Instructions in project CLAUDE.md that contradict user CLAUDE.md or settings.
@@ -83,13 +123,31 @@ edit, command to run, or setting to change).
   deny only holds if the capability it names cannot be reached another way *on
   this machine*. The collector emits a `permission_reachability` block for this;
   treat it as evidence, not as prose to paste. Two finding shapes:
-  - `cross_surface` — secret paths denied on one tool surface while allowed
-    binaries on another surface can read the same bytes. **Read `reachable_via`
-    only — never `already_covered`.** Claude Code extends `Read`/`Edit` denies to
-    file commands it recognizes in Bash (`cat`, `head`, `tail`, `sed`), so those
-    are genuinely protected by an existing `Read(**/.env)` rule and appear in
-    `already_covered`; reporting them as gaps is a false positive. Severity
-    **serious** when `reachable_via` is non-empty.
+  - `cross_surface` — **informational only. Never report it as a finding.**
+    The collector emits `status: "informational"` and `reportable: false` on
+    this block; honour both. It lists allowed, installed, file-reading Bash
+    binaries that coexist with a path deny — useful context, *not* evidence of
+    a gap.
+
+    **Why it is not evidence.** Empirical testing on Claude Code 2.1.224 (with
+    project `deny: ["Read(**/.env)"]`) shows the deny extension is **not** a
+    fixed set of recognised reader binaries. Claude Code parses the command,
+    resolves which paths each argument actually operates on, and applies the
+    `Read`/`Edit` deny to any Bash command touching that path, whatever the
+    binary. Verified denied: `cat`, `strings`, `od`, `cut`, `rg`, `jq`, `sort`,
+    `uniq`, `perl -ne`, and also `ls -la .env` and `file .env` — neither of
+    which reads file *contents*. Meanwhile `echo skipping .env` **ran**, so it
+    is not naive string matching either. Controls (`strings plain.txt`,
+    `jq -r .a plain.json`) ran clean, confirming the path deny is what fires.
+
+    **Therefore: never infer "binary X is not on a recognised-reader list,
+    so it bypasses the deny."** That inference is invalid and previously
+    produced false positives on this very machine (`jq`, `rg`, `sort`, `uniq`
+    were reported as gaps, then verified denied).
+
+    The genuinely uncovered class is **arbitrary subprocesses that open files
+    themselves** — `python3 -c "print(open('.env').read())"` only *prompts*,
+    it is not denied. That, and only that, is the residue worth writing about.
 
     **Do not recommend more `Bash(...)` deny patterns as the fix.** Bash rule
     matching is command-string-based, so `Bash(cat *.env*)` is defeated by
@@ -112,21 +170,48 @@ edit, command to run, or setting to change).
     Note that path-scoped denies (`Bash(cat *.env)`) are the *correct* shape and
     are deliberately not reported.
 
+    **Before reporting a `flag_scoped` finding as a gap, cross-reference the
+    same binary against broader `ask` and `deny` rules at ANY scope.** A narrow
+    flag-scoped deny (`Bash(curl *attacker*)`) can be entirely redundant when a
+    broader rule already covers the binary — e.g. `Bash(curl *)` in `ask`, or
+    `Bash(rm -rf *)` in `ask` making a narrower `rm` deny moot. An `ask` rule is
+    a **strictly stronger** control than a narrow flag-scoped deny: it forces a
+    human checkpoint on *every* invocation of that binary, not just one
+    argument shape. The collector now marks this per entry: `redundant: true`
+    with `covered_by` / `covered_by_list` naming the broader rule, or
+    `redundant: false` for a genuine gap. `redundant: true` must **never** be
+    presented as a coverage gap — report it, if at all, as "redundant rule,
+    safe to drop" at **minor/informational** severity. Only `redundant: false`
+    entries are genuine gaps and keep the warning/serious severity above.
+
   Read `permission_reachability.findings` before writing anything about the
-  permission model. It is machine-specific by design — a work laptop with `aws`
-  and `vault` installed yields findings a personal machine cannot, and vice
-  versa. Never carry a finding across machines from a previous run, and never
-  extend the list by reasoning about tools that "probably" exist: if a binary
-  is not in the collector's output, it was not on this host's PATH. You may
-  reason *beyond* the collector about equivalent-capability tools it cannot
-  detect (it deliberately does not guess at tool families), but any such claim
-  must be verified with `command -v` before it enters the report.
+  permission model, and respect each finding's `reportable` flag — only
+  `flag_scoped` is reportable today. It is machine-specific by design: a work
+  laptop with `aws` and `vault` installed yields findings a personal machine
+  cannot. Never carry a finding across machines from a previous run, and never
+  extend the list by reasoning about tools that "probably" exist — if a binary
+  is not in the collector's output, it was not on this host's PATH. Any claim
+  reaching beyond the collector must be verified with `command -v` **and**, for
+  anything touching deny coverage, by an actual test against this Claude Code
+  version — the reader-binary model looked right on paper for months and was
+  wrong. Prefer `/audit:permissions` for the full boundary analysis; it carries
+  the verified matcher, sandbox, and mode semantics.
 - No hooks where the user's workflow implies them (formatting, tests, secret scanning).
 - Commands/skills/agents without descriptions (won't trigger reliably); commands
   that use `$ARGUMENTS` but declare no `argument-hint`.
 - `settings.local.json` or `.mcp.json` not gitignored in a repo.
 
 **Hygiene & security**
+- **Skills that do not load.** The collector emits, per skill: `loads` (true
+  only when `SKILL.md` exists at the skill root), `stray_frontmatter_files`
+  (`*.md` files carrying skill frontmatter but not named `SKILL.md`), and
+  `self_duplicate_files` (groups of byte-identical `*.md` files inside one
+  skill dir). A directory under `skills/` with no root `SKILL.md` never loads —
+  it's absent from the available-skills list entirely — and is dead weight.
+  Severity **warning**. Fix: rename the stray frontmatter file to `SKILL.md` if
+  the skill is wanted, or delete the directory if not. Byte-identical
+  self-duplication (e.g. `X/X.md` and `X/X/X.md` identical) is a strong signal
+  of a bad install/link pass — call it out explicitly.
 - **Check `parse_error` first, before any other analysis.** Any settings file,
   `~/.claude.json`, or `.mcp.json` carrying a `parse_error` is a **critical**
   finding: malformed JSON silently disables *every* setting in that file —

@@ -12,6 +12,7 @@ Stdlib only. Usage:
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -184,27 +185,93 @@ def inventory_markdown_dir(directory, kind):
     return items
 
 
+def _has_skill_frontmatter(fm):
+    """A stray .md carries skill frontmatter if it declares name and/or description."""
+    return bool(fm.get("name") or fm.get("description"))
+
+
+def _file_hash(path):
+    """sha256 of file bytes, or None if unreadable (covers broken symlinks too)."""
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
 def inventory_skills(directory):
+    """Skills are enumerated by directory, not by globbing SKILL.md.
+
+    A skill dir with no root SKILL.md never loads in Claude Code even if it
+    contains a plausible-looking markdown file elsewhere inside it -- globbing
+    `*/SKILL.md` silently drops exactly that case from the inventory. See
+    DESIGN-NOTES.md for the review-prs/ case this was built to catch.
+    """
     items = []
     if not directory.is_dir():
         return items
-    for skill_md in sorted(directory.glob("*/SKILL.md")):
-        skill_dir = skill_md.parent
-        if not skill_md.exists():
-            items.append(broken_link_entry(skill_md, directory, "skill", name=skill_dir.name))
+    for skill_dir in sorted(p for p in directory.iterdir() if p.is_dir()):
+        skill_md = skill_dir / "SKILL.md"
+        loads = skill_md.is_file()
+
+        if skill_md.is_symlink() and not skill_md.exists():
+            entry = broken_link_entry(skill_md, directory, "skill", name=skill_dir.name)
+            entry["loads"] = False
+            entry["stray_frontmatter_files"] = []
+            entry["self_duplicate_files"] = []
+            items.append(entry)
             continue
-        fm = parse_frontmatter(skill_md)
+
+        # Every markdown file in the skill dir (any depth), guarding broken
+        # symlinks the same way the rest of the collector does: record, don't
+        # crash on them.
+        md_files = sorted(
+            p for p in skill_dir.rglob("*.md") if p.is_file() or p.is_symlink()
+        )
+
+        fm = parse_frontmatter(skill_md) if loads else {}
+        stray_frontmatter_files = []
+        best_stray_fm = {}
+        for md in md_files:
+            if md == skill_md:
+                continue
+            if not md.is_file():  # broken symlink -- can't read frontmatter
+                continue
+            stray_fm = parse_frontmatter(md)
+            if _has_skill_frontmatter(stray_fm):
+                rel = md.relative_to(skill_dir).as_posix()
+                stray_frontmatter_files.append(rel)
+                if not loads and not best_stray_fm:
+                    best_stray_fm = stray_fm
+
+        # Byte-identical .md files within this skill dir, grouped.
+        hashes = {}
+        for md in md_files:
+            if not md.is_file():
+                continue
+            digest = _file_hash(md)
+            if digest is None:
+                continue
+            hashes.setdefault(digest, []).append(md.relative_to(skill_dir).as_posix())
+        self_duplicate_files = [
+            sorted(paths) for paths in hashes.values() if len(paths) >= 2
+        ]
+
         files = [p for p in skill_dir.rglob("*") if p.is_file()]
+        name = fm.get("name") or best_stray_fm.get("name") or skill_dir.name
+        description = fm.get("description") or best_stray_fm.get("description", "")
         items.append(
             {
-                "name": fm.get("name") or skill_dir.name,
+                "name": name,
                 "kind": "skill",
                 "path": str(skill_dir),
                 "bytes": sum(p.stat().st_size for p in files),
-                "description": fm.get("description", ""),
-                "has_description": bool(fm.get("description")),
+                "description": description,
+                "has_description": bool(description),
                 "file_count": len(files),
                 "has_scripts": any("scripts" in p.parts[len(skill_dir.parts):] for p in files),
+                "loads": loads,
+                "stray_frontmatter_files": sorted(stray_frontmatter_files),
+                "self_duplicate_files": sorted(self_duplicate_files),
             }
         )
     return items
@@ -315,15 +382,19 @@ FILE_READING_BINARIES = frozenset({
     "sort", "strings", "tac", "tail", "tr", "uniq", "wc", "xxd", "yq",
 })
 
-# Claude Code extends Read/Edit deny rules to file commands it recognizes in
-# Bash, so a `Read(**/.env)` deny already covers `cat .env` -- these readers are
-# NOT a way around the rule and must not be reported as one. Source:
-# https://code.claude.com/docs/en/permissions ("Read and Edit deny rules apply
-# to Claude's built-in file tools and to file commands Claude Code recognizes in
-# Bash, such as cat, head, tail, and sed"). The docs call this coverage
-# best-effort and name only these four, so anything outside the set is treated
-# as uncovered. If the documented set grows, update this and cite the doc.
-READ_RULE_AWARE_BINARIES = frozenset({"cat", "head", "tail", "sed"})
+# NOT a fixed recognized-reader binary list -- deliberately removed. Round one
+# of empirical testing on Claude Code 2.1.224 seemed to show coverage keyed on
+# binary identity (cat/head/tail/sed denied, matching the docs' "such as"
+# phrasing). Round two overturned that: `ls -la .env` and `file .env` were
+# DENIED even though neither reads file contents, while `echo skipping .env`
+# (which mentions the path but doesn't operate on it) RAN. rg/jq/sort/uniq/
+# perl were also all DENIED despite not appearing in any binary list. That
+# pattern is only explained by Claude Code resolving which paths a Bash
+# command's arguments actually touch and applying the Read/Edit deny to any
+# command touching a denied path -- not by binary membership. A binary-name
+# allowlist/denylist therefore cannot determine coverage and must not gate a
+# "reachable" vs "covered" split; see the cross_surface block below, which is
+# informational only for exactly this reason.
 
 # Deliberately NOT implemented: "sibling binary" detection (flagging scp/sftp
 # because ssh is denied). Every execution-free signal available here -- name
@@ -412,16 +483,20 @@ def analyze_reachability(rule_sets):
     findings = []
 
     # (1) Cross-surface: secret paths denied on one tool surface while another
-    # surface can read the same bytes. The reader set comes from the allow list
-    # itself -- whatever the user actually permitted -- not a fixed list.
+    # surface has an allowed Bash binary that could, in principle, name the
+    # same path. This is INFORMATIONAL inventory, not a finding -- see the
+    # comment above DENY_EXTENSION_RECOGNIZED_READERS's removal. Empirically,
+    # Claude Code resolves the actual paths a Bash command's arguments touch
+    # and applies the Read/Edit deny to any command touching a denied path,
+    # regardless of which binary is invoked (ls/file, which don't even read
+    # contents, were denied; echo, which only mentions the path, was allowed).
+    # A binary being allowed and installed is therefore NOT evidence it can
+    # reach a denied path -- there is no execution-free way to know, from the
+    # rules and PATH alone, which of these binaries' argv Claude Code would
+    # actually resolve to the denied path. So this block reports the inventory
+    # (which allowed Bash binaries exist alongside which path denies) without
+    # asserting any of them are reachable.
     path_denies = [r for r in deny if r["surface"] != "Bash" and r["rest"]]
-    # Bash binaries already denied against secret-looking paths are guarded and
-    # must not be reported as a way around the Read denies.
-    path_guarded_binaries = {
-        r["binary"] for r in deny
-        if r["surface"] == "Bash" and r["binary"] and r["rest"]
-        and SENSITIVE_PATH_RE.search(r["rest"])
-    }
     if path_denies:
         readers = {}
         for rule in allow:
@@ -430,13 +505,9 @@ def analyze_reachability(rule_sets):
             binary = rule["binary"]
             if binary in gated_binaries or binary in readers:
                 continue
-            # Already covered by a path-scoped Bash deny ('cat *.env') -- the
-            # reader cannot reach the protected files, so it is not a gap.
-            if binary in path_guarded_binaries:
-                continue
-            # Only binaries that can emit file contents matter here. A rule
-            # granting mkdir/echo/pwd cannot exfiltrate a denied path, and
-            # listing it dilutes the finding.
+            # Only binaries that can emit file contents are inventory-relevant
+            # here. A rule granting mkdir/pwd is not plausibly related to
+            # reading a denied path.
             if binary not in FILE_READING_BINARIES:
                 continue
             resolved = which(binary)
@@ -446,44 +517,75 @@ def analyze_reachability(rule_sets):
                     "path": resolved,
                     "rule": rule["raw"],
                     "scope": rule["scope"],
-                    # Claude Code applies Read/Edit denies to these when it
-                    # recognizes them as file commands in Bash.
-                    "covered_by_read_rule": binary in READ_RULE_AWARE_BINARIES,
                 }
-        uncovered = sorted(
-            (r for r in readers.values() if not r["covered_by_read_rule"]),
-            key=lambda r: r["binary"],
-        )
-        covered = sorted(
-            (r for r in readers.values() if r["covered_by_read_rule"]),
-            key=lambda r: r["binary"],
-        )
-        if uncovered:
+        if readers:
             findings.append({
                 "kind": "cross_surface",
+                "status": "informational",
+                "reportable": False,
                 "denied_surfaces": sorted({r["surface"] for r in path_denies}),
                 "denied_paths": [r["raw"] for r in path_denies],
-                "reachable_via": uncovered,
-                "already_covered": covered,
+                "allowed_bash_readers": sorted(readers.values(), key=lambda r: r["binary"]),
                 "detail": (
-                    "Path denies are scoped to one tool surface. Claude Code "
-                    "extends Read/Edit denies to file commands it recognizes in "
-                    "Bash (cat/head/tail/sed), so those are already covered and "
-                    "listed separately. The binaries in reachable_via are NOT in "
-                    "that documented set: they are allowed, installed, and can "
-                    "read the same files."
+                    "Informational only -- do not present as a gap. Path "
+                    "denies (Read/Edit) are documented to extend to 'file "
+                    "commands Claude Code recognizes in Bash', but empirical "
+                    "testing on 2.1.224 shows this is NOT a fixed binary list: "
+                    "Claude Code resolves which path a Bash command's "
+                    "arguments actually operate on and applies the deny to any "
+                    "command touching that path. Verified across "
+                    "ls/file/rg/jq/sort/uniq/strings/od/cut/perl -- ls and file "
+                    "were denied even though neither reads file contents, "
+                    "while `echo <path>` (which only mentions the path) ran. "
+                    "Because coverage is path-resolution-based, a binary being "
+                    "allowed and installed here is NOT evidence it can reach "
+                    "the denied path -- binary-identity lists cannot determine "
+                    "coverage either way. allowed_bash_readers is inventory "
+                    "only: which allowed, installed, file-reading Bash "
+                    "binaries exist alongside these path denies."
                 ),
                 "caveat": (
-                    "Bash rule matching is command-string-based, so a Bash deny "
-                    "cannot reliably protect a path -- command substitution, "
-                    "variable indirection, and recursive traversal all evade it. "
-                    "Recommend sandbox.credentials.files (OS-enforced) rather "
-                    "than more Bash deny patterns."
+                    "The genuinely uncovered class is arbitrary subprocesses "
+                    "that open the file themselves rather than going through a "
+                    "command Claude Code recognizes -- e.g. `python -c "
+                    "\"open('.env').read()\"` or a node script -- which Claude "
+                    "Code only PROMPTS for rather than denies. Bash deny "
+                    "patterns that try to constrain arguments also remain "
+                    "fragile in general (command substitution, variable "
+                    "indirection, recursive traversal can evade them). For "
+                    "the arbitrary-subprocess residue, the documented fix is "
+                    "enabling the sandbox (sandbox.credentials.files with "
+                    "mode deny), not adding more Bash deny patterns."
                 ),
             })
 
     # (2) Flag-scoped: a binary denied only for certain flags. Other invocations
-    # of the same installed binary remain allowed.
+    # of the same installed binary remain allowed -- UNLESS a broader ask/deny
+    # rule for the same binary already covers it, in which case the narrow
+    # rule is redundant rather than a gap. An ask rule counts as coverage too:
+    # it forces a human checkpoint on every invocation of that binary, which is
+    # a strictly stronger control than a deny scoped to particular flags.
+    def _is_broader_coverage(candidate, narrow_rest):
+        """True if `candidate` (an ask/deny rule) covers `narrow_rest`.
+
+        A covering rule must itself be trailing-wildcard/prefix form (its raw
+        text ends with '*' or ':*') and its own rest must be empty or a
+        strict prefix of the narrow rule's rest -- strict so a rule never
+        counts as covering itself (chmod 777 * vs chmod 777 * is equal, not a
+        strict prefix, and therefore excluded).
+        """
+        body = candidate["raw"].strip()
+        if body.endswith(")"):
+            body = body[:-1]
+        if not (body.endswith("*") or body.endswith(":*")):
+            return False
+        cand_rest = candidate["rest"]
+        if cand_rest == narrow_rest:
+            return False
+        if cand_rest == "":
+            return True
+        return narrow_rest.startswith(cand_rest + " ") or narrow_rest == cand_rest
+
     by_binary = {}
     for rule in deny:
         if not (rule["binary"] and rule["rest"]):
@@ -501,16 +603,64 @@ def analyze_reachability(rule_sets):
             continue
         if any(r["binary"] == binary and not r["rest"] for r in deny):
             continue  # also denied binary-wide -> not a gap
-        findings.append({
-            "kind": "flag_scoped",
-            "denied_binary": binary,
-            "path": resolved,
-            "denied_rules": [r["raw"] for r in rules],
-            "detail": (
-                f"'{binary}' is installed and denied only for specific flags; "
-                "other invocations of the same binary are not covered."
-            ),
-        })
+
+        # Broader ask/deny rules for the same binary, checked across both
+        # lists so an ask rule can retire a narrower deny rule.
+        broader_candidates = [
+            (r, "ask") for r in ask if r["binary"] == binary
+        ] + [
+            (r, "deny") for r in deny if r["binary"] == binary
+        ]
+
+        for rule in rules:
+            covering = next(
+                (
+                    (cand, cand_list)
+                    for cand, cand_list in broader_candidates
+                    if _is_broader_coverage(cand, rule["rest"])
+                ),
+                None,
+            )
+            if covering:
+                cand, cand_list = covering
+                findings.append({
+                    "kind": "flag_scoped",
+                    "denied_binary": binary,
+                    "path": resolved,
+                    "denied_rules": [rule["raw"]],
+                    "redundant": True,
+                    "covered_by": cand["raw"],
+                    "covered_by_list": cand_list,
+                    "detail": (
+                        f"'{rule['raw']}' is redundant, not a coverage gap: "
+                        f"'{cand['raw']}' already covers every invocation of "
+                        f"'{binary}' at {cand_list} scope. "
+                        + (
+                            f"An {cand_list} rule is a strictly stronger "
+                            f"control than a narrow deny -- it forces a "
+                            f"human checkpoint on every '{binary}' call. "
+                            if cand_list == "ask"
+                            else ""
+                        )
+                        + "Safe to drop the narrower rule."
+                    ),
+                })
+            else:
+                findings.append({
+                    "kind": "flag_scoped",
+                    "denied_binary": binary,
+                    "path": resolved,
+                    "denied_rules": [rule["raw"]],
+                    "redundant": False,
+                    "covered_by": None,
+                    "covered_by_list": None,
+                    "detail": (
+                        f"'{binary}' is installed and denied only for specific "
+                        f"flags ('{rule['raw']}'); other invocations of the "
+                        "same binary are not covered by any broader ask/deny "
+                        "rule."
+                    ),
+                })
 
     return {
         "note": (
@@ -525,6 +675,7 @@ def analyze_reachability(rule_sets):
 
 def scan_user_scope(home):
     root = home / ".claude"
+    skills = inventory_skills(root / "skills")
     scope = {
         "root": str(root),
         "exists": root.is_dir(),
@@ -534,7 +685,10 @@ def scan_user_scope(home):
         "keybindings": file_stats(root / "keybindings.json"),
         "commands": inventory_markdown_dir(root / "commands", "command"),
         "agents": inventory_markdown_dir(root / "agents", "agent"),
-        "skills": inventory_skills(root / "skills"),
+        "skills": skills,
+        # Convenience count so consumers don't have to filter `skills` for
+        # `loads: false` themselves.
+        "skills_not_loading": sum(1 for s in skills if not s.get("loads", False)),
         "plugins": sorted(
             p.name for p in (root / "plugins").iterdir() if p.is_dir()
         )
@@ -565,6 +719,7 @@ def scan_user_scope(home):
 
 def scan_project_scope(project):
     dot = project / ".claude"
+    skills = inventory_skills(dot / "skills")
     scope = {
         "root": str(project),
         "memory": file_stats(project / "CLAUDE.md"),
@@ -573,7 +728,8 @@ def scan_project_scope(project):
         "settings_local": summarize_settings(dot / "settings.local.json"),
         "commands": inventory_markdown_dir(dot / "commands", "command"),
         "agents": inventory_markdown_dir(dot / "agents", "agent"),
-        "skills": inventory_skills(dot / "skills"),
+        "skills": skills,
+        "skills_not_loading": sum(1 for s in skills if not s.get("loads", False)),
         "mcp_json": file_stats(project / ".mcp.json"),
         "is_git_repo": (project / ".git").exists(),
         # Run from $HOME, "project scope" resolves to the user's own config and
@@ -596,6 +752,41 @@ def scan_project_scope(project):
     return scope
 
 
+# Directory basenames that mean "this is a config subdirectory, not a
+# project root" -- landing here almost always means --project was omitted
+# and cwd happened to be inside ~/.claude or similar.
+SUSPICIOUS_ROOT_BASENAMES = frozenset(
+    {".claude", "skills", "commands", "agents", "hooks", "rules"}
+)
+
+
+def _root_warnings(project_root):
+    """Warnings for a resolved project root that is probably the wrong dir.
+
+    Two independent checks, kept distinct because they catch different
+    mistakes: the basename check catches "cwd was inside ~/.claude/skills",
+    the missing-markers check catches "cwd was some unrelated empty dir".
+    """
+    warnings = []
+    if project_root.name in SUSPICIOUS_ROOT_BASENAMES:
+        warnings.append(
+            f"project root '{project_root}' has basename "
+            f"'{project_root.name}', which is almost certainly wrong -- it "
+            "looks like a Claude Code config subdirectory, not a project "
+            "root. Pass --project <dir> explicitly."
+        )
+    has_claude_md = (project_root / "CLAUDE.md").exists()
+    has_dot_claude = (project_root / ".claude").is_dir()
+    has_mcp_json = (project_root / ".mcp.json").exists()
+    if not (has_claude_md or has_dot_claude or has_mcp_json):
+        warnings.append(
+            f"project root '{project_root}' has no CLAUDE.md, no .claude/ "
+            "dir, and no .mcp.json -- it does not look like a project root "
+            "at all. Pass --project <dir> explicitly if this is unexpected."
+        )
+    return warnings
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", default=os.getcwd(), help="project dir to audit")
@@ -609,11 +800,34 @@ def main():
         "platform": sys.platform,
         "home": str(Path.home()),
         "scopes": {},
+        "warnings": [],
     }
+
+    user_root = Path.home() / ".claude"
+    project_root = Path(args.project).resolve()
+
+    # Resolved roots must be visible without opening the JSON -- a wrong
+    # --project silently producing a "clean" empty report is exactly the
+    # failure this exists to prevent.
+    if not args.project_only:
+        print(f"user scope: {user_root}", file=sys.stderr)
+    if not args.user_only:
+        print(f"project root: {project_root}", file=sys.stderr)
+
     if not args.project_only:
         result["scopes"]["user"] = scan_user_scope(Path.home())
     if not args.user_only:
-        result["scopes"]["project"] = scan_project_scope(Path(args.project).resolve())
+        result["scopes"]["project"] = scan_project_scope(project_root)
+        # scan_project_scope always resolves `root` to an absolute path (it
+        # is derived from `project.resolve()`, never left null) even when
+        # the scope turns out to be empty -- an unresolvable path is not
+        # possible here since Path.resolve() succeeds even for a
+        # nonexistent directory, so this cannot silently emit `root: null`.
+        root_warnings = _root_warnings(project_root)
+        if root_warnings:
+            result["warnings"].extend(root_warnings)
+            for warning in root_warnings:
+                print(f"WARNING: {warning}", file=sys.stderr)
 
     # Reachability spans scopes: a project allow rule can route around a user
     # deny rule, so it is computed across everything collected, not per scope.

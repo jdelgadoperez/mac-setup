@@ -131,19 +131,54 @@ The collector reports two gap shapes:
 Path-scoped denies (`Bash(cat *.env)`) are the *correct* shape and are
 deliberately not reported, so the check never punishes the fix it recommends.
 
-### Why `reachable_via` and `already_covered` are separate
+### Why `cross_surface` is informational, not a finding (2026-08-07)
 
-The first version treated every allowed Bash reader as a way around a
-`Read(**/.env)` deny. Wrong for four of them: Claude Code extends `Read`/`Edit`
-denies to file commands it recognizes in Bash — `cat`, `head`, `tail`, `sed`
-are named explicitly in the permissions docs — so those are already protected.
+**Superseded twice. Read this before re-promoting it.**
 
-Splitting the lists turned a 13-reader finding into 9 real gaps plus 4
-suppressed false positives on the reference machine. A config whose only allowed
-readers are the covered four now correctly produces no finding at all.
+*v1* treated every allowed Bash reader as a way around a `Read(**/.env)` deny.
+*v2* split the list into `reachable_via` / `already_covered`, on the theory that
+Claude Code extends `Read`/`Edit` denies to a set of recognised reader binaries
+(`cat`, `head`, `tail`, `sed` — the four the docs name explicitly).
 
-**Read `reachable_via` only.** Reporting `already_covered` entries as gaps is a
-false positive by construction.
+**Both were wrong, because the premise is wrong.** The docs say "file commands
+Claude Code recognizes in Bash, **such as** `cat`, `head`, `tail`, and `sed`" —
+that "such as" is not a closed list, and the real mechanism is not a list at
+all.
+
+Empirical test, Claude Code 2.1.224, project `deny: ["Read(**/.env)"]`:
+
+| Command | Result | What it establishes |
+|---|---|---|
+| `cat .env` | DENIED | control — a doc-named reader |
+| `strings`, `od -c`, `cut -d=`, `rg`, `jq`, `sort`, `uniq`, `perl -ne` on `.env` | DENIED | coverage far exceeds the four named |
+| `ls -la .env` | **DENIED** | `ls` never reads *contents* — coverage is not about reading |
+| `file .env` | **DENIED** | same |
+| `echo skipping .env` | **RAN** | path appears verbatim → not string matching |
+| `strings plain.txt`, `jq -r .a plain.json` | RAN | controls — no blanket binary block |
+| `python3 -c "print(open('.env').read())"` | prompted only | the real carve-out |
+
+Claude Code **parses the command, resolves which paths each argument actually
+operates on, and applies the deny to any Bash command touching that path** —
+regardless of binary. `ls` denied together with `echo` allowed is the clean
+discriminator: not a binary list, not string matching.
+
+**Consequence: no binary-identity check can determine deny coverage.** v2's
+split reported `jq`, `rg`, `sort`, `uniq` as gaps on the reference machine; all
+four were then verified DENIED. Every reported gap was a false positive.
+
+`DENY_EXTENSION_RECOGNIZED_READERS` was therefore **removed rather than
+widened** — a constant implying binary identity determines coverage is worse
+than no constant, because it invites exactly this inference. `cross_surface`
+now emits `allowed_bash_readers` as plain inventory with `status:
+"informational"` and `reportable: false`.
+
+The only genuinely uncovered class is **arbitrary subprocesses that `open()`
+files themselves** (Python/Node), which Claude Code prompts for rather than
+denying. Documented fix: `sandbox.credentials.files` with `mode: deny`.
+
+**If you are tempted to re-promote this to a finding:** first run the `ls`/
+`echo` pair above against the current version. The reader-binary model looked
+correct on paper for months.
 
 ### Why the fix list rejects more Bash denies
 
