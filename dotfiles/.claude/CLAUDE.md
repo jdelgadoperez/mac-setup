@@ -85,6 +85,10 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 - [Important] When invoking built-in agents (`Explore`, `Plan`, `general-purpose`, or `Agent` with no `subagent_type`), pass `model: "sonnet"` unless the task genuinely needs Opus-level reasoning (novel architecture, complex multi-file debugging, deep synthesis). Routine exploration, file search, and research should run on Sonnet.
 - Named subagents define their own model in frontmatter — do not override unless asked.
 
+## MCP in Subagents
+
+@rules/mcp-in-subagents.md
+
 ## Execution Mode Default
 
 - [Important] Whenever a workflow, skill, or plan-execution flow (e.g. deep-implement,
