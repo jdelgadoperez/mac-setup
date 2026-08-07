@@ -236,27 +236,66 @@ Use the `Bash` tool for each of the following:
 COMMIT_SHA=$(gh pr view <PR_NUMBER> --repo <OWNER>/<REPO> --json headRefOid --jq '.headRefOid')
 ```
 
-**Step 5b: Post the summary as a review**
+**Step 5b: Post the re-review atomically**
 
-Use `--request-changes` if there are blocking items (missed prior feedback, regressions, or blocking QA issues), otherwise `--approve`:
+The summary body, every inline comment, and the review event post in a **single
+API call**. Do not post the body first and add comments afterwards — that creates
+two separate reviews in the PR's history, lands the inline comments without their
+summary context, and attaches the event to only one of the two calls. This is the
+canonical rule in `~/.claude/reference/github-review-posting.md`; read it before
+changing anything in this step.
+
+Use `review-tool.py post`, which wraps the correct
+`POST /repos/{owner}/{repo}/pulls/{n}/reviews` endpoint and sends the sidecar's
+comments as the payload's `comments` array. The sidecar was written in Step 3.5a
+and line-corrected in Step 3.5b, so it is already the source of truth.
+
 ```bash
-# If blocking items exist:
-gh pr review <PR_NUMBER> --repo <OWNER>/<REPO> --request-changes --body "<summary_comment>"
+# 1. Dry run first — shows the exact payload GitHub will receive
+~/.claude/scripts/review-tool.py post \
+  --sidecar /tmp/claude-review-sidecar-<REPO>-<PR_NUMBER>.json \
+  --select all \
+  --repo <OWNER>/<REPO> \
+  --pr <PR_NUMBER> \
+  --dry-run
 
-# If no blocking items:
-gh pr review <PR_NUMBER> --repo <OWNER>/<REPO> --approve --body "<summary_comment>"
+# 2. After the confirmation gate below, post for real
+~/.claude/scripts/review-tool.py post \
+  --sidecar /tmp/claude-review-sidecar-<REPO>-<PR_NUMBER>.json \
+  --select all \
+  --repo <OWNER>/<REPO> \
+  --pr <PR_NUMBER> \
+  --yes
 ```
 
-**Step 5c: Post each inline comment individually**
-```bash
-gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments \
-  --method POST \
-  -f body="<comment_body>" \
-  -f commit_id="$COMMIT_SHA" \
-  -f path="<file_path>" \
-  -F line=<line_number> \
-  -f side="RIGHT"
-```
+`--select` takes finding IDs (`"1,B,C"`), `all`, or `approve` for a bare approval
+with no inline comments — the common case when the author addressed everything.
+
+**The event is derived, never asked:**
+
+| Selected findings include | Event |
+|---|---|
+| Any `blocking` finding (missed prior feedback, regressions, blocking QA) | `REQUEST_CHANGES` |
+| Only `non-blocking`, or bare approve | `APPROVE` |
+| Explicit user override | Respect user choice |
+
+Never post `COMMENT` — it is ambiguous. Every review either approves or requests
+changes.
+
+**Before posting (in order):**
+1. **Verify commit freshness** — re-fetch `headRefOid`; if it differs from the
+   sidecar's recorded `commit_id`, warn and require explicit opt-in. This matters
+   more on a re-review than a first pass: the author has been pushing, so the head
+   moves between your review and your post, and stale comments land on wrong lines.
+2. **Confirm `resolve-lines` ran** (Step 3.5b). Any comment whose file is not in
+   the diff (`???` marker) must be dropped, not posted blind.
+3. **Show the dry-run payload** so the user sees what GitHub will receive.
+4. **Confirmation gate** — `AskUserQuestion` with the event, inline count, and
+   body size. Posting is an externally-visible mutation: one explicit opt-in per
+   session. Approval of the review content is not approval to post.
+
+**Comment body format:** `line` is the line number in the NEW file; `side` is
+`RIGHT` for additions/changes, `LEFT` for deletions.
 
 ### Step 6: Confirm Success
 
