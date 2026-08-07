@@ -297,6 +297,31 @@ Two consequences, both mandatory:
   the link and links the source onto itself, corrupting the *source repo*
   rather than the install. This is a precondition for silent, repo-side data
   loss, not a cosmetic inconsistency.
+- **Deployment drift — config that exists but takes no effect.** The collector
+  emits `deployment_drift` with two independent lists. They are separate findings
+  with different fixes; reporting only one leaves the config still inert.
+  - `undeployed` — files in the dotfiles source tree that the installer has not
+    linked into `~/.claude`. Version-controlled, reviewed, reaching nobody.
+    Severity **serious**: the user believes this config is active. Fix: re-run
+    the install script (`--update --dry-run` first to see the change set), never
+    `cp` — a copy drifts from source and defeats the whole symlink arrangement.
+  - `unimported_rules` — files under `rules/` that ARE linked but that CLAUDE.md
+    never `@import`s. Files there load only via `@import`, so linking alone
+    leaves them present-on-disk and read-by-nobody. Severity **serious** for the
+    same reason. Fix: add the `@rules/<name>.md` line.
+
+  Both failure modes are silent and were observed together on this machine:
+  `mcp-in-subagents.md` was committed, then sat undeployed for two months
+  alongside 8 other files, and would still not have loaded after deployment
+  because no import existed. **Deploying without importing looks like a fix and
+  is not** — check both lists before declaring drift resolved.
+
+  `checked: false` means the comparison **did not run** (no symlinks into a
+  source tree — expected when config is installed by copying). That is not a
+  clean bill of health: report it as "not checked", never as "no drift". The
+  source tree is discovered by voting on existing symlink targets, not
+  hardcoded, so `source_root_confidence` shows the winner and the runners-up —
+  sanity-check it names the dotfiles repo before trusting the lists.
 - Deprecated or unknown settings keys; references to deprecated model names
   (e.g. `claude-2`, `claude-3-haiku`, `claude-instant`, `gpt-3.5`).
 

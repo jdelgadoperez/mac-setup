@@ -677,6 +677,156 @@ def analyze_reachability(rule_sets):
     }
 
 
+DRIFT_MANAGED_DIRS = ("rules", "commands", "agents", "skills", "scripts", "hooks")
+
+# Extensions worth reporting as undeployed. A source tree carries README/notes
+# that were never meant to deploy; flagging those is noise that trains the
+# reader to ignore the whole block.
+DRIFT_INTERESTING_SUFFIXES = (".md", ".sh", ".py", ".js", ".json")
+
+
+def _discover_source_root(user_root):
+    """Infer the dotfiles source tree from symlinks already installed under ~/.claude.
+
+    Deliberately NOT hardcoded to any repo path: this must degrade to "no source
+    tree found" on a machine that installs config by copying, rather than
+    silently reporting a clean bill of health for a check that never ran.
+
+    Picks the directory that the most existing symlinks point into, which is the
+    source tree the installer manages. Links into other repos (a project's own
+    commands, a skills marketplace) are real but rarer, so they lose the vote.
+    """
+    votes = {}
+    for sub in DRIFT_MANAGED_DIRS:
+        d = user_root / sub
+        if not d.is_dir():
+            continue
+        for entry in d.rglob("*"):
+            if not entry.is_symlink():
+                continue
+            try:
+                target = Path(os.readlink(entry))
+            except OSError:
+                continue
+            if not target.is_absolute():
+                continue
+            # Walk up from the link target by the same number of components the
+            # link sits below ~/.claude, landing on the source tree's ".claude".
+            rel_depth = len(entry.relative_to(user_root).parts)
+            anchor = target
+            for _ in range(rel_depth):
+                anchor = anchor.parent
+            if anchor.is_dir():
+                votes[str(anchor)] = votes.get(str(anchor), 0) + 1
+    if not votes:
+        return None, {}
+    best = max(votes.items(), key=lambda kv: kv[1])
+    return Path(best[0]), votes
+
+
+def analyze_deployment_drift(user_root, memory_path):
+    """Detect config that exists in the source repo but does not take effect.
+
+    Two independent failure modes, both silent, both observed on this machine:
+
+    1. UNDEPLOYED -- a file committed to the source tree that the installer has
+       not linked into ~/.claude. It is version-controlled, reviewed, and reaches
+       nobody. Found here after `mcp-in-subagents.md` sat undeployed for two
+       months alongside 8 other files.
+    2. UNIMPORTED -- a rules/ file that IS linked but that CLAUDE.md never
+       `@import`s. Files under rules/ only load via @import, so linking alone
+       leaves them present-but-unread. Deploying without importing fixes half
+       the problem and looks like a fix.
+
+    Reported separately because the remedies differ: (1) re-run the installer,
+    (2) add an @import line. Doing only one leaves the config still inert.
+    """
+    out = {
+        "source_root": None,
+        "source_root_confidence": None,
+        "checked": False,
+        "undeployed": [],
+        "unimported_rules": [],
+        "note": None,
+    }
+
+    source_root, votes = _discover_source_root(user_root)
+    if source_root is None:
+        out["note"] = (
+            "No symlinks into a source tree found under ~/.claude, so no "
+            "source-vs-deployed comparison was possible. This is expected when "
+            "config is installed by copying rather than linking. It is NOT "
+            "evidence that nothing has drifted -- the check did not run."
+        )
+        return out
+
+    out["source_root"] = str(source_root)
+    out["source_root_confidence"] = {
+        "links_pointing_here": votes.get(str(source_root), 0),
+        "other_candidates": {k: v for k, v in votes.items() if k != str(source_root)},
+    }
+    out["checked"] = True
+
+    # --- 1. Undeployed: present in source, absent (or pointing elsewhere) in ~/.claude
+    for sub in DRIFT_MANAGED_DIRS:
+        src_dir = source_root / sub
+        if not src_dir.is_dir():
+            continue
+        for src_file in sorted(src_dir.rglob("*")):
+            if not src_file.is_file():
+                continue
+            if src_file.suffix not in DRIFT_INTERESTING_SUFFIXES:
+                continue
+            rel = src_file.relative_to(source_root)
+            deployed = user_root / rel
+            if not deployed.exists():
+                out["undeployed"].append(
+                    {
+                        "relative_path": str(rel),
+                        "source": str(src_file),
+                        "expected_at": str(deployed),
+                        "reason": "missing",
+                    }
+                )
+                continue
+            # Present, but is it actually this source file? A link into a
+            # different repo means another tool owns the path -- not drift.
+            try:
+                if deployed.resolve() != src_file.resolve():
+                    out["undeployed"].append(
+                        {
+                            "relative_path": str(rel),
+                            "source": str(src_file),
+                            "expected_at": str(deployed),
+                            "reason": "resolves_elsewhere",
+                            "resolves_to": str(deployed.resolve()),
+                        }
+                    )
+            except OSError:
+                pass
+
+    # --- 2. Unimported rules: linked but never @import-ed by CLAUDE.md
+    memory_text = read_text(memory_path) or ""
+    imported = set(re.findall(r"@([A-Za-z0-9_./-]+\.md)", memory_text))
+    rules_dir = user_root / "rules"
+    if rules_dir.is_dir():
+        for rule_file in sorted(rules_dir.glob("*.md")):
+            rel = f"rules/{rule_file.name}"
+            if rel not in imported:
+                out["unimported_rules"].append(
+                    {
+                        "path": str(rule_file),
+                        "expected_import": f"@{rel}",
+                        "detail": (
+                            "Deployed but not imported by CLAUDE.md. Files under "
+                            "rules/ load only via @import, so this one is present "
+                            "on disk and read by nobody."
+                        ),
+                    }
+                )
+    return out
+
+
 def scan_user_scope(home):
     root = home / ".claude"
     skills = inventory_skills(root / "skills")
@@ -889,6 +1039,21 @@ def main():
                 rule_sets.append((f"{label}/{key}", perms))
     result["permission_reachability"] = analyze_reachability(rule_sets)
     result["session_permission_mode"] = session_mode_probe(result["scopes"])
+
+    if not args.project_only:
+        drift = analyze_deployment_drift(user_root, user_root / "CLAUDE.md")
+        result["deployment_drift"] = drift
+        n_undeployed = len(drift["undeployed"])
+        n_unimported = len(drift["unimported_rules"])
+        if not drift["checked"]:
+            print(f"DRIFT: not checked — {drift['note']}", file=sys.stderr)
+        elif n_undeployed or n_unimported:
+            print(
+                f"DRIFT: {n_undeployed} file(s) in the source tree are not deployed; "
+                f"{n_unimported} deployed rule(s) are never @import-ed. "
+                "Both are silent — the config exists and takes no effect.",
+                file=sys.stderr,
+            )
 
     # Printed to stderr for the same reason the resolved roots are: an auditor
     # who never opens the JSON must still see that behavioural permission tests
