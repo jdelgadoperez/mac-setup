@@ -21,6 +21,14 @@
     --status-serious:  #ec835a;
     --status-critical: #d03b3b;
     --good-text:       #006300;
+    /* Grade-tile colours. The --status-* ramp is tuned for small badges; at
+       40px on a light surface --status-warning (1.83:1) and --status-serious
+       (2.64:1) fall below the 3.0:1 WCAG large-text floor. These are darkened
+       to clear 3.0:1 on BOTH surfaces without shifting hue family. */
+    --grade-good:     #0ca30c;
+    --grade-warning:  #946100;
+    --grade-serious:  #c04a1e;
+    --grade-critical: #d03b3b;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
@@ -87,6 +95,19 @@
   .tile .value { font-size: 30px; font-weight: 650; line-height: 1.15; }
   .tile .label { color: var(--text-secondary); font-size: 12.5px; margin-top: 2px; }
   .tile.grade .value { font-size: 40px; }
+  /* Grade colour follows the status ramp's semantics (A/B good, C warning,
+     D serious, F critical) via --grade-* tokens, which are contrast-corrected
+     for 40px text — see the token block above. Colour is a second channel
+     only: the letter itself always carries the meaning, so the tile stays
+     readable in monochrome and for colour-vision deficiency. */
+  .tile.grade.grade-a .value { color: var(--grade-good); }
+  .tile.grade.grade-b .value { color: var(--grade-good); }
+  .tile.grade.grade-c .value { color: var(--grade-warning); }
+  .tile.grade.grade-d .value { color: var(--grade-serious); }
+  .tile.grade.grade-f .value { color: var(--grade-critical); }
+  /* F is the parse-error / no-working-config case — give it a little more
+     weight than colour alone so it reads as a hard stop. */
+  .tile.grade.grade-f .value { font-weight: 700; }
   .tile .sub { color: var(--text-muted); font-size: 12px; }
 
   .dimension-scores { margin-top: 18px; display: grid; gap: 10px; }
@@ -199,7 +220,9 @@
   <div class="section-note">Overall health and inventory at a glance.</div>
   <!-- @SECTION:SCORECARD — grade tile + one tile per inventory count + findings-by-severity tiles -->
   <div class="scorecard">
-    <div class="tile grade"><div class="value">B+</div><div class="label">Overall grade</div></div>
+    <!-- Add the grade class matching the letter: grade-a | grade-b | grade-c |
+         grade-d | grade-f (ignore any +/- suffix, so B+ and B- both use grade-b). -->
+    <div class="tile grade grade-b"><div class="value">B+</div><div class="label">Overall grade</div></div>
     <div class="tile"><div class="value">12</div><div class="label">Commands</div></div>
     <div class="tile"><div class="value">5</div><div class="label">Skills</div></div>
     <div class="tile"><div class="value">3</div><div class="label">Agents</div></div>

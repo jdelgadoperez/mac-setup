@@ -277,6 +277,14 @@ Fill in:
   by severity. If any config file failed to parse (see `parse_error` above),
   the grade is **F** regardless of the dimension scores, and the scorecard says
   why — a scope whose settings don't load has no working configuration to grade.
+
+  **Colour the grade tile.** Add the class matching the letter to the grade
+  tile — `grade-a`, `grade-b`, `grade-c`, `grade-d`, or `grade-f` — ignoring
+  any `+`/`-` suffix, so `B+` and `B-` both take `grade-b`. The template maps
+  these onto the existing status palette (A/B good, C warning, D serious,
+  F critical); don't introduce new colours. The letter always carries the
+  meaning on its own, so the tile still reads correctly in monochrome — colour
+  is a second channel, never the only one.
 - **Findings** — one card per finding, grouped by dimension, ordered most
   severe first, each with its concrete fix.
 - **Inventory** — tables of commands/skills/agents/MCP servers with scope and
