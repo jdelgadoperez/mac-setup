@@ -103,10 +103,31 @@ When writing or modifying any multi-agent orchestrated command in `~/.claude/com
 
 - Do not re-read files already read in the current session — reference the earlier read instead
 - Use `offset`/`limit` when reading large files rather than loading the whole thing
+- Work in small increments. For anything long, write the content directly to a file and give me a short
+  summary instead of printing the full output.
+
+## Communication
+
+- Ask clarifying questions with the AskUserQuestion tool when requirements are ambiguous
+- When reporting on file/project analysis, flag up front any files that were unsupported or skipped rather
+  than only reporting the counted subset
+
+## Commits
+
+- Follow Conventional Commit guidelines: https://www.conventionalcommits.org/en/v1.0.0/
+
+## Code Reviews (acting on findings)
+
+- For each code-review finding, fix it, then confirm the fix passes a test that exercises the real behavior,
+  not a shortcut. Save each task brief to a file before clearing any scratch state.
 
 ## Python
 
 @rules/python.md
+
+## Planning Workflow
+
+@rules/planning.md
 
 ## File Conventions
 
