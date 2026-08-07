@@ -1,6 +1,6 @@
 ---
-name: security-auditor
-description: Continuous security vulnerability scanning for OWASP Top 10, common vulnerabilities, and insecure patterns. Use when reviewing code, before deployments, or on file changes. Scans for SQL injection, XSS, secrets exposure, auth issues. Triggers on file changes, security mentions, deployment prep.
+name: security-scan
+description: Read-only security vulnerability scan (skill form; for dispatched audit work use the security-auditor agent). Continuous security vulnerability scanning for OWASP Top 10, common vulnerabilities, and insecure patterns. Use when reviewing code, before deployments, or on file changes. Scans for SQL injection, XSS, secrets exposure, auth issues. Triggers on file changes, security mentions, deployment prep.
 allowed-tools: Read, Grep, Bash
 ---
 

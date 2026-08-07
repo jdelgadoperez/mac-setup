@@ -1,6 +1,6 @@
 ---
-name: code-reviewer
-description: Automatic code quality and best practices analysis. Use proactively when files are modified, saved, or committed. Analyzes code style, patterns, potential bugs, and security basics. Triggers on file changes, git diff, code edits, quality mentions.
+name: code-review-scan
+description: Read-only code quality scan (skill form; for dispatched review work use the code-reviewer agent). Automatic code quality and best practices analysis. Use proactively when files are modified, saved, or committed. Analyzes code style, patterns, potential bugs, and security basics. Triggers on file changes, git diff, code edits, quality mentions.
 allowed-tools: Read, Grep, Glob
 ---
 
