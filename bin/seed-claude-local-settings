@@ -1,0 +1,104 @@
+#!/bin/sh
+# seed-claude-local-settings [--dry-run] [dir...]
+#
+# Backfills a per-repo .claude/settings.local.json that narrows Claude Code's
+# sandbox.autoAllowBashIfSandboxed setting from user scope down to repo scope.
+# Claude Code resolves .claude/settings.local.json from the git repository
+# root (v2.1.211+), so one file at a repo root covers all of that repo's
+# worktrees.
+#
+# Non-fatal by design: a target that isn't a git repo, or that already has a
+# settings.local.json, is skipped with a message rather than treated as an
+# error. This is meant to be safe to call from gccd on every clone.
+#
+# Usage:
+#   seed-claude-local-settings [--dry-run] [dir...]
+#
+# With no dirs given, operates on the current directory.
+
+set -eu
+
+DRY_RUN=false
+dirs=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=true
+      ;;
+    *)
+      dirs="$dirs $arg"
+      ;;
+  esac
+done
+
+if [ -z "$dirs" ]; then
+  dirs="."
+fi
+
+SETTINGS_JSON='{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
+}
+'
+
+seed_one_dir() {
+  target_dir="$1"
+
+  if [ ! -d "$target_dir" ]; then
+    printf "${RED:-}Directory not found: %s${NC:-}\n" "$target_dir" >&2
+    return 0
+  fi
+
+  repo_root=$(cd "$target_dir" 2>/dev/null && git rev-parse --show-toplevel 2>/dev/null) || repo_root=""
+
+  if [ -z "$repo_root" ]; then
+    printf "${YELLOW:-}Not a git repository, skipping: %s${NC:-}\n" "$target_dir"
+    return 0
+  fi
+
+  settings_file="$repo_root/.claude/settings.local.json"
+
+  if [ -e "$settings_file" ]; then
+    printf "${YELLOW:-}Left alone (already exists): %s${NC:-}\n" "$settings_file"
+    return 0
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    printf "${YELLOW:-}[DRY RUN]${NC:-} Would write: %s\n" "$settings_file"
+  else
+    mkdir -p "$repo_root/.claude"
+    printf '%s' "$SETTINGS_JSON" > "$settings_file"
+    printf "${GREEN:-}Wrote %s${NC:-}\n" "$settings_file"
+  fi
+
+  exclude_pattern=".claude/settings.local.json"
+  already_ignored=false
+  if (cd "$repo_root" && git check-ignore -q "$exclude_pattern" 2>/dev/null); then
+    already_ignored=true
+  fi
+
+  if [ "$already_ignored" = true ]; then
+    printf "${GREEN:-}Already gitignored: %s${NC:-}\n" "$exclude_pattern"
+    return 0
+  fi
+
+  exclude_file="$repo_root/.git/info/exclude"
+
+  if [ "$DRY_RUN" = true ]; then
+    printf "${YELLOW:-}[DRY RUN]${NC:-} Would add to %s: %s\n" "$exclude_file" "$exclude_pattern"
+  else
+    mkdir -p "$(dirname "$exclude_file")"
+    {
+      printf '\n# Added by seed-claude-local-settings (per-repo Claude Code sandbox scoping)\n'
+      printf '%s\n' "$exclude_pattern"
+    } >> "$exclude_file"
+    printf "${GREEN:-}Added to %s: %s${NC:-}\n" "$exclude_file" "$exclude_pattern"
+  fi
+}
+
+for dir in $dirs; do
+  seed_one_dir "$dir"
+done
