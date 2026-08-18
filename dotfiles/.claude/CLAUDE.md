@@ -136,6 +136,10 @@ When writing or modifying any multi-agent orchestrated command in `~/.claude/com
 ## File Conventions
 
 - Summaries and weekly logs go in `_summaries/` (leading underscore), not `summaries/`.
+- [Important] Requested research reports and docs are canonical in `~/projects/_reports/`, named
+  `<topic>-YYYY-MM-DD.html` (or `.md`). Write them there directly — do not draft in the scratchpad
+  and copy. When publishing one as an Artifact, publish from the `_reports/` path so the file that
+  gets edited is the file that republishes.
 
 ## Architecture Decisions
 
