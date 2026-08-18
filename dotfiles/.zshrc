@@ -130,5 +130,8 @@ if [[ "$ZPROF" = true ]]; then
   zprof
 fi
 
+# Claude Code: cap bash tool output (default 30000)
+export BASH_MAX_OUTPUT_LENGTH=15000
+
 # Enable zoxide, override `cd` — must be the LAST init line in this file
 eval "$(zoxide init zsh --cmd cd)"
