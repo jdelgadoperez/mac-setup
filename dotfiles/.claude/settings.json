@@ -234,7 +234,7 @@
       "Bash(docker *)",
       "WebFetch(*)"
     ],
-    "defaultMode": "default",
+    "defaultMode": "auto",
     "disableBypassPermissionsMode": "disable",
     "allowManagedHooksOnly": false,
     "allowManagedPermissionRulesOnly": false
@@ -264,6 +264,14 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/load-skill-anti-sycophancy.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/jessdelgadoperez/.claude/tablo/locate.sh"
           }
         ]
       }
@@ -334,6 +342,14 @@
             "command": "bash ~/.claude/hooks/opus-delegation-reminder.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/jessdelgadoperez/.claude/tablo/locate.sh"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -390,6 +406,16 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/pre-push-checks/scripts/block-remote-branch-delete.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/jessdelgadoperez/.claude/tablo/hook.sh",
+            "timeout": 600
           }
         ]
       }
@@ -472,8 +498,8 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
+  "advisorModel": "fable",
   "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
-  "advisorModel": "fable"
+  "agentPushNotifEnabled": true
 }
