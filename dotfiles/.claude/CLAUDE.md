@@ -55,6 +55,10 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 @rules/fnm-bash-hang.md
 
+## Sandbox Bypass
+
+Before setting `dangerouslyDisableSandbox: true`, read `~/.claude/reference/dangerously-disable-sandbox.md` — it is the canonical reactive-only rule (use it in response to a confirmed sandbox error, never speculatively) plus the one narrow macOS Go-TLS exception and its three-step diagnostic. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
+
 ## Documentation Lookups
 
 When looking up library, framework, SDK, or API documentation, the `find-docs` skill and `/context7` command already cover the common path — for the detailed fallback (resolving library IDs, version-specific docs, quota handling), read `~/.claude/reference/context7.md` on demand. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
