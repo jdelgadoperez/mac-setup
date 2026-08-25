@@ -57,7 +57,7 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 ## Documentation Lookups
 
-@rules/context7.md
+When looking up library, framework, SDK, or API documentation, the `find-docs` skill and `/context7` command already cover the common path — for the detailed fallback (resolving library IDs, version-specific docs, quota handling), read `~/.claude/reference/context7.md` on demand. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## Debugging
 
@@ -87,7 +87,7 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 ## MCP in Subagents
 
-@rules/mcp-in-subagents.md
+When authoring or debugging a subagent that needs MCP tools, read `~/.claude/reference/mcp-in-subagents.md` first — it covers scope rules, the auth handoff pattern, and anti-patterns. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## Execution Mode Default
 
@@ -131,7 +131,7 @@ When writing or modifying any multi-agent orchestrated command in `~/.claude/com
 
 ## Planning Workflow
 
-@rules/planning.md
+When writing an implementation plan, read `~/.claude/reference/planning.md` first — it covers plan storage conventions, naming, and required plan content. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## File Conventions
 
@@ -163,7 +163,7 @@ Before ANY externally-visible mutation (`gh pr review`, `gh api POST/PATCH`, Sla
 
 ## LLM Wiki Pattern
 
-@rules/llm-wiki.md
+When working in the LLM-maintained wiki vault at `~/<vault>/LLM/`, read `~/.claude/reference/llm-wiki.md` first — it covers the three-layer architecture, ingest/query/lint workflows, and special files. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 @RTK.md
 
