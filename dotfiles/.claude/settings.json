@@ -426,17 +426,10 @@
     "command": "bash ~/.claude/hooks/statusline-command.sh"
   },
   "enabledPlugins": {
-    "claude-md-management@claude-plugins-official": false,
-    "code-review@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
-    "context7@claude-plugins-official": false,
-    "frontend-design@claude-plugins-official": false,
-    "playwright@claude-plugins-official": false,
     "superpowers@claude-plugins-official": true,
-    "deep-plan@piercelamb-plugins": false,
-    "deep-implement@piercelamb-plugins": false,
-    "deep-project@piercelamb-plugins": false,
-    "obsidian@obsidian-skills": false
+    "mattpocock-skills@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "piercelamb-plugins": {
