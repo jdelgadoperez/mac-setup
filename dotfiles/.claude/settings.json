@@ -258,14 +258,6 @@
             "command": "node ~/.claude/hooks/session-start.js"
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/load-skill-anti-sycophancy.sh"
-          }
-        ]
       }
     ],
     "SessionEnd": [],
