@@ -521,6 +521,215 @@ function _git_cleanup_worktrees() {
   printf "\n"
 }
 
+# Scan a single repo for cleanup candidates without touching the network.
+# Prints "<gone_branch_count>|<stale_worktree_count>" for the repo at $1.
+function _gitclean_scan_repo() {
+  local repo_path="$1"
+  local gone_count=0
+  local stale_count=0
+
+  # Branches whose upstream was deleted on the remote. This reads refs as they
+  # stand on disk — without a fetch the marker reflects the last prune, which is
+  # why the scan reports an estimate and gitclean re-checks per repo.
+  local track
+  while IFS= read -r track; do
+    if [[ "$track" == "[gone]" ]]; then
+      ((gone_count++))
+    fi
+  done < <(git -C "$repo_path" for-each-ref --format='%(upstream:track)' refs/heads/ 2>/dev/null)
+
+  # Worktree admin refs pointing at directories that no longer exist.
+  if [[ -n "$(git -C "$repo_path" worktree prune --dry-run 2>/dev/null)" ]]; then
+    ((stale_count++))
+  fi
+
+  # Registered worktrees whose directory is missing or whose branch is gone.
+  # Mirrors the labelling in _git_cleanup_worktrees so the counts agree.
+  local main_worktree
+  main_worktree=$(git -C "$repo_path" worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktree //')
+
+  local current_path="" current_branch="" line
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^worktree\ (.+)$ ]]; then
+      current_path="${match[1]}"
+    elif [[ "$line" =~ ^branch\ refs/heads/(.+)$ ]]; then
+      current_branch="${match[1]}"
+    elif [[ "$line" == "detached" ]]; then
+      current_branch="(detached HEAD)"
+    elif [[ -z "$line" && -n "$current_path" ]]; then
+      if [[ "$current_path" != "$main_worktree" ]]; then
+        if [[ ! -d "$current_path" ]]; then
+          ((stale_count++))
+        elif ! git -C "$repo_path" show-ref --verify --quiet "refs/heads/${current_branch}" 2>/dev/null; then
+          ((stale_count++))
+        fi
+      fi
+      current_path=""
+      current_branch=""
+    fi
+  done < <(git -C "$repo_path" worktree list --porcelain 2>/dev/null; echo "")
+
+  printf '%s|%s\n' "$gone_count" "$stale_count"
+}
+
+function gitcleanall() {
+  local depth=2
+  local scan_dirs=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -d|--depth)
+        depth="$2"
+        shift 2
+        ;;
+      --depth=*)
+        depth="${1#--depth=}"
+        shift
+        ;;
+      --help|-h)
+        printf "${BOLD_CYAN}gitcleanall${NC} — Run ${CYAN}gitclean -i${NC} across every repo that needs it\n\n"
+        printf "${BOLD_WHITE}Usage:${NC}\n"
+        printf "  gitcleanall                  Scan current directory, then clean matches\n"
+        printf "  gitcleanall ${YELLOW}<dir>...${NC}        Scan the given directories instead\n"
+        printf "  gitcleanall ${YELLOW}-d 3${NC}            Scan this many directories deep (default 2)\n\n"
+        printf "${BOLD_WHITE}Detection${NC} ${WHITE}(no network — reads refs as they stand on disk):${NC}\n"
+        printf "  • Branches whose upstream is ${RED}[gone]${NC}\n"
+        printf "  • Worktrees with a missing directory or a deleted branch\n\n"
+        printf "${BOLD_WHITE}Note:${NC} counts are an estimate. ${CYAN}gitclean${NC} fetches and re-checks in each\n"
+        printf "repo, and protects main/master/develop/release plus the checked-out branch.\n"
+        return 0
+        ;;
+      -*)
+        printf "${RED}Unknown option: ${1}${NC}\n"
+        printf "Run ${YELLOW}gitcleanall --help${NC} for usage.\n"
+        return 1
+        ;;
+      *)
+        scan_dirs+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  if [[ ${#scan_dirs[@]} -eq 0 ]]; then
+    scan_dirs=(".")
+  fi
+
+  if ! [[ "$depth" =~ ^[0-9]+$ ]]; then
+    printf "${RED}Depth must be a non-negative integer, got: ${depth}${NC}\n"
+    return 1
+  fi
+
+  # Resolve to absolute paths up front so the later cd loop can never be thrown
+  # off by a relative path.
+  local resolved_dirs=()
+  local dir
+  for dir in "${scan_dirs[@]}"; do
+    if [[ ! -d "$dir" ]]; then
+      printf "${YELLOW}Skipping missing directory: ${dir}${NC}\n"
+      continue
+    fi
+    resolved_dirs+=("${dir:A}")
+  done
+
+  if [[ ${#resolved_dirs[@]} -eq 0 ]]; then
+    printf "${RED}No valid directories to scan.${NC}\n"
+    return 1
+  fi
+
+  printf "${BLUE}Scanning for repos with defunct branches or worktrees...${NC}\n"
+
+  # Find every .git (dir for a normal repo, file for a worktree checkout).
+  # -depth+1 because the .git entry sits one level below the repo itself.
+  local git_markers=()
+  if [[ "$depth" -eq 0 ]]; then
+    git_markers=("${(@f)$(find "${resolved_dirs[@]}" -name .git -print 2>/dev/null)}")
+  else
+    git_markers=("${(@f)$(find "${resolved_dirs[@]}" -maxdepth $((depth + 1)) -name .git -print 2>/dev/null)}")
+  fi
+
+  local repos_to_clean=()
+  local repo_summaries=()
+  local scanned=0
+  local marker repo gone stale counts
+
+  for marker in "${git_markers[@]}"; do
+    [[ -z "$marker" ]] && continue
+    repo="${marker:h}"
+
+    git -C "$repo" rev-parse --is-inside-work-tree &>/dev/null || continue
+    ((scanned++))
+
+    counts=$(_gitclean_scan_repo "$repo")
+    gone="${counts%%|*}"
+    stale="${counts##*|}"
+
+    if [[ "$gone" -gt 0 || "$stale" -gt 0 ]]; then
+      repos_to_clean+=("$repo")
+      repo_summaries+=("${gone}|${stale}")
+    fi
+  done
+
+  printf "${WHITE}Scanned ${BOLD_WHITE}${scanned}${NC}${WHITE} repo(s).${NC}\n"
+
+  if [[ ${#repos_to_clean[@]} -eq 0 ]]; then
+    printf "${GREEN}Nothing to clean.${NC}\n"
+    return 0
+  fi
+
+  printf "\n${BOLD_WHITE}Repos needing cleanup:${NC}\n"
+  local idx
+  for idx in {1..${#repos_to_clean[@]}}; do
+    gone="${repo_summaries[$idx]%%|*}"
+    stale="${repo_summaries[$idx]##*|}"
+
+    printf "  ${CYAN}%-50s${NC}" "${repos_to_clean[$idx]/#$HOME/~}"
+    if [[ "$gone" -gt 0 ]]; then
+      printf " ${RED}%s gone${NC}" "$gone"
+    fi
+    if [[ "$stale" -gt 0 ]]; then
+      printf " ${YELLOW}%s worktree${NC}" "$stale"
+    fi
+    printf "\n"
+  done
+
+  printf "\n${WHITE}Total: ${BOLD_WHITE}${#repos_to_clean[@]}${NC}${WHITE} repo(s). Running ${CYAN}gitclean -i${WHITE} in each.${NC}\n"
+  printf "${WHITE}Press ${YELLOW}Esc${WHITE} at a prompt to skip that repo.${NC}\n"
+
+  # Preserve the caller's directory and any chpwd hook across the loop, and
+  # restore both even if the user interrupts partway through.
+  local starting_path="$PWD"
+  local original_chpwd=$(declare -f chpwd)
+  unset -f chpwd 2>/dev/null
+
+  function _gitcleanall_restore() {
+    gotopathsafely "$starting_path"
+    if [[ -n "$original_chpwd" ]]; then
+      eval "$original_chpwd"
+    fi
+    unfunction _gitcleanall_restore 2>/dev/null
+  }
+  trap '_gitcleanall_restore; trap - INT; return 130' INT
+
+  for idx in {1..${#repos_to_clean[@]}}; do
+    repo="${repos_to_clean[$idx]}"
+    printf "\n${BOLD_BLUE}━━ [${idx}/${#repos_to_clean[@]}] ${repo/#$HOME/~} ━━${NC}\n"
+
+    if ! gotopathsafely "$repo"; then
+      printf "${RED}Could not enter ${repo}. Skipping.${NC}\n"
+      continue
+    fi
+
+    # Keep going even if one repo errors out — a bad repo shouldn't end the run.
+    gitclean -i || printf "${YELLOW}gitclean exited non-zero in ${repo/#$HOME/~}. Continuing.${NC}\n"
+  done
+
+  trap - INT
+  _gitcleanall_restore
+
+  printf "\n${BOLD_GREEN}All done.${NC} Processed ${BOLD_WHITE}${#repos_to_clean[@]}${NC} repo(s).\n"
+}
+
 function getorgcommitcount() {
   AUTHOR="$1"
   ORG="$2"

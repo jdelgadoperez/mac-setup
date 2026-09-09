@@ -78,9 +78,42 @@ Setting this flag unnecessarily:
 2. Slows the user down significantly (approval required every time)
 3. Introduces unnecessary security surface
 
+## SSH commit-signing failure — a SEPARATE confirmed sandbox restriction
+
+Distinct mechanism from the macOS platform-verifier TLS block above — keep them separate.
+
+**Signature.** A signed `git commit` fails with:
+
+```
+error: Couldn't get agent socket?
+fatal: failed to write commit object
+```
+
+and `ssh-add -l` inside the sandbox returns `Error connecting to agent: Operation not
+permitted`.
+
+**Root cause.** With SSH-format commit signing (`gpg.format=ssh`, `commit.gpgsign=true`)
+backed by the macOS keychain ssh-agent, the agent's only socket is the launchd bootstrap
+endpoint (`/var/run/com.apple.launchd.*/Listeners`). The Claude Code Bash sandbox refuses
+the `connect()` to it. This holds even though that path is in
+`sandbox.network.allowUnixSockets`, and a symlink to a non-launchd path is resolved back to
+the launchd target and still denied. The key/agent/config are fine — verify by running the
+same `ssh-add -l` with the sandbox disabled; it succeeds and lists the signing key. **There
+is no `settings.json` fix** for this while the OS keychain agent is the signer.
+
+**What to do.** On `Couldn't get agent socket?` during a commit: recognize it as this known
+sandbox limitation (do not re-diagnose as a hook/content/key problem), **ask before
+proceeding**, and on approval re-run **only the `git commit`** with
+`dangerouslyDisableSandbox: true` — every other command stays sandboxed. Alternatively the
+user commits in their own unsandboxed terminal, which always works.
+
 ## Rule
 
 > Only use `dangerouslyDisableSandbox: true` reactively, in response to a confirmed
 > sandbox error message. The one exception is the macOS Go-TLS class above, where the
 > failure is already root-caused and deterministic — and only after the three-step
 > diagnostic confirms the CLI is a Go binary and neither env knob helps.
+>
+> The SSH commit-signing failure (`Couldn't get agent socket?`) is a separate confirmed
+> sandbox restriction covered in its own section above: recognize it on sight, ask the user
+> first, then bypass the sandbox for **only** the `git commit`.
