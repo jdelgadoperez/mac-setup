@@ -14,7 +14,6 @@ nothing actually enforces.
 | `cd-git-allow.sh` | PreToolUse / Bash | Blocks the git `-C` flag, auto-approves bare `cd` |
 | `inject-sonnet-default.sh` | PreToolUse / Task | Defaults subagents to Sonnet when no model is set |
 | `dod-commit-nudge.sh` | PreToolUse / Bash | Non-blocking Definition-of-Done reminder on commits |
-| `load-skill-anti-sycophancy.sh` | SessionStart | Loads the anti-sycophancy skill from turn 1 |
 | `opus-delegation-reminder.sh` | UserPromptSubmit | Reminds Opus to delegate implementation to Sonnet |
 | `pre-push-checks/scripts/block-remote-branch-delete.sh` | PreToolUse / Bash | Blocks remote branch deletion |
 

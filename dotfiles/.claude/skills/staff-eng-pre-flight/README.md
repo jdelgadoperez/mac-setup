@@ -12,7 +12,6 @@ A layered forcing function so substantive code passes a staff-engineer lens **ea
 | `hooks/dod-commit-nudge.sh` | Soft Definition-of-Done reminder; self-gates on `git commit` |
 | `hooks/pre-push-checks/scripts/staff-eng-preflight-gate.sh` | Hard-block PR-open/review-request, soft-nudge push, until a sentinel exists |
 | `hooks/pre-push-checks/scripts/staff-eng-preflight-gate.test.sh` | 16-case test matrix (run with no sentinel) |
-| `hooks/load-skill-anti-sycophancy.sh` | `SessionStart`: auto-loads the anti-sycophancy skill as context (no-op if that skill isn't installed) |
 
 These deploy to `~/.claude/...` via your usual dotfiles symlink/copy step.
 
@@ -22,9 +21,6 @@ Add these hook entries to `~/.claude/settings.json` (`chmod +x` the scripts firs
 
 ```jsonc
 "hooks": {
-  "SessionStart": [
-    { "hooks": [ { "type": "command", "command": "bash ~/.claude/hooks/load-skill-anti-sycophancy.sh" } ] }
-  ],
   "PreToolUse": [
     { "matcher": "Bash", "hooks": [
       { "type": "command", "command": "bash ~/.claude/hooks/dod-commit-nudge.sh", "if": "Bash(git commit:*)", "timeout": 5 } ] },

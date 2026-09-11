@@ -44,7 +44,6 @@ HOOK_TABLE=(
   "cd-git-allow.sh|cd-git-allow|{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git -C /tmp status\"}}|emits block JSON (decision=block, git -C disallowed)"
   "dod-commit-nudge.sh|dod-commit-nudge|{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git commit -m x\"}}|emits additionalContext nudge JSON"
   "pre-push-checks/scripts/block-remote-branch-delete.sh|block-remote-branch-delete|{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git push origin --delete main\"}}|emits block JSON (decision=block, remote branch deletion)"
-  "load-skill-anti-sycophancy.sh|load-skill-anti-sycophancy|{\"hook_event_name\":\"SessionStart\"}|emits additionalContext JSON with skill body"
 )
 
 fail_count=0
