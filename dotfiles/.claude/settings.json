@@ -234,7 +234,7 @@
       "Bash(docker *)",
       "WebFetch(*)"
     ],
-    "defaultMode": "default",
+    "defaultMode": "auto",
     "disableBypassPermissionsMode": "disable",
     "allowManagedHooksOnly": false,
     "allowManagedPermissionRulesOnly": false
@@ -256,6 +256,14 @@
           {
             "type": "command",
             "command": "node ~/.claude/hooks/session-start.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/jessdelgadoperez/.claude/tablo/locate.sh"
           }
         ]
       }
@@ -326,6 +334,14 @@
             "command": "bash ~/.claude/hooks/opus-delegation-reminder.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/jessdelgadoperez/.claude/tablo/locate.sh"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -384,6 +400,16 @@
             "command": "bash ~/.claude/hooks/pre-push-checks/scripts/block-remote-branch-delete.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/jessdelgadoperez/.claude/tablo/hook.sh",
+            "timeout": 600
+          }
+        ]
       }
     ]
   },
@@ -392,17 +418,10 @@
     "command": "bash ~/.claude/hooks/statusline-command.sh"
   },
   "enabledPlugins": {
-    "claude-md-management@claude-plugins-official": false,
-    "code-review@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
-    "context7@claude-plugins-official": false,
-    "frontend-design@claude-plugins-official": false,
-    "playwright@claude-plugins-official": false,
     "superpowers@claude-plugins-official": true,
-    "deep-plan@piercelamb-plugins": false,
-    "deep-implement@piercelamb-plugins": false,
-    "deep-project@piercelamb-plugins": false,
-    "obsidian@obsidian-skills": false
+    "mattpocock-skills@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "piercelamb-plugins": {
@@ -464,8 +483,8 @@
     ]
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
+  "advisorModel": "fable",
   "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
-  "advisorModel": "fable"
+  "agentPushNotifEnabled": true
 }

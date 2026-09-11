@@ -55,9 +55,13 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 @rules/fnm-bash-hang.md
 
+## Sandbox Bypass
+
+Before setting `dangerouslyDisableSandbox: true`, read `~/.claude/reference/dangerously-disable-sandbox.md` — it is the canonical reactive-only rule (use it in response to a confirmed sandbox error, never speculatively) plus the one narrow macOS Go-TLS exception and its three-step diagnostic. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
+
 ## Documentation Lookups
 
-@rules/context7.md
+When looking up library, framework, SDK, or API documentation, the `find-docs` skill and `/context7` command already cover the common path — for the detailed fallback (resolving library IDs, version-specific docs, quota handling), read `~/.claude/reference/context7.md` on demand. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## Debugging
 
@@ -87,7 +91,7 @@ with over 10 years in TypeScript. Always answer me with responses that align wit
 
 ## MCP in Subagents
 
-@rules/mcp-in-subagents.md
+When authoring or debugging a subagent that needs MCP tools, read `~/.claude/reference/mcp-in-subagents.md` first — it covers scope rules, the auth handoff pattern, and anti-patterns. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## Execution Mode Default
 
@@ -131,11 +135,15 @@ When writing or modifying any multi-agent orchestrated command in `~/.claude/com
 
 ## Planning Workflow
 
-@rules/planning.md
+When writing an implementation plan, read `~/.claude/reference/planning.md` first — it covers plan storage conventions, naming, and required plan content. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## File Conventions
 
 - Summaries and weekly logs go in `_summaries/` (leading underscore), not `summaries/`.
+- [Important] Requested research reports and docs are canonical in `~/projects/_reports/`, named
+  `<topic>-YYYY-MM-DD.html` (or `.md`). Write them there directly — do not draft in the scratchpad
+  and copy. When publishing one as an Artifact, publish from the `_reports/` path so the file that
+  gets edited is the file that republishes.
 
 ## Architecture Decisions
 
@@ -159,7 +167,7 @@ Before ANY externally-visible mutation (`gh pr review`, `gh api POST/PATCH`, Sla
 
 ## LLM Wiki Pattern
 
-@rules/llm-wiki.md
+When working in the LLM-maintained wiki vault at `~/<vault>/LLM/`, read `~/.claude/reference/llm-wiki.md` first — it covers the three-layer architecture, ingest/query/lint workflows, and special files. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 @RTK.md
 
