@@ -45,5 +45,5 @@ existing skill; this skill orchestrates the order and fills the gap `ship` leave
 
 - Opening a PR is an externally-visible action. Confirm before `gh pr create` unless the user explicitly
   authorized it this turn.
-- Never add a Claude co-authored footer to commits or the PR body.
+- Always include the Claude co-authored footer on commits and in the PR body.
 - Verify the git root matches the intended repo before pushing.

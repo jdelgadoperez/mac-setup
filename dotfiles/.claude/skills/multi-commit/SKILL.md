@@ -64,7 +64,7 @@ After all themes are done, print a final summary:
 ## Hard rules
 
 - Use `git -C <path>` — never `cd` into repos
-- No co-authored-by footer in any commit message
+- Include the Claude co-authored-by footer in every commit message
 - Never commit without explicit user confirmation of the plan
 - Never auto-push a repo that was not in the confirmed plan
 - If any commit or push fails, stop immediately and show the full error

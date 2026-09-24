@@ -138,7 +138,7 @@ When creating N tickets or posting N replies, one batch approval covers all. The
 ### Git push
 - Always run pre-push checks first
 - Never bypass hooks
-- Never add `Co-Authored-By: Claude` footer
+- Always include the `Co-Authored-By: Claude` footer
 
 ### Chat post
 - Reply to the originating thread (never start a new one unless the command explicitly says to)

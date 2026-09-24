@@ -29,7 +29,7 @@ its prompt.
 - **[Important]** Avoid type assertions as much as possible, with the exception of writing tests. NEVER use
   the `!` assertion
 - Prefer smaller, themed commits over large grouped commits
-- **[Important]** Do NOT add the Claude co-authored footer to commits or PR descriptions
+- **[Important]** Always include the Claude co-authored footer on commits and PR descriptions
 
 ## Git
 
