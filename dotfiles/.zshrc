@@ -104,6 +104,17 @@ export LANG=en_US.UTF-8
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/shims:$PATH"
 
+# memory-bank / fastembed embedding model
+# fastembed derives its cache path from TMPDIR. Claude Code's sandbox rewrites
+# TMPDIR, so the default lands in a dir that has never held the model — fastembed
+# then silently falls back to hash-based embeddings (search returns []) after a
+# blocked re-download. Pin the cache to a stable path; ~/.cache survives, the
+# macOS per-user /var/folders temp dir does not.
+export FASTEMBED_CACHE_PATH="$HOME/.cache/fastembed"
+# Model is a one-time ~64MB fetch. Prefer a fast hard error over a multi-minute
+# download stall if it ever goes missing; unset this to re-fetch.
+export HF_HUB_OFFLINE=1
+
 # Ruby
 export GEM_HOME="$HOME/.gem/ruby/2.6.0"
 export PATH="$GEM_HOME/bin:$PATH"
