@@ -30,9 +30,13 @@ Never spawn more than one subagent per repo.
 For each selected repo where `type` is `code` or `config`:
 
 ```bash
-git -C <absolute-path> worktree add -b bug/<slug> \
-  ~/.config/superpowers/worktrees/<name>/bug/<slug>
+git -C <absolute-path> branch --no-track bug/<slug> origin/main
+git -C <absolute-path> worktree add <absolute-path>-bug-<slug> bug/<slug>
 ```
+
+Worktrees go beside each repo (`<absolute-path>-bug-<slug>`). The branch is created first with
+`--no-track` because `worktree add -b` writes upstream config to `.git/config`, which the Claude Code
+sandbox blocks.
 
 For `type: data` repos: no worktree. Pass the `path` directly to the subagent.
 
@@ -157,8 +161,7 @@ Invoke `/multi-commit` with:
 After `/multi-commit` completes, clean up every worktree created in Step 4:
 
 ```bash
-git -C <absolute-repo-path> worktree remove \
-  ~/.config/superpowers/worktrees/<name>/bug/<slug>
+git -C <absolute-repo-path> worktree remove <absolute-repo-path>-bug-<slug>
 git -C <absolute-repo-path> worktree prune
 ```
 
