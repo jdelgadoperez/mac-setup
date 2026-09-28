@@ -11,24 +11,40 @@
 
 When working on multiple things in a single repo, use git worktrees instead of switching branches.
 
-Preferred worktree location: `~/.config/superpowers/worktrees/<project>/<branch>/`
+Preferred worktree location: a sibling of the main checkout, named `<repo>-<TICKET>` — i.e.
+`../<repo>-<TICKET>` relative to the main checkout. With no ticket, use `<repo>-<short-branch-slug>`.
+
+```
+projects/
+├── my-app/              # main checkout (stays on the default branch)
+├── my-app-ABC-123/      # worktree for ticket ABC-123
+└── my-app-fix-login/    # worktree with no ticket
+```
 
 ```bash
 # List existing worktrees
 git worktree list
 
-# Create worktree for NEW branch
-git worktree add -b <branch-name> ~/.config/superpowers/worktrees/<project>/<branch-name>
+# Create worktree for NEW branch — create the branch first, then add the worktree
+git branch --no-track <branch> origin/main
+git worktree add ../<repo>-<TICKET> <branch>
 
 # Create worktree for EXISTING branch
-git worktree add ~/.config/superpowers/worktrees/<project>/<branch-name> <branch-name>
+git worktree add ../<repo>-<TICKET> <branch>
+
+# Move a misplaced worktree
+git worktree move <old-path> ../<repo>-<TICKET>
 
 # Remove worktree when done
-git worktree remove ~/.config/superpowers/worktrees/<project>/<branch-name>
+git worktree remove ../<repo>-<TICKET>
 
 # Clean up stale references
 git worktree prune
 ```
+
+Avoid `git worktree add -b` and tracking branch creation: both write upstream config to `.git/config`,
+which the Claude Code sandbox blocks (`could not lock config file .git/config`) — the branch is created
+but the worktree isn't. `--no-track` skips that write; `git push -u` sets the upstream later.
 
 ## Shell & Environment Cleanup
 
