@@ -22,28 +22,37 @@ description: "Git worktree workflow. Commands, naming conventions, rules, and ex
 # List existing worktrees (check first to avoid conflicts)
 git worktree list
 
-# Create worktree for NEW branch
-git worktree add -b <branch-name> ../<repo>-<branch-name>
+# Create worktree for NEW branch — create the branch first, then add the worktree
+git branch --no-track <branch> origin/main
+git worktree add ../<repo>-<TICKET> <branch>
 
 # Create worktree for EXISTING branch
-git worktree add ../<repo>-<branch-name> <branch-name>
+git worktree add ../<repo>-<TICKET> <branch>
+
+# Move a misplaced worktree
+git worktree move <old-path> ../<repo>-<TICKET>
 
 # Remove worktree when done
-git worktree remove ../<repo>-<branch-name>
+git worktree remove ../<repo>-<TICKET>
 
 # Clean up stale references
 git worktree prune
 ```
 
+Avoid `git worktree add -b` and tracking branch creation: both write upstream config to `.git/config`,
+which the Claude Code sandbox blocks (`could not lock config file .git/config`) — the branch is created
+but the worktree isn't. `--no-track` skips that write; `git push -u` sets the upstream later.
+
 ## Naming Convention
 
-Worktrees are sibling directories to the repository:
+Worktrees are siblings of the main checkout, named `<repo>-<TICKET>`. With no ticket, use
+`<repo>-<short-branch-slug>`:
 ```
 /projects/
-├── my-app/                           # Main repo (stays on default branch)
-├── my-app-feat-add-export/           # Worktree for feature work
-├── other-repo/                       # Main repo
-├── other-repo-fix-button/            # Worktree for fix
+├── my-app/                           # Main checkout (stays on default branch)
+├── my-app-ABC-123/                   # Worktree for ticket ABC-123
+├── other-repo/                       # Main checkout
+├── other-repo-fix-button/            # Worktree with no ticket
 ```
 
 ## Rules
@@ -57,20 +66,21 @@ Worktrees are sibling directories to the repository:
 ## Example Workflow
 
 ```bash
-# 1. From main repo, create worktree for a branch
+# 1. From main repo, create the branch, then a worktree for it
 cd my-app
-git worktree add -b feat/add-export ../my-app-feat-add-export
+git branch --no-track ABC-123/add-export origin/main
+git worktree add ../my-app-ABC-123 ABC-123/add-export
 
 # 2. Work in worktree
-cd ../my-app-feat-add-export
+cd ../my-app-ABC-123
 # ... make changes ...
 
 # 3. Commit and push (no permission needed in worktrees)
 git add .
 git commit -m "feat(exports): add CSV export"
-git push -u origin feat/add-export
+git push -u origin ABC-123/add-export
 
 # 4. When merged, clean up
 cd ../my-app
-git worktree remove ../my-app-feat-add-export
+git worktree remove ../my-app-ABC-123
 ```
