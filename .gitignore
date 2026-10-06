@@ -15,3 +15,7 @@ __pycache__/
 # making that path relative, which would silently start committing hook output.
 *.jsonl
 hook-logs/
+
+# Real oncall configs are per-person; only examples are committed.
+**/oncall-config.json
+!**/examples/**/oncall-config.json
