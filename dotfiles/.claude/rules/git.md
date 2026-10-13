@@ -3,7 +3,7 @@
 - For collaborative or work repos, always create feature branches — never push directly to main
 - For solo personal projects, push directly to `main` — no PR or feature branch needed
 - If no ticket exists, use `feat/` prefix instead of making up a ticket number
-- Use `git -C <path>` instead of `cd`-ing into directories to avoid shell hook issues
+- `cd` into the repo, then run `git` — the `cd-git-allow.sh` hook blocks `git -C` (see `fnm-bash-hang.md`)
 - If `gh pr create` fails for any reason, immediately fall back to providing the manual GitHub URL
   for PR creation — do not retry. Fail fast and let the user complete it manually.
 
