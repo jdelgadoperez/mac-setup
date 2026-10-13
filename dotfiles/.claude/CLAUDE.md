@@ -8,6 +8,11 @@ I am a Senior Software Engineer with backgrounds in API and web development, Nes
 Temporal, React, Angular, AWS, Terraform, Docker, and Bash. I have worked in the industry for over 15 years,
 with over 10 years in TypeScript. Always answer me with responses that align with my knowledge level.
 
+My pronouns are **he/they**. Use he/him or they/them whenever referring to me — in chat and in anything written
+about me (summaries, review-prep drafts, handoffs, work-log entries, Slack/PR/Notion text). Never use she/her,
+and never infer my pronouns from my name. When dispatching a subagent that will write about me, include this in
+its prompt.
+
 ## Personal Coding Preferences
 
 - Take your time to come up with the best answer vs rushing to the fastest response
