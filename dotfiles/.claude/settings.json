@@ -247,7 +247,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "memory-bank hooks context-summary >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
+            "command": "lockf -k -t 0 ~/.memory-bank/context-summary.lock memory-bank hooks context-summary >> ~/.memory-bank/ingest.log 2>&1 &"
+          },
+          {
+            "type": "command",
+            "command": "lockf -k -t 0 ~/.memory-bank/ingest.lock memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
+          },
+          {
+            "type": "command",
+            "command": "lockf -k -t 0 ~/.memory-bank/distill.lock sh -c 'ANTHROPIC_API_KEY=$(security find-generic-password -s ANTHROPIC_API_KEY -w 2>/dev/null) && [ -n \"$ANTHROPIC_API_KEY\" ] && export ANTHROPIC_API_KEY && exec memory-bank distill --since 3h || echo \"distill skipped: ANTHROPIC_API_KEY not found in Keychain\"' >> ~/.memory-bank/ingest.log 2>&1 &"
           }
         ]
       },
@@ -297,24 +305,6 @@
             "command": "afplay /System/Library/Sounds/Purr.aiff </dev/null >/dev/null 2>&1 &"
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "( pgrep -f 'memory-bank ingest claude-code' >/dev/null || memory-bank ingest claude-code ) >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "( ANTHROPIC_API_KEY=$(security find-generic-password -s ANTHROPIC_API_KEY -w 2>/dev/null); [ -n \"$ANTHROPIC_API_KEY\" ] && export ANTHROPIC_API_KEY && memory-bank distill --since 3h ) >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
-          }
-        ]
       }
     ],
     "UserPromptSubmit": [
@@ -350,7 +340,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "( pgrep -f 'memory-bank ingest claude-code' >/dev/null || memory-bank ingest claude-code ) >> ~/.memory-bank/ingest.log </dev/null >/dev/null 2>&1 &"
+            "command": "lockf -k -t 0 ~/.memory-bank/ingest.lock memory-bank ingest claude-code >> ~/.memory-bank/ingest.log 2>&1 &"
           }
         ]
       }
