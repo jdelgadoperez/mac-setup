@@ -168,6 +168,9 @@ gitprune -i                  # fzf multi-select over all unprotected branches
 gitprune -f                  # Delete gone + merged + squash-merged branches
 gitprune -f -p 'pr-*'        # Delete every branch matching the glob, any label
 
+# fetch --prune that first clears remote refs differing only by case (macOS lock collision)
+gitfetch [git-fetch-args]
+
 # System cleanup (caches, logs, docker, etc.)
 cleansys
 

@@ -152,6 +152,45 @@ function getcommits() {
   echo "Got all commits by '$AUTHOR'"
 }
 
+# `git fetch --prune` deletes every pruned ref in one transaction. On a
+# case-insensitive filesystem, two remote refs that differ only by case share a
+# lock file, so the whole prune aborts with "cannot lock ref ... File exists".
+# Deleting the colliding remote-tracking refs one at a time first is harmless:
+# fetch recreates any that still exist on the remote.
+function gitfetch() {
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    printf "${RED}Not inside a git repository.${NC}\n"
+    return 1
+  fi
+
+  if [[ "$(git config --bool core.ignorecase)" == "true" ]]; then
+    typeset -A first_ref_by_lowercase
+    local colliding_refs=()
+    local ref lowercase_ref
+    while IFS= read -r ref; do
+      lowercase_ref="${(L)ref}"
+      if [[ -n "${first_ref_by_lowercase[$lowercase_ref]}" ]]; then
+        (( ${colliding_refs[(Ie)${first_ref_by_lowercase[$lowercase_ref]}]} )) || colliding_refs+=("${first_ref_by_lowercase[$lowercase_ref]}")
+        colliding_refs+=("$ref")
+      else
+        first_ref_by_lowercase[$lowercase_ref]="$ref"
+      fi
+    done < <(git for-each-ref --format='%(refname)' refs/remotes/)
+
+    if [[ ${#colliding_refs[@]} -gt 0 ]]; then
+      printf "${YELLOW}Clearing ${#colliding_refs[@]} remote-tracking ref(s) that differ only by case:${NC}\n"
+      for ref in "${colliding_refs[@]}"; do
+        git update-ref -d "$ref" && printf "  ${WHITE}${ref#refs/remotes/}${NC}\n"
+      done
+    fi
+  fi
+
+  if ! git fetch --prune "$@"; then
+    printf "${RED}git fetch --prune failed.${NC} Remote-tracking refs may be out of date.\n"
+    return 1
+  fi
+}
+
 function gitclean() {
   if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     printf "${RED}Not inside a git repository.${NC}\n"
@@ -194,7 +233,9 @@ function gitclean() {
   local protected_pattern="^(main|master|develop|release|${current_branch})$"
 
   printf "${BLUE}Fetching and pruning remote tracking refs...${NC}\n"
-  git fetch --prune --quiet
+  if ! gitfetch --quiet; then
+    printf "${YELLOW}Continuing, but branches whose upstream was deleted may not show as gone.${NC}\n"
+  fi
 
   local default_branch
   default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
@@ -730,17 +771,16 @@ function gitcleanall() {
   printf "\n${BOLD_GREEN}All done.${NC} Processed ${BOLD_WHITE}${#repos_to_clean[@]}${NC} repo(s).\n"
 }
 
-# Squash merges leave no ancestry link, so rebuild the branch as one commit on
-# its merge-base and ask `git cherry` whether an equivalent patch already landed.
+# Squash merges leave no ancestry link, so instead ask whether merging the
+# branch into the target would change the target's tree. If not, its changes
+# have already landed.
 function _gitprune_is_squash_merged() {
   local branch="$1"
   local target="$2"
-  local merge_base tree probe_commit
+  local merge_output
 
-  merge_base=$(git merge-base "$target" "$branch" 2>/dev/null) || return 1
-  tree=$(git rev-parse "${branch}^{tree}" 2>/dev/null) || return 1
-  probe_commit=$(git commit-tree "$tree" -p "$merge_base" -m "gitprune squash probe" 2>/dev/null) || return 1
-  [[ $(git cherry "$target" "$probe_commit" 2>/dev/null) == "-"* ]]
+  merge_output=$(git merge-tree --write-tree "$target" "$branch" 2>/dev/null) || return 1
+  [[ "${merge_output%%$'\n'*}" == "$(git rev-parse "${target}^{tree}")" ]]
 }
 
 function _gitprune_label_color() {
@@ -815,7 +855,9 @@ function gitprune() {
   done
 
   printf "${BLUE}Fetching and pruning remote tracking refs...${NC}\n"
-  git fetch --prune --quiet
+  if ! gitfetch --quiet; then
+    printf "${YELLOW}Continuing, but branches whose upstream was deleted may not show as gone.${NC}\n"
+  fi
   git worktree prune
 
   local default_branch
