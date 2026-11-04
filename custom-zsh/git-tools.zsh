@@ -730,6 +730,305 @@ function gitcleanall() {
   printf "\n${BOLD_GREEN}All done.${NC} Processed ${BOLD_WHITE}${#repos_to_clean[@]}${NC} repo(s).\n"
 }
 
+# Squash merges leave no ancestry link, so rebuild the branch as one commit on
+# its merge-base and ask `git cherry` whether an equivalent patch already landed.
+function _gitprune_is_squash_merged() {
+  local branch="$1"
+  local target="$2"
+  local merge_base tree probe_commit
+
+  merge_base=$(git merge-base "$target" "$branch" 2>/dev/null) || return 1
+  tree=$(git rev-parse "${branch}^{tree}" 2>/dev/null) || return 1
+  probe_commit=$(git commit-tree "$tree" -p "$merge_base" -m "gitprune squash probe" 2>/dev/null) || return 1
+  [[ $(git cherry "$target" "$probe_commit" 2>/dev/null) == "-"* ]]
+}
+
+function _gitprune_label_color() {
+  case "$1" in
+    gone) printf '%s' "$RED" ;;
+    merged) printf '%s' "$YELLOW" ;;
+    squashed) printf '%s' "$MAGENTA" ;;
+    local) printf '%s' "$CYAN" ;;
+    stale) printf '%s' "$BLUE" ;;
+    *) printf '%s' "$GREEN" ;;
+  esac
+}
+
+function gitprune() {
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    printf "${RED}Not inside a git repository.${NC}\n"
+    return 1
+  fi
+
+  local force=false
+  local interactive=false
+  local older_than_days=30
+  local patterns=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --force|-f) force=true ;;
+      --interactive|-i) interactive=true ;;
+      --pattern|-p)
+        if [[ -z "$2" ]]; then
+          printf "${RED}--pattern requires a glob (e.g. 'pr-*').${NC}\n"
+          return 1
+        fi
+        patterns+=("$2")
+        shift
+        ;;
+      --older-than|-o)
+        if [[ ! "$2" =~ ^[0-9]+$ ]]; then
+          printf "${RED}--older-than requires a number of days.${NC}\n"
+          return 1
+        fi
+        older_than_days="$2"
+        shift
+        ;;
+      --help|-h)
+        printf "${BOLD_CYAN}gitprune${NC} — Classify and delete unused local branches\n\n"
+        printf "${BOLD_WHITE}Usage:${NC}\n"
+        printf "  gitprune                        Dry run — classify every local branch\n"
+        printf "  gitprune ${YELLOW}--interactive${NC}          Pick any branches to delete (fzf multi-select)\n"
+        printf "  gitprune ${YELLOW}--force${NC}                Delete all gone/merged/squashed branches\n"
+        printf "  gitprune ${YELLOW}--pattern${NC} 'pr-*'       Scope to matching branches (repeatable);\n"
+        printf "                                  with --force, deletes every match regardless of label\n"
+        printf "  gitprune ${YELLOW}--older-than${NC} 14        Stale cutoff in days (default 30)\n\n"
+        printf "${BOLD_WHITE}Labels:${NC}\n"
+        printf "  ${RED}gone${NC}      upstream deleted on the remote\n"
+        printf "  ${YELLOW}merged${NC}    ancestor of the default branch\n"
+        printf "  ${MAGENTA}squashed${NC}  equivalent patch already on the default branch\n"
+        printf "  ${CYAN}local${NC}     never pushed — deleting loses its unique commits\n"
+        printf "  ${BLUE}stale${NC}     has an upstream, no commits within the cutoff\n"
+        printf "  ${GREEN}active${NC}    everything else\n\n"
+        printf "Branches held by a clean worktree have the worktree removed first; dirty worktrees are skipped.\n"
+        printf "${BOLD_WHITE}Protected branches:${NC} main, master, develop, release, the default branch, and current branch\n"
+        return 0
+        ;;
+      *)
+        printf "${RED}Unknown option: $1${NC}\n"
+        printf "Run ${YELLOW}gitprune --help${NC} for usage.\n"
+        return 1
+        ;;
+    esac
+    shift
+  done
+
+  printf "${BLUE}Fetching and pruning remote tracking refs...${NC}\n"
+  git fetch --prune --quiet
+  git worktree prune
+
+  local default_branch
+  default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+  [[ -z "$default_branch" ]] && default_branch="main"
+
+  local target_ref="$default_branch"
+  if git show-ref --verify --quiet "refs/remotes/origin/${default_branch}"; then
+    target_ref="origin/${default_branch}"
+  fi
+
+  local current_branch
+  current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+  # Map branch -> worktree path for every linked worktree. The main checkout's
+  # branch is protected rather than mapped, since it can't be removed.
+  local main_worktree
+  main_worktree=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+  local main_worktree_branch=""
+  typeset -A branch_worktree
+  local worktree_path=""
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^worktree\ (.+)$ ]]; then
+      worktree_path="${match[1]}"
+    elif [[ "$line" =~ ^branch\ refs/heads/(.+)$ ]]; then
+      if [[ "$worktree_path" == "$main_worktree" ]]; then
+        main_worktree_branch="${match[1]}"
+      else
+        branch_worktree[${match[1]}]="$worktree_path"
+      fi
+    fi
+  done < <(git worktree list --porcelain)
+
+  local protected_branches=(main master develop release "$default_branch" "$current_branch" "$main_worktree_branch")
+
+  local now
+  now=$(date +%s)
+  local stale_cutoff=$(( now - older_than_days * 86400 ))
+
+  typeset -A branch_label branch_age_days branch_unique_commits
+  local scoped_branches=()
+  local squash_candidates=()
+
+  # \x1f as the delimiter: upstream fields are often empty, and a whitespace
+  # IFS would collapse consecutive delimiters and shift the columns.
+  local branch upstream track commit_epoch matches_pattern pattern
+  while IFS=$'\x1f' read -r branch upstream track commit_epoch; do
+    [[ -z "$branch" ]] && continue
+    (( ${protected_branches[(Ie)$branch]} )) && continue
+
+    if [[ ${#patterns[@]} -gt 0 ]]; then
+      matches_pattern=false
+      for pattern in "${patterns[@]}"; do
+        if [[ "$branch" == ${~pattern} ]]; then
+          matches_pattern=true
+          break
+        fi
+      done
+      [[ "$matches_pattern" == false ]] && continue
+    fi
+
+    scoped_branches+=("$branch")
+    branch_age_days[$branch]=$(( (now - commit_epoch) / 86400 ))
+    branch_unique_commits[$branch]=$(git rev-list --count "${target_ref}..${branch}" 2>/dev/null || echo 0)
+
+    if [[ "$track" == "[gone]" ]]; then
+      branch_label[$branch]="gone"
+    elif git merge-base --is-ancestor "$branch" "$target_ref" 2>/dev/null; then
+      branch_label[$branch]="merged"
+    else
+      squash_candidates+=("$branch")
+      if [[ -z "$upstream" ]]; then
+        branch_label[$branch]="local"
+      elif (( commit_epoch < stale_cutoff )); then
+        branch_label[$branch]="stale"
+      else
+        branch_label[$branch]="active"
+      fi
+    fi
+  done < <(git for-each-ref --format='%(refname:short)%1f%(upstream:short)%1f%(upstream:track)%1f%(committerdate:unix)' refs/heads/)
+
+  if [[ ${#scoped_branches[@]} -eq 0 ]]; then
+    printf "${GREEN}No unprotected branches found.${NC}\n"
+    return 0
+  fi
+
+  if [[ ${#squash_candidates[@]} -gt 0 ]]; then
+    printf "${BLUE}Checking ${#squash_candidates[@]} branch(es) for squash merges into ${target_ref}...${NC}\n"
+    for branch in "${squash_candidates[@]}"; do
+      if _gitprune_is_squash_merged "$branch" "$target_ref"; then
+        branch_label[$branch]="squashed"
+      fi
+    done
+  fi
+
+  local label_order=(gone merged squashed local stale active)
+  local defunct_labels=(gone merged squashed)
+  local ordered_branches=()
+  local label
+  for label in "${label_order[@]}"; do
+    for branch in "${scoped_branches[@]}"; do
+      [[ "${branch_label[$branch]}" == "$label" ]] && ordered_branches+=("$branch")
+    done
+  done
+
+  local force_targets=()
+  for branch in "${ordered_branches[@]}"; do
+    if [[ ${#patterns[@]} -gt 0 ]] || (( ${defunct_labels[(Ie)${branch_label[$branch]}]} )); then
+      force_targets+=("$branch")
+    fi
+  done
+
+  local previous_label=""
+  for branch in "${ordered_branches[@]}"; do
+    label="${branch_label[$branch]}"
+    if [[ "$label" != "$previous_label" ]]; then
+      printf "\n$(_gitprune_label_color "$label")${BOLD}${label}${NC}\n"
+      previous_label="$label"
+    fi
+    local details=""
+    [[ "$label" == "local" && ${branch_unique_commits[$branch]} -gt 0 ]] && details+=" ${YELLOW}${branch_unique_commits[$branch]} unpushed${NC}"
+    [[ -n "${branch_worktree[$branch]}" ]] && details+=" ${MAGENTA}+worktree${NC}"
+    printf "  %-70s ${WHITE}%5sd${NC}${details}\n" "$branch" "${branch_age_days[$branch]}"
+  done
+
+  printf "\n${WHITE}Scanned ${BOLD_WHITE}${#ordered_branches[@]}${NC}${WHITE} branch(es); ${BOLD_WHITE}${#force_targets[@]}${NC}${WHITE} would be deleted by --force.${NC}\n"
+
+  local branches_to_delete=()
+
+  if [[ "$interactive" == true ]]; then
+    if command -v fzf &>/dev/null; then
+      local selected
+      selected=$(for branch in "${ordered_branches[@]}"; do
+        printf '%-9s\t%5sd\t%s\n' "${branch_label[$branch]}" "${branch_age_days[$branch]}" "$branch"
+      done | fzf --multi \
+        --delimiter=$'\t' \
+        --header="Tab: toggle | Ctrl-A: select all | Ctrl-D: deselect all | Enter: confirm | Esc: cancel" \
+        --prompt="Delete branches> " \
+        --bind="ctrl-a:select-all,ctrl-d:deselect-all" \
+        --preview="git log --oneline --color=always -15 {3}" \
+        --preview-window=right:50%:wrap \
+        --color="fg:#f8f8f2,bg:#282a36,hl:#ff79c6,fg+:#f8f8f2,bg+:#44475a,hl+:#ff79c6,info:#8be9fd,prompt:#50fa7b,pointer:#ff79c6,marker:#50fa7b,spinner:#50fa7b,header:#6272a4")
+
+      if [[ -n "$selected" ]]; then
+        while IFS= read -r line; do
+          branches_to_delete+=("${line##*	}")
+        done <<< "$selected"
+      fi
+    else
+      printf "\n${BOLD_CYAN}Select branches to delete:${NC}\n"
+      for branch in "${ordered_branches[@]}"; do
+        label="${branch_label[$branch]}"
+        printf "  $(_gitprune_label_color "$label")[%s]${NC} ${WHITE}%s${NC} — delete? [y/N] " "$label" "$branch"
+        read -r response
+        [[ "$response" =~ ^[Yy]$ ]] && branches_to_delete+=("$branch")
+      done
+    fi
+
+    if [[ ${#branches_to_delete[@]} -eq 0 ]]; then
+      printf "\n${YELLOW}No branches selected. Nothing deleted.${NC}\n"
+      return 0
+    fi
+  elif [[ "$force" == true ]]; then
+    branches_to_delete=("${force_targets[@]}")
+    if [[ ${#branches_to_delete[@]} -eq 0 ]]; then
+      printf "\n${GREEN}Nothing defunct to delete.${NC} Use ${CYAN}--interactive${NC} or ${CYAN}--pattern${NC} to target other branches.\n"
+      return 0
+    fi
+  else
+    printf "\n${BOLD_YELLOW}Dry run — no branches deleted.${NC}\n"
+    printf "Run ${CYAN}gitprune --force${NC} to delete defunct branches, or ${CYAN}gitprune --interactive${NC} to pick.\n"
+    return 0
+  fi
+
+  printf "\n${BOLD_RED}Deleting ${#branches_to_delete[@]} branch(es)...${NC}\n"
+  local deleted=0
+  local skipped=0
+  local failed=0
+  local tip_sha
+
+  for branch in "${branches_to_delete[@]}"; do
+    local held_by="${branch_worktree[$branch]}"
+    if [[ -n "$held_by" ]]; then
+      if [[ -n $(git -C "$held_by" status --porcelain 2>/dev/null) ]]; then
+        printf "  ${YELLOW}Skipped${NC} ${WHITE}${branch}${NC} — worktree has uncommitted changes: ${held_by/#$HOME/~}\n"
+        ((skipped++))
+        continue
+      fi
+      if ! git worktree remove "$held_by" &>/dev/null; then
+        printf "  ${RED}Failed${NC} ${WHITE}${branch}${NC} — could not remove worktree ${held_by/#$HOME/~}\n"
+        ((failed++))
+        continue
+      fi
+      printf "  ${BLUE}Removed worktree${NC} ${held_by/#$HOME/~}\n"
+    fi
+
+    tip_sha=$(git rev-parse --short "$branch" 2>/dev/null)
+    if git branch -D "$branch" &>/dev/null; then
+      printf "  ${GREEN}Deleted${NC} ${WHITE}${branch}${NC} (was ${tip_sha})\n"
+      ((deleted++))
+    else
+      printf "  ${RED}Failed${NC} ${WHITE}${branch}${NC}\n"
+      ((failed++))
+    fi
+  done
+
+  printf "\n${GREEN}Done.${NC} Deleted: ${BOLD_GREEN}${deleted}${NC}"
+  [[ $skipped -gt 0 ]] && printf ", Skipped: ${BOLD_YELLOW}${skipped}${NC}"
+  [[ $failed -gt 0 ]] && printf ", Failed: ${BOLD_RED}${failed}${NC}"
+  printf "\n"
+  printf "${WHITE}Restore any branch with ${CYAN}git branch <name> <sha>${NC}\n"
+}
+
 function getorgcommitcount() {
   AUTHOR="$1"
   ORG="$2"

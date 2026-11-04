@@ -162,6 +162,12 @@ gccd <git-repo-url>
 # Show current branch for all repos in a directory
 showgitbranch ~/projects
 
+# Classify every local branch (gone/merged/squashed/local/stale/active) and prune
+gitprune                     # Dry run
+gitprune -i                  # fzf multi-select over all unprotected branches
+gitprune -f                  # Delete gone + merged + squash-merged branches
+gitprune -f -p 'pr-*'        # Delete every branch matching the glob, any label
+
 # System cleanup (caches, logs, docker, etc.)
 cleansys
 
