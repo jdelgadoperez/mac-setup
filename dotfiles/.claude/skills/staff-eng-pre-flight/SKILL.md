@@ -47,7 +47,10 @@ one-line reason. Don't hand-wave a PASS you didn't check.
 2. **Failure modes & reversibility** — How does it fail in prod (not in the happy path)? Behind a flag /
    reversible without a deploy? Rollback plan? Writes idempotent / retry-safe? Partial-failure story?
 3. **Simplicity / altitude** — Is this the simplest change that achieves the goal, or did I over-build? Any
-   abstraction added before a second caller exists? Could the diff be smaller?
+   abstraction added before a second caller exists? Could the diff be smaller? New dependency? Check that the
+   repo doesn't already have one (or a shared helper) for the same job, that the package is still maintained,
+   and that the PR says why the existing option wasn't used. Needing a type cast or shim to make it fit is a
+   sign it's the wrong choice.
 4. **Contract & compatibility** — API / DB / event / queue / interface changes backward-compatible? Migration
    ordering safe? All consumers updated?
 5. **Operational readiness** — Observability for the failure case (who/what/when/where/why in
