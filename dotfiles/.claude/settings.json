@@ -476,5 +476,19 @@
   "effortLevel": "high",
   "advisorModel": "fable",
   "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "mcp.linear.app",
+        "api.linear.app"
+      ],
+      "allowMachLookup": [
+        "com.apple.trustd.agent",
+        "com.apple.trustd"
+      ]
+    }
+  }
 }

@@ -62,7 +62,7 @@ its prompt.
 
 ## Sandbox Bypass
 
-Before setting `dangerouslyDisableSandbox: true`, read `~/.claude/reference/dangerously-disable-sandbox.md` — it is the canonical reactive-only rule (use it in response to a confirmed sandbox error, never speculatively) plus the one narrow macOS Go-TLS exception and its three-step diagnostic. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
+Before setting `dangerouslyDisableSandbox: true`, read `~/.claude/reference/dangerously-disable-sandbox.md` — it is the canonical reactive-only rule (use it in response to a confirmed sandbox error, never speculatively) plus the macOS `OSStatus -26276` TLS failure and its `allowMachLookup` config fix. It lives in `reference/` rather than `rules/` because everything in `rules/` loads into every session; this one is read on demand.
 
 ## Documentation Lookups
 

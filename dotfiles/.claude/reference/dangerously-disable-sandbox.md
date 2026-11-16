@@ -17,47 +17,51 @@ restriction error**, such as:
 - `sandbox-exec denied`
 - Permission denied on a specific system path
 
-## Go binaries on macOS — a deterministic sandbox failure
+## macOS platform-verifier TLS failure (`OSStatus -26276`) — fixed by config
 
-There is one narrow, well-understood class where proactively disabling the sandbox is
-correct: **Go binaries making outbound HTTPS on macOS.**
+A macOS **native** binary whose HTTPS client verifies certificates through the OS platform
+verifier (`Security.framework`) fails in-sandbox with `OSStatus -26276`
+(`errSecInternalComponent`, a trust-evaluation failure, not a missing CA). Go surfaces it as
+`tls: failed to verify certificate: x509: OSStatus -26276`; Rust surfaces it as
+`InvalidCertificate(Other(OtherError("OSStatus -26276: -26276")))`. CA-bundle env knobs
+(`SSL_CERT_FILE`, `GODEBUG=x509usefallbackroots=1`) do not help.
 
-Go verifies TLS certificates by calling into macOS `Security.framework`, which the
-sandbox blocks at the Mach-service level. The signature is always:
+**Root cause.** The verifier asks the `trustd` Mach service to evaluate the chain, and the
+Seatbelt sandbox denies that Mach lookup.
 
+**Fix — no bypass needed.** Allow the lookup and the hosts in the user `settings.json`:
+
+```json
+"sandbox": {
+  "network": {
+    "allowedDomains": ["<each host the CLI calls>"],
+    "allowMachLookup": ["com.apple.trustd.agent", "com.apple.trustd"]
+  }
+}
 ```
-tls: failed to verify certificate: x509: OSStatus -26276
-```
 
-`OSStatus -26276` is `errSecInternalComponent` — a trust-evaluation failure, **not** a
-missing CA. It is confirmed unfixable by `SSL_CERT_FILE` (any bundle) or
-`GODEBUG=x509usefallbackroots=1`, and is independent of auth. Non-Go HTTPS clients (e.g.
-`curl`) are unaffected in the same sandbox, which is what isolates this to Go's
-platform-verifier path.
+With that in place the CLI works **inside** the sandbox: do not reach for
+`dangerouslyDisableSandbox`, and do not put the CLI in `excludedCommands`. A host the CLI
+needs that is missing from `allowedDomains` shows up as a `deny network-outbound <host>:443`
+sandbox violation instead, a different error: add the host.
 
-### Diagnostic before treating a CLI as verified-broken
+### If `-26276` comes back
 
-The predictive criterion is "Go binary making outbound HTTPS on macOS". To confirm a
-candidate, run its network probe in-sandbox and check three things:
+1. Check that `sandbox.network.allowMachLookup` still lists both `trustd` services in the
+   live settings (a settings sync or rewrite can drop it).
+2. Probe in-sandbox with the call prefixed by `env` (so no `excludedCommands` entry can
+   match and run it unsandboxed), e.g. `env gh api user`.
+3. If it still fails with both entries present, report it rather than bypassing.
 
-1. The error is exactly `x509: OSStatus -26276`.
-2. `SSL_CERT_FILE` and `GODEBUG=x509usefallbackroots=1` both leave it unchanged.
-3. `go version -m "$(command -v <cli>)"` shows it is a Go binary.
+Notes:
 
-A non-Go CLI failing on TLS is a *different* bug — do not treat it as this class.
-
-Notes that keep this exception narrow:
-
-- **Keychain is NOT blocked.** Credential lookups succeed in-sandbox. When a Go CLI
-  reports an auth problem under the sandbox (e.g. "the token in keyring is invalid"),
-  that message is a misleading symptom of the TLS failure. Don't chase it as an
-  expired-credential bug.
-- **The network is NOT blocked.** In the same sandbox, `curl` and `git ls-remote` reach
-  the same hosts. Adding hosts to the sandbox network allowlist does nothing, because host
-  access was never the problem.
+- **Keychain is NOT blocked.** A CLI reporting "the token in keyring is invalid" under
+  this failure is showing a symptom of the TLS block, not an expired credential.
+- `excludedCommands` entries use `Bash(...)` rule syntax: a bare `gh` matches only `gh`
+  with no arguments (use `gh *`). Redirects to files, `;`/`&&` chains, heredocs and
+  commands named through a variable stay sandboxed regardless.
 - Do **not** build a token-extraction + `curl` shim to route a blocked CLI around the
-  approval gate. That is a systematic bypass of a deliberate guardrail, not a bug
-  workaround.
+  approval gate.
 
 ## When NOT to Use It
 
@@ -80,7 +84,7 @@ Setting this flag unnecessarily:
 
 ## SSH commit-signing failure — a SEPARATE confirmed sandbox restriction
 
-Distinct mechanism from the macOS platform-verifier TLS block above — keep them separate.
+Distinct mechanism from the macOS platform-verifier TLS failure above — keep them separate.
 
 **Signature.** A signed `git commit` fails with:
 
@@ -110,9 +114,8 @@ user commits in their own unsandboxed terminal, which always works.
 ## Rule
 
 > Only use `dangerouslyDisableSandbox: true` reactively, in response to a confirmed
-> sandbox error message. The one exception is the macOS Go-TLS class above, where the
-> failure is already root-caused and deterministic — and only after the three-step
-> diagnostic confirms the CLI is a Go binary and neither env knob helps.
+> sandbox error message. There is no proactive exception: the macOS `OSStatus -26276`
+> TLS failure is fixed by `sandbox.network.allowMachLookup` (see above), not by bypassing.
 >
 > The SSH commit-signing failure (`Couldn't get agent socket?`) is a separate confirmed
 > sandbox restriction covered in its own section above: recognize it on sight, ask the user
