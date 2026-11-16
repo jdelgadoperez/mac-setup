@@ -77,6 +77,36 @@ CASES = [
     ("BLOCK a tool path inside the body, not in command position",
      {"tool_name": "Bash", "tool_input": {"command":
       'gh pr comment 1 --body "run /Users/someoneelse/bin/gh"'}}, 2),
+    ("ALLOW linear-cli body that mentions the file flags in its text",
+     {"tool_name": "Bash", "tool_input": {"command":
+      'linear-cli call save_comment \'{"issueId":"INT-1","body":"the agent requires `gh pr edit --body-file`, and --input is refused"}\''}}, 0),
+    ("ALLOW gh pr comment quoting the guard's own fail-closed message",
+     {"tool_name": "Bash", "tool_input": {"command":
+      'gh pr comment 1 --body "it said: content is in a --body-file/--input/@file, which can\'t be scanned"'}}, 0),
+    ("FAIL-CLOSED gh api -F with a quoted @file value",
+     {"tool_name": "Bash", "tool_input": {"command":
+      "gh api repos/drata/api/issues/1/comments -F 'body=@/tmp/b.md'"}}, 3),
+    ("FAIL-CLOSED gh api with -F joined to its @file value",
+     {"tool_name": "Bash", "tool_input": {"command":
+      'gh api repos/drata/api/issues/1/comments -Fbody=@b.md'}}, 3),
+    ("FAIL-CLOSED gh pr edit --body-file=<file> form",
+     {"tool_name": "Bash", "tool_input": {"command":
+      'gh pr edit 1 --body-file=b.md'}}, 3),
+    ("FAIL-CLOSED unparseable command that names a body file",
+     {"tool_name": "Bash", "tool_input": {"command":
+      'gh pr review 1 --body-file b.md --body "unbalanced'}}, 3),
+    ("ALLOW linear-cli run by a quoted path with a space in it (read call)",
+     {"tool_name": "Bash", "tool_input": {"command":
+      f'"{HOME}/Library/Application Support/Claude/plugins/linear/install/linear-cli" call list_comments \'{{"issueId":"INT-736","limit":100,"orderBy":"createdAt"}}\''}}, 0),
+    ("ALLOW linear-cli run by a path with a backslash-escaped space",
+     {"tool_name": "Bash", "tool_input": {"command":
+      f'{HOME}/Library/Application\\ Support/Claude/plugins/linear/install/linear-cli call list_teams \'{{}}\''}}, 0),
+    ("BLOCK linear-cli run by a spaced path with a home path in the body",
+     {"tool_name": "Bash", "tool_input": {"command":
+      f'"{HOME}/Library/Application Support/Claude/plugins/linear/install/linear-cli" call save_comment \'{{"body":"see {HOME}/r.md"}}\''}}, 2),
+    ("BLOCK a quoted spaced home path in a body that only ends in a tool name",
+     {"tool_name": "Bash", "tool_input": {"command":
+      f'gh pr comment 1 --body "{HOME}/Library/Application Support/x/gh"'}}, 2),
     ("ALLOW slack clean message",
      {"tool_name": "mcp__claude_ai_Slack__slack_send_message", "tool_input":
       {"text": "the readiness report is attached"}}, 0),

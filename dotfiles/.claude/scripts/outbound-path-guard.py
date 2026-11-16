@@ -33,6 +33,7 @@ Rules (per the user's spec):
 """
 import json
 import re
+import shlex
 import socket
 import sys
 
@@ -78,17 +79,26 @@ POST_PROGRAMS = ("linear-cli", "gh", "acli", "curl")
 # A path ending in a POST_PROGRAM in command position (start of command, start
 # of a line in a multi-line script, or after ; & | ( or $(), optionally quoted. Paths anywhere else — bodies, flags,
 # JSON arguments — are left in place and still scanned.
+# A quoted path may contain spaces (plugins installed under
+# "Library/Application Support"); an unquoted one may contain backslash-escaped
+# characters.
+_PROGRAM_NAMES = "|".join(map(re.escape, POST_PROGRAMS))
 PROGRAM_PATH_RE = re.compile(
-    r"""(?P<lead>^|[;&|(\n]|\$\()(?P<space>[ \t]*)(?P<quote>["']?)"""
-    r"""(?:~[A-Za-z0-9._-]*|/)[^\s"'`;&|()]*/"""
-    r"""(?P<program>""" + "|".join(map(re.escape, POST_PROGRAMS)) + r""")"""
-    r"""(?P=quote)(?=\s|$|[;&|)])""")
+    r"""(?P<lead>^|[;&|(\n]|\$\()(?P<space>[ \t]*)"""
+    r"""(?:"""
+    r"""(?P<quote>["'])(?:~[A-Za-z0-9._-]*|/)(?:(?!(?P=quote))[^\n])*/"""
+    r"""(?P<quoted_program>""" + _PROGRAM_NAMES + r""")(?P=quote)"""
+    r"""|"""
+    r"""(?:~[A-Za-z0-9._-]*|/)(?:\\.|[^\s"'`;&|()\\])*/"""
+    r"""(?P<program>""" + _PROGRAM_NAMES + r""")"""
+    r""")(?=\s|$|[;&|)])""")
 
 
 def strip_program_paths(command):
     """Replace a post tool's own executable path with its bare name."""
     return PROGRAM_PATH_RE.sub(
-        lambda match: match["lead"] + match["space"] + match["program"], command)
+        lambda match: match["lead"] + match["space"]
+        + (match["quoted_program"] or match["program"]), command)
 
 # Out-of-band content flags: content is in a file, not the command string.
 # We can't scan it, so we fail closed for post-intent commands that use them.
@@ -99,6 +109,33 @@ OUT_OF_BAND_FLAGS = (
     r"-f\s+\S+=@",
     r"--field\s+\S+=@",
 )
+
+FILE_FLAGS = ("--body-file", "--input")
+FIELD_FLAGS = ("-F", "-f", "--field")
+
+
+def uses_out_of_band_flag(command):
+    """True when the command itself passes content through a file.
+
+    Checks the command's arguments, not its text, so a body that merely
+    mentions one of these flags is still scanned. A command shlex can't parse
+    falls back to the text regexes, which keeps the guard fail-closed.
+    """
+    try:
+        arguments = shlex.split(command)
+    except ValueError:
+        return any(re.search(flag, command) for flag in OUT_OF_BAND_FLAGS)
+    for index, argument in enumerate(arguments):
+        if argument in FILE_FLAGS or argument.startswith(
+                tuple(flag + "=" for flag in FILE_FLAGS)):
+            return True
+        if argument in FIELD_FLAGS:
+            following = arguments[index + 1] if index + 1 < len(arguments) else ""
+            if "=@" in following:
+                return True
+        elif "=@" in argument and argument.startswith(FIELD_FLAGS):
+            return True
+    return False
 
 
 def _leak_patterns():
@@ -196,7 +233,7 @@ def main():
         if not is_post:
             return 0
         # Fail closed if the outbound body is in an unreadable out-of-band file.
-        if any(re.search(f, cmd) for f in OUT_OF_BAND_FLAGS):
+        if uses_out_of_band_flag(cmd):
             print("FAIL_CLOSED: outbound content is in a --body-file/--input/"
                   "@file, which can't be scanned. Inline the content (e.g. "
                   "--body \"...\") so it can be checked, or post it yourself "
