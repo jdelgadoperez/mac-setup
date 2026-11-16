@@ -492,6 +492,12 @@ function updateclaudeplugins() {
   fi
 }
 
+function updateclaude() {
+  claude update
+  echo ""
+  updateclaudeplugins
+}
+
 function startotel() {
   local compose_file="/Users/jessdelgadoperez/projects/drata/claude-code-otel-dist/docker-compose.yml"
 
@@ -602,8 +608,16 @@ function updatelibs() {
   echo "${BLUE}==============================================================================${NC}"
   echo "${BLUE}[1/9] Install latest ${CYAN}node${NC}"
   echo "${BLUE}==============================================================================${NC}"
-  if fnm use lts-latest --corepack-enabled --install-if-missing 2>&1; then
-    echo "${GREEN}✅ Now on Node $(fnm current)${NC}"
+  # Node 25+ no longer bundles corepack, so fnm's --corepack-enabled fails; install it from npm instead
+  if fnm use lts-latest --install-if-missing 2>&1; then
+    if ! command -v corepack >/dev/null 2>&1; then
+      npm install -g corepack 2>&1
+    fi
+    if corepack enable 2>&1; then
+      echo "${GREEN}✅ Now on Node $(fnm current) (corepack enabled)${NC}"
+    else
+      echo "${YELLOW}⚠️  Now on Node $(fnm current), but failed to enable corepack${NC}"
+    fi
   else
     echo "${YELLOW}⚠️  Failed to update Node.js${NC}"
   fi
